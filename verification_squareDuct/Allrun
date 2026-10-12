@@ -1,0 +1,31 @@
+#!/bin/sh
+cd "${0%/*}" || exit                                # Run from this directory
+
+# Source OpenFOAM tutorial run functions if available
+if [ -n "$WM_PROJECT_DIR" ] && [ -f "$WM_PROJECT_DIR/bin/tools/RunFunctions" ]; then
+    . "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+fi
+
+# 1. Clean previous time directories and logs
+rm -rf [1-9]* log.* constant/polyMesh
+
+# 2. Generate mesh
+echo "--> Running blockMesh..."
+blockMesh > log.blockMesh 2>&1
+
+# 3. Ensure TorchScript model exists in constant/
+if [ ! -f "constant/tbnn_model.pt" ]; then
+    if [ -f "../tbnn_model.pt" ]; then
+        echo "--> Copying tbnn_model.pt to constant/..."
+        cp ../tbnn_model.pt constant/
+    elif [ -f "../../tbnn_model.pt" ]; then
+        echo "--> Copying tbnn_model.pt to constant/..."
+        cp ../tbnn_model.pt constant/
+    fi
+fi
+
+# 4. Run custom solver
+echo "--> Running tbnnFoam..."
+tbnnFoam > log.tbnnFoam 2>&1
+
+echo "--> Simulation completed! Check log.tbnnFoam."

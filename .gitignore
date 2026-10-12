@@ -1,0 +1,13 @@
+# OpenFOAM intermediate build files
+Make/linux*
+verification_squareDuct/constant/polyMesh
+verification_squareDuct/[1-9]*
+verification_squareDuct/0.*
+*.o
+*.so
+
+# Python cache & OS files
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

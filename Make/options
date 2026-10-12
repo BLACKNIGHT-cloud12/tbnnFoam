@@ -1,0 +1,35 @@
+LIBTORCH_DIR = $(HOME)/libtorch
+
+EXE_INC = \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/sampling/lnInclude \
+    -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude \
+    -I$(LIB_SRC)/TurbulenceModels/incompressible/lnInclude \
+    -I$(LIB_SRC)/transportModels \
+    -I$(LIB_SRC)/transportModels/incompressible/singlePhaseTransportModel \
+    -I$(LIB_SRC)/dynamicMesh/lnInclude \
+    -I$(LIB_SRC)/dynamicFvMesh/lnInclude \
+    -I$(LIB_SRC)/fvOptions/lnInclude \
+    -I$(LIBTORCH_DIR)/include \
+    -I$(LIBTORCH_DIR)/include/torch/csrc/api/include \
+    -D_GLIBCXX_USE_CXX11_ABI=1 \
+    -Wno-old-style-cast \
+    -std=c++17
+
+EXE_LIBS = \
+    -lfiniteVolume \
+    -lfvOptions \
+    -lmeshTools \
+    -lsampling \
+    -ldynamicMesh \
+    -ldynamicFvMesh \
+    -lturbulenceModels \
+    -lincompressibleTurbulenceModels \
+    -lincompressibleTransportModels \
+    -latmosphericModels \
+    -L$(LIBTORCH_DIR)/lib \
+    -ltorch \
+    -ltorch_cpu \
+    -lc10 \
+    -Wl,-rpath,$(LIBTORCH_DIR)/lib
