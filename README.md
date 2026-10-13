@@ -4,9 +4,12 @@
 [![LibTorch](https://img.shields.io/badge/LibTorch-C%2B%2B11_ABI-red.svg)](https://pytorch.org)
 [![Python](https://img.shields.io/badge/Python-3.12-brightgreen.svg)](https://python.org)
 [![DNS Validation](https://img.shields.io/badge/DNS_Validation-Re_b=1500-success.svg)](https://github.com/BLACKNIGHT-cloud12/tbnnFoam)
+[![Interactive Studio](https://img.shields.io/badge/Live_Studio-Interactive_Dashboard-blueviolet.svg)](docs/index.html)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 An in-situ **Physics-Informed Machine Learning (SciML)** turbulence closure framework for OpenFOAM. `tbnnFoam` executes a **Tensor Basis Neural Network (TBNN)** (Ling et al., 2016) natively within the finite volume C++ solver using LibTorch. By embedding Pope's (1975) 10-tensor basis integrity expansion, the solver guarantees **Galilean and rotational frame-invariance** and overcomes the classical **Boussinesq hypothesis failure** in anisotropic, separated, and secondary turbulent flows.
+
+> 🚀 **Explore the Interactive Simulation Studio:** [Open docs/index.html](docs/index.html) to interact with the live execution map, inspect C++ functions, trace tensor invariant dataflow through the neural network, and view synchronized simulation animations.
 
 ---
 
