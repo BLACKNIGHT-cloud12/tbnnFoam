@@ -1,16 +1,21 @@
-/*---------------------------------------------------------------------------*\
+/*--------------------------------*- C++ -*----------------------------------*\
 | =========                 |                                                 |
 | \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
 |  \\    /   O peration     | Version:  2606                                  |
 |   \\  /    A nd           | Website:  www.openfoam.com                      |
 |    \\/     M anipulation  |                                                 |
 \*---------------------------------------------------------------------------*/
-Build  : _481094f-20260618 OPENFOAM=2606 version=2606
-Arch   : "LSB;label=32;scalar=64"
-Exec   : blockMesh
-Date   : Oct 12 2026
-Time   : 10:38:26
-Host   : Soumiklaptop
-PID    : 4458
-fileName::stripInvalid() called for invalid fileName /mnt/c/Users/soumi/OneDrive/Documents/Zerodatasolver/tbnnFoam/verification_squareDuct
-    For debug level (= 2) > 1 this is considered fatal
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    arch        "LSB;label=32;scalar=64";
+    class       dictionary;
+    location    "73/uniform/functionObjects";
+    object      functionObjectProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+
+
+// ************************************************************************* //

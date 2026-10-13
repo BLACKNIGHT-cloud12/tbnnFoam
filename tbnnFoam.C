@@ -158,33 +158,36 @@ int main(int argc, char *argv[])
         at::Tensor outputAnisotropy = tbnnModule.forward(inputs).toTensor();
         auto anisoAccessor = outputAnisotropy.accessor<float, 3>();
 
-        // Ramp-up factor: let baseline RANS settle for initial iterations, then smoothly activate TBNN
-        scalar alphaTBNN = min(1.0, max(0.0, (runTime.timeIndex() - 5.0) / 15.0));
+        // Ramp-up factor: let baseline RANS converge (first 60 iterations), then smoothly introduce TBNN
+        scalar alphaTBNN = min(1.0, max(0.0, (runTime.timeIndex() - 60.0) / 40.0));
 
         // --- 5. Update OpenFOAM Fields and Compute Stabilizing Stress Correction
         for (label cellI = 0; cellI < nCells; ++cellI)
         {
-            symmTensor aVal
-            (
-                anisoAccessor[cellI][0][0], anisoAccessor[cellI][0][1], anisoAccessor[cellI][0][2],
-                                            anisoAccessor[cellI][1][1], anisoAccessor[cellI][1][2],
-                                                                        anisoAccessor[cellI][2][2]
-            );
+            // Lumley triangle realizability clipping: physical anisotropy is strictly bounded
+            scalar axx = std::clamp(static_cast<double>(anisoAccessor[cellI][0][0]), -0.33, 0.66);
+            scalar ayy = std::clamp(static_cast<double>(anisoAccessor[cellI][1][1]), -0.33, 0.66);
+            scalar azz = std::clamp(static_cast<double>(anisoAccessor[cellI][2][2]), -0.33, 0.66);
+            scalar axy = std::clamp(static_cast<double>(anisoAccessor[cellI][0][1]), -0.5, 0.5);
+            scalar axz = std::clamp(static_cast<double>(anisoAccessor[cellI][0][2]), -0.5, 0.5);
+            scalar ayz = std::clamp(static_cast<double>(anisoAccessor[cellI][1][2]), -0.5, 0.5);
 
+            symmTensor aVal(axx, axy, axz, ayy, ayz, azz);
             aTBNN[cellI] = aVal;
 
             // Full Reynolds Stress: tauR = 2*k*(a + 1/3*I)
             scalar kVal = k[cellI];
             tauR[cellI] = 2.0 * kVal * (aVal + (1.0/3.0)*symmTensor::I);
 
-            // Boussinesq baseline stress: tauB = 2/3*k*I - 2*nut*S
-            symmTensor tauBoussinesq = (2.0/3.0)*kVal*symmTensor::I - 2.0*nut[cellI]*S[cellI];
-
-            // Stabilizing non-linear stress difference with smooth ramp-up
-            tauDelta[cellI] = alphaTBNN * (tauR[cellI] - tauBoussinesq);
+            // Pure anisotropic Reynolds stress source: 2*k*a with smooth relaxation (alpha = 0.01)
+            symmTensor tauDiff = 2.0 * kVal * aVal;
+            tauDelta[cellI] = 0.99 * tauDelta[cellI] + 0.01 * alphaTBNN * tauDiff;
         }
 
-        tauDelta.correctBoundaryConditions();
+        forAll(tauDelta.boundaryField(), patchI)
+        {
+            tauDelta.boundaryFieldRef()[patchI] == symmTensor::zero;
+        }
         tauR.correctBoundaryConditions();
         aTBNN.correctBoundaryConditions();
 
