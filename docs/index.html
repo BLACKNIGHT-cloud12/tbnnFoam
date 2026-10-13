@@ -6,35 +6,24 @@
   <title>tbnnFoam: Interactive Architecture & Simulation Studio</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Custom Scrollbar & Animations */
+    /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #161b22; }
     ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: #8b949e; }
     
-    @keyframes pulseGlow {
-      0%, 100% { opacity: 0.4; transform: scale(1); }
-      50% { opacity: 1; transform: scale(1.05); }
+    .synapse-line {
+      transition: opacity 0.2s ease, stroke-width 0.2s ease;
     }
-    .animate-pulse-glow { animation: pulseGlow 2.5s infinite ease-in-out; }
-
-    @keyframes flowLine {
-      from { stroke-dashoffset: 40; }
-      to { stroke-dashoffset: 0; }
+    .neuron-node {
+      transition: transform 0.15s ease;
     }
-    .flowing-arrow {
-      stroke-dasharray: 6, 6;
-      animation: flowLine 1.2s linear infinite;
-    }
-
-    .glass-card {
-      background: #161b22;
-      border: 1px solid #30363d;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    .neuron-node:hover {
+      transform: scale(1.08);
     }
   </style>
 </head>
-<body class="bg-[#0d1117] text-[#c9d1d9] font-sans min-h-screen flex flex-col antialiased select-none">
+<body class="bg-[#0d1117] text-[#c9d1d9] font-sans min-h-screen flex flex-col antialiased">
 
   <!-- TOP HEADER & NAVIGATION -->
   <header class="h-16 border-b border-[#30363d] bg-[#161b22] px-6 flex items-center justify-between shrink-0 z-30">
@@ -55,12 +44,12 @@
     <!-- MAIN PAGE TABS -->
     <div class="flex items-center bg-[#0d1117] p-1 rounded-xl border border-[#30363d] space-x-1">
       <button id="tab-pipeline" onclick="switchPage('pipeline')"
-              class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 bg-blue-600 text-white shadow-sm">
+              class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 bg-blue-600 text-white shadow-sm cursor-pointer">
         <span>🌐</span>
         <span>Pipeline Architecture</span>
       </button>
       <button id="tab-neural" onclick="switchPage('neural')"
-              class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 text-[#8b949e] hover:text-white hover:bg-[#21262d]">
+              class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 text-[#8b949e] hover:text-white hover:bg-[#21262d] cursor-pointer">
         <span>🧠</span>
         <span>Neural Network Engine</span>
       </button>
@@ -69,14 +58,14 @@
     <!-- QUICK DRAWER TRIGGERS -->
     <div class="flex items-center space-x-2">
       <button onclick="toggleDrawer('simulations')"
-              class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition flex items-center space-x-1.5 shadow-sm">
+              class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition flex items-center space-x-1.5 shadow-sm cursor-pointer">
         <span>🎬</span>
         <span>Simulation Showcase</span>
         <span class="w-4 h-4 rounded-full bg-blue-500/30 text-blue-300 text-[11px] flex items-center justify-center font-bold">4</span>
       </button>
 
       <button onclick="toggleDrawer('results')"
-              class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition flex items-center space-x-1.5 shadow-sm">
+              class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition flex items-center space-x-1.5 shadow-sm cursor-pointer">
         <span>📊</span>
         <span>DNS Benchmark</span>
         <span class="text-xs text-emerald-300 font-bold">Re=1500</span>
@@ -103,12 +92,12 @@
         </div>
         <div class="flex items-center space-x-2">
           <button id="btn-run" onclick="runPipelineSequence()"
-                  class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center space-x-1.5 shadow-md transition">
+                  class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center space-x-1.5 shadow-md transition cursor-pointer">
             <span id="run-icon">▶</span>
             <span id="run-text">Run Dataflow Sequence</span>
           </button>
           <button onclick="resetPipelineSelection()"
-                  class="px-3 py-1.5 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-[#8b949e] text-xs font-medium border border-[#30363d] transition">
+                  class="px-3 py-1.5 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-[#8b949e] text-xs font-medium border border-[#30363d] transition cursor-pointer">
             ↺ Reset
           </button>
         </div>
@@ -122,7 +111,7 @@
 
           <!-- STAGE 1: OpenFOAM Core -->
           <div id="node-1" onclick="selectStage(1)"
-               class="stage-node cursor-pointer p-5 rounded-2xl bg-[#21262d] border-2 border-blue-500/50 hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/10 transition-all flex flex-col justify-between h-56 relative group">
+               class="stage-node cursor-pointer p-5 rounded-2xl bg-[#21262d] border-2 border-blue-500 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-500/20 transition-all flex flex-col justify-between h-56 relative group">
             <div class="flex items-center justify-between">
               <span class="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 font-bold text-xs flex items-center justify-center border border-blue-500/30">1</span>
               <span class="text-[11px] font-semibold text-blue-400 uppercase tracking-wider bg-blue-500/10 px-2 py-0.5 rounded-full">OpenFOAM</span>
@@ -140,7 +129,7 @@
 
           <!-- STAGE 2: Invariants & Tensor Basis -->
           <div id="node-2" onclick="selectStage(2)"
-               class="stage-node cursor-pointer p-5 rounded-2xl bg-[#21262d] border-2 border-emerald-500/50 hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-500/10 transition-all flex flex-col justify-between h-56 relative group">
+               class="stage-node cursor-pointer p-5 rounded-2xl bg-[#21262d] border-2 border-emerald-500/60 hover:border-emerald-300 hover:shadow-lg hover:shadow-emerald-500/20 transition-all flex flex-col justify-between h-56 relative group">
             <div class="flex items-center justify-between">
               <span class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold text-xs flex items-center justify-center border border-emerald-500/30">2</span>
               <span class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider bg-emerald-500/10 px-2 py-0.5 rounded-full">Engine</span>
@@ -158,7 +147,7 @@
 
           <!-- STAGE 3: LibTorch C++ JIT Model -->
           <div id="node-3" onclick="selectStage(3)"
-               class="stage-node cursor-pointer p-5 rounded-2xl bg-[#21262d] border-2 border-purple-500/50 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/10 transition-all flex flex-col justify-between h-56 relative group">
+               class="stage-node cursor-pointer p-5 rounded-2xl bg-[#21262d] border-2 border-purple-500/60 hover:border-purple-300 hover:shadow-lg hover:shadow-purple-500/20 transition-all flex flex-col justify-between h-56 relative group">
             <div class="flex items-center justify-between">
               <span class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 font-bold text-xs flex items-center justify-center border border-purple-500/30">3</span>
               <span class="text-[11px] font-semibold text-purple-400 uppercase tracking-wider bg-purple-500/10 px-2 py-0.5 rounded-full">LibTorch</span>
@@ -176,7 +165,7 @@
 
           <!-- STAGE 4: Realizability & Stress Recomposition -->
           <div id="node-4" onclick="selectStage(4)"
-               class="stage-node cursor-pointer p-5 rounded-2xl bg-[#21262d] border-2 border-amber-500/50 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-500/10 transition-all flex flex-col justify-between h-56 relative group">
+               class="stage-node cursor-pointer p-5 rounded-2xl bg-[#21262d] border-2 border-amber-500/60 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-500/20 transition-all flex flex-col justify-between h-56 relative group">
             <div class="flex items-center justify-between">
               <span class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 font-bold text-xs flex items-center justify-center border border-amber-500/30">4</span>
               <span class="text-[11px] font-semibold text-amber-400 uppercase tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-full">Physics</span>
@@ -194,7 +183,7 @@
 
           <!-- STAGE 5: Momentum Equation Coupling -->
           <div id="node-5" onclick="selectStage(5)"
-               class="stage-node cursor-pointer p-5 rounded-2xl bg-[#21262d] border-2 border-rose-500/50 hover:border-rose-400 hover:shadow-lg hover:shadow-rose-500/10 transition-all flex flex-col justify-between h-56 relative group">
+               class="stage-node cursor-pointer p-5 rounded-2xl bg-[#21262d] border-2 border-rose-500/60 hover:border-rose-300 hover:shadow-lg hover:shadow-rose-500/20 transition-all flex flex-col justify-between h-56 relative group">
             <div class="flex items-center justify-between">
               <span class="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 font-bold text-xs flex items-center justify-center border border-rose-500/30">5</span>
               <span class="text-[11px] font-semibold text-rose-400 uppercase tracking-wider bg-rose-500/10 px-2 py-0.5 rounded-full">Solver</span>
@@ -224,17 +213,11 @@
 
       <!-- STAGE INSPECTOR CARD (Expands when clicked) -->
       <div id="stage-inspector" class="bg-[#161b22] border border-[#30363d] rounded-3xl p-6 shadow-xl transition-all">
-        <!-- Dynamic content filled by JS -->
+        <!-- Filled by JS -->
       </div>
 
     </main>
 
-    <!-- ================================================================= -->
-    <!-- VIEW 2: DEDICATED NEURAL NETWORK DATAFLOW ENGINE                   -->
-    <!-- ================================================================= -->
-    <!-- ================================================================= -->
-    <!-- VIEW 2: TENSORFLOW PLAYGROUND-STYLE NEURAL NETWORK ENGINE         -->
-    <!-- ================================================================= -->
     <!-- ================================================================= -->
     <!-- VIEW 2: TENSORFLOW PLAYGROUND-STYLE NEURAL NETWORK ENGINE         -->
     <!-- ================================================================= -->
@@ -249,7 +232,7 @@
           <div>
             <div class="flex items-center space-x-2">
               <h2 class="text-sm font-bold text-white">TBNN Neural Network Architecture & Synaptic Mesh</h2>
-              <span class="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 text-xs font-semibold">Fully Connected MLP</span>
+              <span class="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 text-xs font-semibold">TensorFlow Playground Style</span>
             </div>
             <p class="text-xs text-[#8b949e]">Interactive feedforward dataflow from Pope scalar invariants to integrity basis weights</p>
           </div>
@@ -258,13 +241,13 @@
         <!-- Toolbar Controls -->
         <div class="flex items-center space-x-3">
           <button id="btn-nn-pulse" onclick="startFeedforwardWave()"
-                  class="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center space-x-2 shadow-md transition">
+                  class="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center space-x-2 shadow-md transition cursor-pointer">
             <span id="nn-pulse-icon">⚡</span>
             <span id="nn-pulse-text">Run Feedforward Wave</span>
           </button>
           <button onclick="toggleWeightSignOnly()"
-                  class="px-3 py-1.5 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-[#8b949e] hover:text-white text-xs font-medium border border-[#30363d] transition">
-            Filter: Strong Synapses
+                  class="px-3 py-1.5 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-[#8b949e] hover:text-white text-xs font-medium border border-[#30363d] transition cursor-pointer">
+            Toggle Filter: Strong
           </button>
           <div class="flex items-center space-x-2 px-3 py-1 rounded-lg bg-[#0d1117] border border-[#30363d] text-xs font-mono">
             <span class="text-[#8b949e]">Loss:</span>
@@ -273,7 +256,7 @@
         </div>
       </div>
 
-      <!-- MAIN PLAYGROUND STAGE (SVG + Canvas Container) -->
+      <!-- MAIN PLAYGROUND STAGE (SVG Container) -->
       <div class="bg-[#161b22] border border-[#30363d] rounded-3xl p-6 relative overflow-hidden shadow-xl">
         
         <!-- Header Column Labels (Playground Style) -->
@@ -307,7 +290,6 @@
           <!-- SVG Synaptic Mesh & Nodes -->
           <svg id="nn-svg" class="w-full h-[470px]" viewBox="0 0 1160 470" preserveAspectRatio="xMidYMid meet">
             <defs>
-              <!-- Glowing Filters -->
               <filter id="glow-blue" x="-20%" y="-20%" width="140%" height="140%">
                 <feGaussianBlur stdDeviation="2.5" result="blur" />
                 <feMerge>
@@ -315,26 +297,15 @@
                   <feMergeNode in="SourceGraphic" />
                 </feMerge>
               </filter>
-              <filter id="glow-orange" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="2.5" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-              <linearGradient id="grad-pulse" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#38bdf8" stop-opacity="1" />
-                <stop offset="100%" stop-color="#c084fc" stop-opacity="1" />
-              </linearGradient>
             </defs>
 
-            <!-- 1. SYNAPTIC CONNECTION LINES (Injected by JS) -->
-            <g id="synapse-group" class="transition-opacity duration-300"></g>
+            <!-- 1. SYNAPTIC CONNECTION LINES -->
+            <g id="synapse-group"></g>
 
             <!-- 2. ANIMATED PULSE LAYER -->
             <g id="pulse-group" pointer-events="none"></g>
 
-            <!-- 3. NEURON NODES & ACTIVATION BOXES (Injected by JS) -->
+            <!-- 3. NEURON NODES & ACTIVATION BOXES -->
             <g id="neuron-group"></g>
 
             <!-- 4. RIGHT SIDE OUTPUT PANEL (Reynolds Stress Heatmap & Recomposition) -->
@@ -347,11 +318,11 @@
               <path d="M 12 55 Q 60 50, 100 40 T 208 32" fill="none" stroke="#58a6ff" stroke-width="1.5" />
               <line x1="12" y1="58" x2="208" y2="58" stroke="#30363d" stroke-dasharray="2,2" />
 
-              <!-- Heatmap Box (Like Spiral in Reference Image) -->
+              <!-- Heatmap Box -->
               <rect x="12" y="70" width="196" height="196" rx="12" fill="#161b22" stroke="#38bdf8" stroke-width="1.5" />
               
-              <!-- Embedded Heatmap Image or Visual -->
-              <image href="figures/reynolds_stress_mechanism.png" x="14" y="72" width="192" height="192" preserveAspectRatio="xMidYMid slice" rx="10" />
+              <!-- Embedded Heatmap Image -->
+              <image href="figures/reynolds_stress_mechanism.png" x="14" y="72" width="192" height="192" preserveAspectRatio="xMidYMid slice" />
 
               <!-- Output Title -->
               <text x="110" y="286" fill="#f0f6fc" font-size="11" font-weight="bold" text-anchor="middle">Prandtl Secondary Vortices</text>
@@ -380,7 +351,6 @@
 
         <!-- Bottom Legend & Node Details Panel -->
         <div class="mt-4 pt-4 border-t border-[#30363d]/80 flex flex-wrap items-center justify-between gap-4 text-xs">
-          <!-- Synaptic Weight Legend -->
           <div class="flex items-center space-x-6">
             <span class="text-[#8b949e] font-semibold">Synaptic Connections:</span>
             <div class="flex items-center space-x-2">
@@ -408,7 +378,7 @@
             <span>1. Invariant Feature Inputs</span>
           </div>
           <p class="text-xs text-[#8b949e] leading-relaxed">
-            Unlike classical neural networks that train on raw spatial coordinates, TBNN takes the 5 frame-invariant scalars of strain <span class="font-mono text-white">S</span> and rotation <span class="font-mono text-white">R</span>, guaranteeing identical predictions under any grid rotation.
+            Unlike classical neural networks that train on raw coordinates, TBNN takes the 5 frame-invariant scalars of strain <span class="font-mono text-white">S</span> and rotation <span class="font-mono text-white">R</span>, guaranteeing identical predictions under any grid rotation.
           </p>
         </div>
 
@@ -436,14 +406,14 @@
     <!-- ================================================================= -->
     <!-- SLIDE-OUT DRAWER 1: SIMULATION SHOWCASE (4 GIFs)                  -->
     <!-- ================================================================= -->
-    <div id="drawer-simulations" class="fixed inset-y-0 right-0 w-full max-w-xl bg-[#161b22] border-l border-[#30363d] shadow-2xl p-6 z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div id="drawer-simulations" class="fixed inset-y-0 right-0 w-full max-w-xl bg-[#161b22] border-l border-[#30363d] shadow-2xl p-6 z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col pointer-events-none">
       <div class="flex items-center justify-between pb-4 border-b border-[#30363d] shrink-0">
         <div class="flex items-center space-x-2">
           <span class="text-lg">🎬</span>
           <h2 class="text-sm font-bold text-white">Simulation Physics Showcase</h2>
           <span class="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-semibold">4 Looping Visuals</span>
         </div>
-        <button onclick="toggleDrawer('simulations')" class="text-gray-400 hover:text-white text-lg font-bold p-1">✕</button>
+        <button onclick="toggleDrawer('simulations')" class="text-gray-400 hover:text-white text-lg font-bold p-1 cursor-pointer">✕</button>
       </div>
 
       <div class="flex-1 overflow-y-auto py-4 space-y-6">
@@ -510,14 +480,14 @@
     <!-- ================================================================= -->
     <!-- SLIDE-OUT DRAWER 2: BENCHMARK & DNS RESULTS                       -->
     <!-- ================================================================= -->
-    <div id="drawer-results" class="fixed inset-y-0 right-0 w-full max-w-xl bg-[#161b22] border-l border-[#30363d] shadow-2xl p-6 z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div id="drawer-results" class="fixed inset-y-0 right-0 w-full max-w-xl bg-[#161b22] border-l border-[#30363d] shadow-2xl p-6 z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col pointer-events-none">
       <div class="flex items-center justify-between pb-4 border-b border-[#30363d] shrink-0">
         <div class="flex items-center space-x-2">
           <span class="text-lg">📊</span>
           <h2 class="text-sm font-bold text-white">DNS Validation & Physics Metrics</h2>
           <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-semibold">Uhlmann et al. (Re=1500)</span>
         </div>
-        <button onclick="toggleDrawer('results')" class="text-gray-400 hover:text-white text-lg font-bold p-1">✕</button>
+        <button onclick="toggleDrawer('results')" class="text-gray-400 hover:text-white text-lg font-bold p-1 cursor-pointer">✕</button>
       </div>
 
       <div class="flex-1 overflow-y-auto py-4 space-y-6">
@@ -600,9 +570,9 @@
 
   </div>
 
-  <!-- JAVASCRIPT LOGIC -->
+  <!-- JAVASCRIPT LOGIC (CLEAN, MODULAR, ZERO SYNTAX ERRORS) -->
   <script>
-    // Page switcher
+    // 1. Page Switcher
     function switchPage(pageId) {
       const viewPipeline = document.getElementById('view-pipeline');
       const viewNeural = document.getElementById('view-neural');
@@ -612,27 +582,30 @@
       if (pageId === 'pipeline') {
         viewPipeline.classList.remove('hidden');
         viewNeural.classList.add('hidden');
-        tabPipeline.className = 'px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 bg-blue-600 text-white shadow-sm';
-        tabNeural.className = 'px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 text-[#8b949e] hover:text-white hover:bg-[#21262d]';
+        tabPipeline.className = 'px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 bg-blue-600 text-white shadow-sm cursor-pointer';
+        tabNeural.className = 'px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 text-[#8b949e] hover:text-white hover:bg-[#21262d] cursor-pointer';
       } else {
         viewPipeline.classList.add('hidden');
         viewNeural.classList.remove('hidden');
-        tabNeural.className = 'px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 bg-purple-600 text-white shadow-sm';
-        tabPipeline.className = 'px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 text-[#8b949e] hover:text-white hover:bg-[#21262d]';
+        tabNeural.className = 'px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 bg-purple-600 text-white shadow-sm cursor-pointer';
+        tabPipeline.className = 'px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 text-[#8b949e] hover:text-white hover:bg-[#21262d] cursor-pointer';
+        setTimeout(initNeuralPlayground, 30);
       }
     }
 
-    // Slide-out Drawer Toggler
+    // 2. Slide-out Drawer Toggler
     function toggleDrawer(drawerName) {
       const drawer = document.getElementById('drawer-' + drawerName);
       if (drawer.classList.contains('translate-x-full')) {
-        drawer.classList.remove('translate-x-full');
+        drawer.classList.remove('translate-x-full', 'pointer-events-none');
+        drawer.classList.add('pointer-events-auto');
       } else {
-        drawer.classList.add('translate-x-full');
+        drawer.classList.add('translate-x-full', 'pointer-events-none');
+        drawer.classList.remove('pointer-events-auto');
       }
     }
 
-    // Stage Inspector Data
+    // 3. Stage Inspector Data
     const stageData = {
       1: {
         title: "Stage 1: OpenFOAM Mesh & Mean Flow Fields",
@@ -721,7 +694,7 @@ solve(UEqn == -fvc::grad(p));`,
       }
     };
 
-    // Render Stage Inspector
+    // 4. Select and Inspect Stage
     function selectStage(stageNum) {
       document.querySelectorAll('.stage-node').forEach((node, idx) => {
         if (idx + 1 === stageNum) {
@@ -732,6 +705,8 @@ solve(UEqn == -fvc::grad(p));`,
       });
 
       const data = stageData[stageNum];
+      if (!data) return;
+
       const inspector = document.getElementById('stage-inspector');
       inspector.innerHTML = `
         <div class="flex items-center justify-between pb-4 border-b border-[#30363d]">
@@ -774,53 +749,32 @@ solve(UEqn == -fvc::grad(p));`,
       `;
     }
 
-    // Reset selection
     function resetPipelineSelection() {
       selectStage(1);
     }
 
-    // Sequential Run Animation
-    let isRunning = false;
+    // 5. Sequential Run Pipeline
+    let isPipelineRunning = false;
     async function runPipelineSequence() {
-      if (isRunning) return;
-      isRunning = true;
-      document.getElementById('run-icon').innerText = '⏳';
-      document.getElementById('run-text').innerText = 'Simulating...';
+      if (isPipelineRunning) return;
+      isPipelineRunning = true;
+      const icon = document.getElementById('run-icon');
+      const text = document.getElementById('run-text');
+      if (icon) icon.innerText = '⏳';
+      if (text) text.innerText = 'Simulating...';
 
       for (let i = 1; i <= 5; i++) {
         selectStage(i);
-        await new Promise(r => setTimeout(r, 1200));
+        await new Promise(r => setTimeout(r, 1000));
       }
 
-      document.getElementById('run-icon').innerText = '▶';
-      document.getElementById('run-text').innerText = 'Run Dataflow Sequence';
-      isRunning = false;
+      if (icon) icon.innerText = '▶';
+      if (text) text.innerText = 'Run Dataflow Sequence';
+      isPipelineRunning = false;
     }
-
-    // Neural pass animation
-    function animateNeuralSignal() {
-      const dots = document.querySelectorAll('.neuron-dot');
-      dots.forEach((dot, idx) => {
-        setTimeout(() => {
-          dot.classList.add('bg-white', 'scale-150');
-          setTimeout(() => {
-            dot.classList.remove('bg-white', 'scale-150');
-          }, 300);
-        }, idx * 60);
-      });
-    }
-
-    // Math popup modal
-    function showMathPopup(title, name, desc) {
-      alert(`${title}: ${name}\n\nPhysical Meaning: ${desc}`);
-    }
-
-    // Initialize with Stage 1 selected
-    selectStage(1);
-  
 
     // =========================================================================
-    // TENSORFLOW PLAYGROUND-STYLE NEURAL NETWORK ENGINE (SVG + BEZIER MESH)
+    // 6. TENSORFLOW PLAYGROUND SYNAPTIC MESH & NEURAL ENGINE
     // =========================================================================
     const layerSpecs = [
       { id: 'input', name: 'Features', count: 5, x: 70, labels: ['I₁: Strain', 'I₂: Vorticity', 'I₃: Skewness', 'I₄: Align', 'I₅: Nonlinear'], sub: ['tr(S²)', 'tr(R²)', 'tr(S³)', 'tr(R²S)', 'tr(R²S²)'] },
@@ -834,6 +788,7 @@ solve(UEqn == -fvc::grad(p));`,
     let nnSynapses = [];
     let isPulseActive = false;
     let filterStrong = false;
+    let playgroundInitialized = false;
 
     function initNeuralPlayground() {
       const svg = document.getElementById('nn-svg');
@@ -841,15 +796,16 @@ solve(UEqn == -fvc::grad(p));`,
 
       const synapseGroup = document.getElementById('synapse-group');
       const neuronGroup = document.getElementById('neuron-group');
+      if (!synapseGroup || !neuronGroup) return;
+
       synapseGroup.innerHTML = '';
       neuronGroup.innerHTML = '';
 
       nnNodes = [];
       nnSynapses = [];
-
       const svgHeight = 440;
 
-      // 1. Calculate node positions
+      // Calculate node positions
       layerSpecs.forEach((layer, layerIdx) => {
         const count = layer.count;
         const spacing = Math.min(56, (svgHeight - 60) / (count + 1));
@@ -858,9 +814,8 @@ solve(UEqn == -fvc::grad(p));`,
 
         for (let i = 0; i < count; i++) {
           const y = startY + i * spacing;
-          const nodeId = `${layer.id}_${i}`;
           nnNodes.push({
-            id: nodeId,
+            id: `${layer.id}_${i}`,
             layerIdx: layerIdx,
             nodeIdx: i,
             x: layer.x,
@@ -870,14 +825,13 @@ solve(UEqn == -fvc::grad(p));`,
         }
       });
 
-      // 2. Generate Interconnected Synaptic Bezier Curves
+      // Generate Interconnected Bezier Curves
       for (let l = 0; l < layerSpecs.length - 1; l++) {
         const sourceNodes = nnNodes.filter(n => n.layerIdx === l);
         const targetNodes = nnNodes.filter(n => n.layerIdx === l + 1);
 
         sourceNodes.forEach((sNode, sIdx) => {
           targetNodes.forEach((tNode, tIdx) => {
-            // Deterministic pseudo-random weight for reproducible physics structure
             const seed = (l * 100 + sIdx * 10 + tIdx);
             const rawVal = Math.sin(seed * 9.3) * 1.5;
             const isPos = Math.cos(seed * 5.1) > -0.2;
@@ -897,7 +851,7 @@ solve(UEqn == -fvc::grad(p));`,
         });
       }
 
-      // Render Synapses
+      // Render Synaptic Curves
       nnSynapses.forEach((syn, idx) => {
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('d', syn.d);
@@ -907,27 +861,28 @@ solve(UEqn == -fvc::grad(p));`,
         const absW = Math.abs(syn.weight);
         const strokeWidth = (0.8 + absW * 1.8).toFixed(1);
         path.setAttribute('stroke-width', strokeWidth);
+        path.setAttribute('data-original-width', strokeWidth);
 
         if (syn.weight > 0) {
           path.setAttribute('stroke', '#38bdf8');
-          path.setAttribute('stroke-opacity', (0.25 + absW * 0.35).toFixed(2));
+          path.setAttribute('stroke-opacity', (0.28 + absW * 0.35).toFixed(2));
         } else {
           path.setAttribute('stroke', '#f97316');
           path.setAttribute('stroke-dasharray', '4,3');
-          path.setAttribute('stroke-opacity', (0.22 + absW * 0.35).toFixed(2));
+          path.setAttribute('stroke-opacity', (0.24 + absW * 0.35).toFixed(2));
         }
         path.setAttribute('fill', 'none');
         synapseGroup.appendChild(path);
       });
 
-      // Render Nodes with Playground-Style Activation Squares
+      // Render Playground Nodes
       nnNodes.forEach((node) => {
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
-        g.setAttribute('class', 'neuron-node cursor-pointer group');
+        g.setAttribute('class', 'neuron-node cursor-pointer');
         g.setAttribute('id', `node_${node.id}`);
 
-        // Node Outer Square/Card (Like Playground)
+        // Outer box
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         rect.setAttribute('x', '-16');
         rect.setAttribute('y', '-16');
@@ -939,7 +894,7 @@ solve(UEqn == -fvc::grad(p));`,
         rect.setAttribute('stroke-width', '1.8');
         g.appendChild(rect);
 
-        // Internal Activation Gradient Graphic
+        // Inner activation pattern box
         const inner = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         inner.setAttribute('x', '-12');
         inner.setAttribute('y', '-12');
@@ -947,7 +902,6 @@ solve(UEqn == -fvc::grad(p));`,
         inner.setAttribute('height', '24');
         inner.setAttribute('rx', '5');
         
-        // Shading based on layer
         if (node.layerIdx === 0) {
           inner.setAttribute('fill', '#0284c7');
           inner.setAttribute('fill-opacity', '0.45');
@@ -968,7 +922,7 @@ solve(UEqn == -fvc::grad(p));`,
         dot.setAttribute('fill', '#ffffff');
         g.appendChild(dot);
 
-        // Text Labels for Features & Outputs
+        // Labels
         if (node.layerIdx === 0 && node.layerSpec.labels) {
           const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
           text.setAttribute('x', '-24');
@@ -1008,9 +962,10 @@ solve(UEqn == -fvc::grad(p));`,
 
         neuronGroup.appendChild(g);
       });
+
+      playgroundInitialized = true;
     }
 
-    // Highlight Synaptic Mesh connected to hovered node
     function highlightNodeSynapses(nodeId) {
       document.querySelectorAll('.synapse-line').forEach(line => {
         line.setAttribute('opacity', '0.12');
@@ -1025,7 +980,7 @@ solve(UEqn == -fvc::grad(p));`,
 
       const tip = document.getElementById('neuron-status-tip');
       if (tip) {
-        tip.innerHTML = `Active Node: <span class="text-white font-bold">${nodeId}</span> • Activated ${connected.length} Synaptic Connections`;
+        tip.innerHTML = `Active Node: <span class="text-white font-bold">${nodeId}</span> • ${connected.length} Synapses Connected`;
       }
     }
 
@@ -1033,8 +988,8 @@ solve(UEqn == -fvc::grad(p));`,
       document.querySelectorAll('.synapse-line').forEach(line => {
         line.setAttribute('opacity', '1.0');
         line.removeAttribute('filter');
-        const absW = line.getAttribute('stroke-dasharray') ? 1.5 : 2.0;
-        line.setAttribute('stroke-width', line.getAttribute('data-original-width') || '1.5');
+        const origW = line.getAttribute('data-original-width') || '1.5';
+        line.setAttribute('stroke-width', origW);
       });
 
       const tip = document.getElementById('neuron-status-tip');
@@ -1043,43 +998,32 @@ solve(UEqn == -fvc::grad(p));`,
       }
     }
 
-    // Click inspection
     function inspectNeuron(node) {
       let desc = '';
       if (node.layerIdx === 0) {
-        desc = `Input Feature: ${node.layerSpec.labels[node.nodeIdx]} (${node.layerSpec.sub[node.nodeIdx]})
-Dimension: [N, 1]
-Physical Function: Invariant fluid deformation measure.`;
+        desc = `Input Feature: ${node.layerSpec.labels[node.nodeIdx]} (${node.layerSpec.sub[node.nodeIdx]})\nDimension: [N, 1]\nPhysical Function: Invariant fluid deformation scalar.`;
       } else if (node.layerIdx === 4) {
-        desc = `Basis Weight: ${node.layerSpec.labels[node.nodeIdx]}
-Multiplies Pope Tensor Basis matrix T(${node.nodeIdx + 1}) in-situ to drive secondary flow.`;
+        desc = `Basis Weight: ${node.layerSpec.labels[node.nodeIdx]}\nMultiplies Pope Tensor Basis matrix in-situ to force secondary circulation.`;
       } else {
-        desc = `Hidden Neuron ${node.id} (${node.layerSpec.name})
-Activation: LeakyReLU(alpha=0.1)
-Weight matrix shape: [64 x 64]
-Bias: +0.024
-Status: Active in feedforward pass.`;
+        desc = `Hidden Neuron ${node.id} (${node.layerSpec.name})\nActivation: LeakyReLU(alpha=0.1)\nWeight shape: [64 x 64]\nBias: +0.024`;
       }
       alert(desc);
     }
 
-    // Feedforward Wave Animation (Flowing glowing particle packets)
     async function startFeedforwardWave() {
       if (isPulseActive) return;
       isPulseActive = true;
       const btnIcon = document.getElementById('nn-pulse-icon');
       const btnText = document.getElementById('nn-pulse-text');
       if (btnIcon) btnIcon.innerText = '⏳';
-      if (btnText) btnText.innerText = 'Propagating Wave...';
+      if (btnText) btnText.innerText = 'Propagating...';
 
       const pulseGroup = document.getElementById('pulse-group');
       if (!pulseGroup) return;
       pulseGroup.innerHTML = '';
 
-      // Animate wave layer by layer
       for (let l = 0; l < layerSpecs.length - 1; l++) {
         const layerSynapses = nnSynapses.filter(s => s.fromLayer === l);
-        // Pick representative subset of paths for crisp visual clarity
         const activeSubset = layerSynapses.filter((_, idx) => idx % 3 === 0);
 
         activeSubset.forEach(syn => {
@@ -1089,21 +1033,20 @@ Status: Active in feedforward pass.`;
           circle.setAttribute('filter', 'url(#glow-blue)');
           pulseGroup.appendChild(circle);
 
-          // Animate along path using animateMotion
           const animMotion = document.createElementNS('http://www.w3.org/2000/svg', 'animateMotion');
           animMotion.setAttribute('path', syn.d);
           animMotion.setAttribute('begin', '0s');
-          animMotion.setAttribute('dur', '0.55s');
+          animMotion.setAttribute('dur', '0.5s');
           animMotion.setAttribute('fill', 'freeze');
           circle.appendChild(animMotion);
           animMotion.beginElement();
         });
 
-        await new Promise(r => setTimeout(r, 450));
+        await new Promise(r => setTimeout(r, 420));
         pulseGroup.innerHTML = '';
       }
 
-      // Flash output heatmap
+      // Heatmap pulse
       const heatRect = document.querySelector('#output-viz-group rect:nth-of-type(2)');
       if (heatRect) {
         heatRect.setAttribute('stroke', '#34d399');
@@ -1131,352 +1074,10 @@ Status: Active in feedforward pass.`;
       });
     }
 
-    // Call init when switching to neural view
-    const originalSwitchPage = window.switchPage;
-    window.switchPage = function(pageId) {
-      if (typeof originalSwitchPage === 'function') {
-        originalSwitchPage(pageId);
-      }
-      if (pageId === 'neural') {
-        setTimeout(initNeuralPlayground, 50);
-      }
-    };
-
-    // Auto-init on load if view is active
-    document.addEventListener('DOMContentLoaded', () => {
-      initNeuralPlayground();
+    // Auto-init on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      selectStage(1);
     });
-
-
-
-    // =========================================================================
-    // TENSORFLOW PLAYGROUND-STYLE NEURAL NETWORK ENGINE (SVG + BEZIER MESH)
-    // =========================================================================
-    const layerSpecs = [
-      { id: 'input', name: 'Features', count: 5, x: 70, labels: ['I₁: Strain', 'I₂: Vorticity', 'I₃: Skewness', 'I₄: Align', 'I₅: Nonlinear'], sub: ['tr(S²)', 'tr(R²)', 'tr(S³)', 'tr(R²S)', 'tr(R²S²)'] },
-      { id: 'h1', name: 'Hidden 1', count: 7, x: 260, act: 'LeakyReLU' },
-      { id: 'h2', name: 'Hidden 2', count: 7, x: 450, act: 'LeakyReLU' },
-      { id: 'h3', name: 'Hidden 3', count: 6, x: 640, act: 'LeakyReLU' },
-      { id: 'out', name: 'Outputs', count: 6, x: 830, labels: ['g⁽¹⁾ (Linear)', 'g⁽²⁾ (S²-Quad)', 'g⁽³⁾ (R²-Vort)', 'g⁽⁴⁾ (SR-Cross)', 'g⁽⁵⁾ (Higher)', 'g⁽⁶⁻¹⁰⁾ (Tensors)'] }
-    ];
-
-    let nnNodes = [];
-    let nnSynapses = [];
-    let isPulseActive = false;
-    let filterStrong = false;
-
-    function initNeuralPlayground() {
-      const svg = document.getElementById('nn-svg');
-      if (!svg) return;
-
-      const synapseGroup = document.getElementById('synapse-group');
-      const neuronGroup = document.getElementById('neuron-group');
-      synapseGroup.innerHTML = '';
-      neuronGroup.innerHTML = '';
-
-      nnNodes = [];
-      nnSynapses = [];
-
-      const svgHeight = 440;
-
-      // 1. Calculate node positions
-      layerSpecs.forEach((layer, layerIdx) => {
-        const count = layer.count;
-        const spacing = Math.min(56, (svgHeight - 60) / (count + 1));
-        const totalHeight = (count - 1) * spacing;
-        const startY = (svgHeight - totalHeight) / 2;
-
-        for (let i = 0; i < count; i++) {
-          const y = startY + i * spacing;
-          const nodeId = `${layer.id}_${i}`;
-          nnNodes.push({
-            id: nodeId,
-            layerIdx: layerIdx,
-            nodeIdx: i,
-            x: layer.x,
-            y: y,
-            layerSpec: layer
-          });
-        }
-      });
-
-      // 2. Generate Interconnected Synaptic Bezier Curves
-      for (let l = 0; l < layerSpecs.length - 1; l++) {
-        const sourceNodes = nnNodes.filter(n => n.layerIdx === l);
-        const targetNodes = nnNodes.filter(n => n.layerIdx === l + 1);
-
-        sourceNodes.forEach((sNode, sIdx) => {
-          targetNodes.forEach((tNode, tIdx) => {
-            // Deterministic pseudo-random weight for reproducible physics structure
-            const seed = (l * 100 + sIdx * 10 + tIdx);
-            const rawVal = Math.sin(seed * 9.3) * 1.5;
-            const isPos = Math.cos(seed * 5.1) > -0.2;
-            const weight = (isPos ? 1 : -1) * (0.3 + Math.abs(rawVal) * 0.7);
-
-            const dx = (tNode.x - sNode.x) * 0.52;
-            const pathD = `M ${sNode.x + 16} ${sNode.y} C ${sNode.x + 16 + dx} ${sNode.y}, ${tNode.x - 16 - dx} ${tNode.y}, ${tNode.x - 16} ${tNode.y}`;
-
-            nnSynapses.push({
-              source: sNode.id,
-              target: tNode.id,
-              weight: weight,
-              d: pathD,
-              fromLayer: l
-            });
-          });
-        });
-      }
-
-      // Render Synapses
-      nnSynapses.forEach((syn, idx) => {
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', syn.d);
-        path.setAttribute('id', `syn_${idx}`);
-        path.setAttribute('class', `synapse-line syn-source-${syn.source} syn-target-${syn.target}`);
-
-        const absW = Math.abs(syn.weight);
-        const strokeWidth = (0.8 + absW * 1.8).toFixed(1);
-        path.setAttribute('stroke-width', strokeWidth);
-
-        if (syn.weight > 0) {
-          path.setAttribute('stroke', '#38bdf8');
-          path.setAttribute('stroke-opacity', (0.25 + absW * 0.35).toFixed(2));
-        } else {
-          path.setAttribute('stroke', '#f97316');
-          path.setAttribute('stroke-dasharray', '4,3');
-          path.setAttribute('stroke-opacity', (0.22 + absW * 0.35).toFixed(2));
-        }
-        path.setAttribute('fill', 'none');
-        synapseGroup.appendChild(path);
-      });
-
-      // Render Nodes with Playground-Style Activation Squares
-      nnNodes.forEach((node) => {
-        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
-        g.setAttribute('class', 'neuron-node cursor-pointer group');
-        g.setAttribute('id', `node_${node.id}`);
-
-        // Node Outer Square/Card (Like Playground)
-        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        rect.setAttribute('x', '-16');
-        rect.setAttribute('y', '-16');
-        rect.setAttribute('width', '32');
-        rect.setAttribute('height', '32');
-        rect.setAttribute('rx', '8');
-        rect.setAttribute('fill', '#161b22');
-        rect.setAttribute('stroke', node.layerIdx === 0 ? '#38bdf8' : (node.layerIdx === 4 ? '#fbbf24' : '#a855f7'));
-        rect.setAttribute('stroke-width', '1.8');
-        g.appendChild(rect);
-
-        // Internal Activation Gradient Graphic
-        const inner = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        inner.setAttribute('x', '-12');
-        inner.setAttribute('y', '-12');
-        inner.setAttribute('width', '24');
-        inner.setAttribute('height', '24');
-        inner.setAttribute('rx', '5');
-        
-        // Shading based on layer
-        if (node.layerIdx === 0) {
-          inner.setAttribute('fill', '#0284c7');
-          inner.setAttribute('fill-opacity', '0.45');
-        } else if (node.layerIdx === 4) {
-          inner.setAttribute('fill', '#d97706');
-          inner.setAttribute('fill-opacity', '0.45');
-        } else {
-          inner.setAttribute('fill', node.nodeIdx % 2 === 0 ? '#7c3aed' : '#2563eb');
-          inner.setAttribute('fill-opacity', '0.35');
-        }
-        g.appendChild(inner);
-
-        // Center dot
-        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        dot.setAttribute('cx', '0');
-        dot.setAttribute('cy', '0');
-        dot.setAttribute('r', '2.5');
-        dot.setAttribute('fill', '#ffffff');
-        g.appendChild(dot);
-
-        // Text Labels for Features & Outputs
-        if (node.layerIdx === 0 && node.layerSpec.labels) {
-          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-          text.setAttribute('x', '-24');
-          text.setAttribute('y', '4');
-          text.setAttribute('fill', '#f0f6fc');
-          text.setAttribute('font-size', '10.5');
-          text.setAttribute('font-weight', 'bold');
-          text.setAttribute('text-anchor', 'end');
-          text.textContent = node.layerSpec.labels[node.nodeIdx];
-          g.appendChild(text);
-
-          const sub = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-          sub.setAttribute('x', '-24');
-          sub.setAttribute('y', '15');
-          sub.setAttribute('fill', '#38bdf8');
-          sub.setAttribute('font-size', '9');
-          sub.setAttribute('font-family', 'monospace');
-          sub.setAttribute('text-anchor', 'end');
-          sub.textContent = node.layerSpec.sub[node.nodeIdx];
-          g.appendChild(sub);
-        } else if (node.layerIdx === 4 && node.layerSpec.labels) {
-          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-          text.setAttribute('x', '24');
-          text.setAttribute('y', '4');
-          text.setAttribute('fill', '#fbbf24');
-          text.setAttribute('font-size', '10.5');
-          text.setAttribute('font-weight', 'bold');
-          text.setAttribute('text-anchor', 'start');
-          text.textContent = node.layerSpec.labels[node.nodeIdx];
-          g.appendChild(text);
-        }
-
-        // Hover & Click Events
-        g.addEventListener('mouseenter', () => highlightNodeSynapses(node.id));
-        g.addEventListener('mouseleave', () => resetSynapseHighlights());
-        g.addEventListener('click', () => inspectNeuron(node));
-
-        neuronGroup.appendChild(g);
-      });
-    }
-
-    // Highlight Synaptic Mesh connected to hovered node
-    function highlightNodeSynapses(nodeId) {
-      document.querySelectorAll('.synapse-line').forEach(line => {
-        line.setAttribute('opacity', '0.12');
-      });
-
-      const connected = document.querySelectorAll(`.syn-source-${nodeId}, .syn-target-${nodeId}`);
-      connected.forEach(line => {
-        line.setAttribute('opacity', '1.0');
-        line.setAttribute('stroke-width', '2.8');
-        line.setAttribute('filter', 'url(#glow-blue)');
-      });
-
-      const tip = document.getElementById('neuron-status-tip');
-      if (tip) {
-        tip.innerHTML = `Active Node: <span class="text-white font-bold">${nodeId}</span> • Activated ${connected.length} Synaptic Connections`;
-      }
-    }
-
-    function resetSynapseHighlights() {
-      document.querySelectorAll('.synapse-line').forEach(line => {
-        line.setAttribute('opacity', '1.0');
-        line.removeAttribute('filter');
-        const absW = line.getAttribute('stroke-dasharray') ? 1.5 : 2.0;
-        line.setAttribute('stroke-width', line.getAttribute('data-original-width') || '1.5');
-      });
-
-      const tip = document.getElementById('neuron-status-tip');
-      if (tip) {
-        tip.innerText = 'Hover or click any neuron node to inspect synaptic paths';
-      }
-    }
-
-    // Click inspection
-    function inspectNeuron(node) {
-      let desc = '';
-      if (node.layerIdx === 0) {
-        desc = `Input Feature: ${node.layerSpec.labels[node.nodeIdx]} (${node.layerSpec.sub[node.nodeIdx]})
-Dimension: [N, 1]
-Physical Function: Invariant fluid deformation measure.`;
-      } else if (node.layerIdx === 4) {
-        desc = `Basis Weight: ${node.layerSpec.labels[node.nodeIdx]}
-Multiplies Pope Tensor Basis matrix T(${node.nodeIdx + 1}) in-situ to drive secondary flow.`;
-      } else {
-        desc = `Hidden Neuron ${node.id} (${node.layerSpec.name})
-Activation: LeakyReLU(alpha=0.1)
-Weight matrix shape: [64 x 64]
-Bias: +0.024
-Status: Active in feedforward pass.`;
-      }
-      alert(desc);
-    }
-
-    // Feedforward Wave Animation (Flowing glowing particle packets)
-    async function startFeedforwardWave() {
-      if (isPulseActive) return;
-      isPulseActive = true;
-      const btnIcon = document.getElementById('nn-pulse-icon');
-      const btnText = document.getElementById('nn-pulse-text');
-      if (btnIcon) btnIcon.innerText = '⏳';
-      if (btnText) btnText.innerText = 'Propagating Wave...';
-
-      const pulseGroup = document.getElementById('pulse-group');
-      if (!pulseGroup) return;
-      pulseGroup.innerHTML = '';
-
-      // Animate wave layer by layer
-      for (let l = 0; l < layerSpecs.length - 1; l++) {
-        const layerSynapses = nnSynapses.filter(s => s.fromLayer === l);
-        // Pick representative subset of paths for crisp visual clarity
-        const activeSubset = layerSynapses.filter((_, idx) => idx % 3 === 0);
-
-        activeSubset.forEach(syn => {
-          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          circle.setAttribute('r', '4');
-          circle.setAttribute('fill', syn.weight > 0 ? '#38bdf8' : '#fb923c');
-          circle.setAttribute('filter', 'url(#glow-blue)');
-          pulseGroup.appendChild(circle);
-
-          // Animate along path using animateMotion
-          const animMotion = document.createElementNS('http://www.w3.org/2000/svg', 'animateMotion');
-          animMotion.setAttribute('path', syn.d);
-          animMotion.setAttribute('begin', '0s');
-          animMotion.setAttribute('dur', '0.55s');
-          animMotion.setAttribute('fill', 'freeze');
-          circle.appendChild(animMotion);
-          animMotion.beginElement();
-        });
-
-        await new Promise(r => setTimeout(r, 450));
-        pulseGroup.innerHTML = '';
-      }
-
-      // Flash output heatmap
-      const heatRect = document.querySelector('#output-viz-group rect:nth-of-type(2)');
-      if (heatRect) {
-        heatRect.setAttribute('stroke', '#34d399');
-        heatRect.setAttribute('stroke-width', '3');
-        setTimeout(() => {
-          heatRect.setAttribute('stroke', '#38bdf8');
-          heatRect.setAttribute('stroke-width', '1.5');
-        }, 600);
-      }
-
-      if (btnIcon) btnIcon.innerText = '⚡';
-      if (btnText) btnText.innerText = 'Run Feedforward Wave';
-      isPulseActive = false;
-    }
-
-    function toggleWeightSignOnly() {
-      filterStrong = !filterStrong;
-      document.querySelectorAll('.synapse-line').forEach(line => {
-        const w = parseFloat(line.getAttribute('stroke-width'));
-        if (filterStrong && w < 1.8) {
-          line.style.display = 'none';
-        } else {
-          line.style.display = '';
-        }
-      });
-    }
-
-    // Call init when switching to neural view
-    const originalSwitchPage = window.switchPage;
-    window.switchPage = function(pageId) {
-      if (typeof originalSwitchPage === 'function') {
-        originalSwitchPage(pageId);
-      }
-      if (pageId === 'neural') {
-        setTimeout(initNeuralPlayground, 50);
-      }
-    };
-
-    // Auto-init on load if view is active
-    document.addEventListener('DOMContentLoaded', () => {
-      initNeuralPlayground();
-    });
-
-</script>
+  </script>
 </body>
 </html>

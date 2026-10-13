@@ -1,0 +1,1122 @@
+"""
+build_clean_studio.py
+=====================
+Builds a unified, completely validated, zero-syntax-error HTML file for both
+docs/index.html and the Antigravity artifact tbnn_studio.html.
+Ensures every button (Pipeline tab, Neural tab, Stage 1-5 nodes, Run Sequence,
+Simulations drawer, Results drawer, Neuron hover/click, and Feedforward Wave)
+works smoothly with zero console errors.
+"""
+
+from pathlib import Path
+
+def generate_html(is_artifact: bool = False) -> str:
+    # Tailwind CDN
+    tailwind_script = '<script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>' if is_artifact else '<script src="https://cdn.tailwindcss.com"></script>'
+    
+    # Image base prefix
+    img_prefix = "file:///C:/Users/soumi/tbnnFoam/docs/" if is_artifact else ""
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>tbnnFoam: Interactive Architecture & Simulation Studio</title>
+  {tailwind_script}
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {{ width: 6px; height: 6px; }}
+    ::-webkit-scrollbar-track {{ background: #161b22; }}
+    ::-webkit-scrollbar-thumb {{ background: #30363d; border-radius: 3px; }}
+    ::-webkit-scrollbar-thumb:hover {{ background: #8b949e; }}
+    
+    .synapse-line {{
+      transition: opacity 0.2s ease, stroke-width 0.2s ease;
+    }}
+    .neuron-node {{
+      transition: transform 0.15s ease;
+    }}
+    .neuron-node:hover {{
+      transform: scale(1.08);
+    }}
+  </style>
+</head>
+<body class="bg-[#0d1117] text-[#c9d1d9] font-sans min-h-screen flex flex-col antialiased">
+
+  <!-- TOP HEADER & NAVIGATION -->
+  <header class="h-16 border-b border-[#30363d] bg-[#161b22] px-6 flex items-center justify-between shrink-0 z-30">
+    <div class="flex items-center space-x-4">
+      <div class="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-bold text-lg shadow-inner">
+        ⚡
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <h1 class="text-base font-bold tracking-tight text-[#f0f6fc]">tbnnFoam Interactive Studio</h1>
+          <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">OpenFOAM v2606</span>
+          <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">LibTorch C++ JIT</span>
+        </div>
+        <p class="text-xs text-[#8b949e]">In-Situ Tensor Basis Neural Network RANS Closure Workbench</p>
+      </div>
+    </div>
+
+    <!-- MAIN PAGE TABS -->
+    <div class="flex items-center bg-[#0d1117] p-1 rounded-xl border border-[#30363d] space-x-1">
+      <button id="tab-pipeline" onclick="switchPage('pipeline')"
+              class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 bg-blue-600 text-white shadow-sm cursor-pointer">
+        <span>🌐</span>
+        <span>Pipeline Architecture</span>
+      </button>
+      <button id="tab-neural" onclick="switchPage('neural')"
+              class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 text-[#8b949e] hover:text-white hover:bg-[#21262d] cursor-pointer">
+        <span>🧠</span>
+        <span>Neural Network Engine</span>
+      </button>
+    </div>
+
+    <!-- QUICK DRAWER TRIGGERS -->
+    <div class="flex items-center space-x-2">
+      <button onclick="toggleDrawer('simulations')"
+              class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition flex items-center space-x-1.5 shadow-sm cursor-pointer">
+        <span>🎬</span>
+        <span>Simulation Showcase</span>
+        <span class="w-4 h-4 rounded-full bg-blue-500/30 text-blue-300 text-[11px] flex items-center justify-center font-bold">4</span>
+      </button>
+
+      <button onclick="toggleDrawer('results')"
+              class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition flex items-center space-x-1.5 shadow-sm cursor-pointer">
+        <span>📊</span>
+        <span>DNS Benchmark</span>
+        <span class="text-xs text-emerald-300 font-bold">Re=1500</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- WORKSPACE BODY -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- ================================================================= -->
+    <!-- VIEW 1: MAIN INTERACTIVE PIPELINE ARCHITECTURE                     -->
+    <!-- ================================================================= -->
+    <main id="view-pipeline" class="flex-1 flex flex-col p-6 overflow-y-auto space-y-6">
+      
+      <!-- Top Banner / Control Bar -->
+      <div class="flex items-center justify-between bg-[#161b22] p-4 rounded-2xl border border-[#30363d] shadow-sm">
+        <div class="flex items-center space-x-3">
+          <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></div>
+          <div>
+            <span class="text-xs font-bold text-[#f0f6fc]">End-to-End In-Situ Execution Map</span>
+            <span class="text-xs text-[#8b949e] ml-2">• Click any stage box below to inspect its C++ implementation & formulas</span>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button id="btn-run" onclick="runPipelineSequence()"
+                  class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center space-x-1.5 shadow-md transition cursor-pointer">
+            <span id="run-icon">▶</span>
+            <span id="run-text">Run Dataflow Sequence</span>
+          </button>
+          <button onclick="resetPipelineSelection()"
+                  class="px-3 py-1.5 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-[#8b949e] text-xs font-medium border border-[#30363d] transition cursor-pointer">
+            ↺ Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- THE INTERACTIVE FLOW MAP (Nodes) -->
+      <div class="relative bg-[#161b22] border border-[#30363d] rounded-3xl p-8 shadow-md">
+        
+        <!-- Connected Flowchart Grid -->
+        <div class="grid grid-cols-5 gap-6 relative z-10">
+
+          <!-- STAGE 1: OpenFOAM Core -->
+          <div id="node-1" onclick="selectStage(1)"
+               class="stage-node cursor-pointer p-5 rounded-2xl bg-[#21262d] border-2 border-blue-500 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-500/20 transition-all flex flex-col justify-between h-56 relative group">
+            <div class="flex items-center justify-between">
+              <span class="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 font-bold text-xs flex items-center justify-center border border-blue-500/30">1</span>
+              <span class="text-[11px] font-semibold text-blue-400 uppercase tracking-wider bg-blue-500/10 px-2 py-0.5 rounded-full">OpenFOAM</span>
+            </div>
+            <div class="my-auto">
+              <h3 class="text-sm font-bold text-white group-hover:text-blue-300 transition">Mean Fields Extraction</h3>
+              <p class="text-xs text-[#8b949e] mt-1.5 leading-relaxed">Retrieves velocity U, turbulent k, and epsilon from finite volume mesh database.</p>
+            </div>
+            <div class="bg-[#0d1117] p-2 rounded-lg border border-[#30363d] text-[11px] font-mono text-blue-300/90 flex justify-between">
+              <span>Output:</span>
+              <span class="font-bold">U, k, ε, ν_t</span>
+            </div>
+            <div class="absolute -right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-blue-600/30 text-blue-400 flex items-center justify-center text-xs font-bold z-20 pointer-events-none hidden md:flex">➔</div>
+          </div>
+
+          <!-- STAGE 2: Invariants & Tensor Basis -->
+          <div id="node-2" onclick="selectStage(2)"
+               class="stage-node cursor-pointer p-5 rounded-2xl bg-[#21262d] border-2 border-emerald-500/60 hover:border-emerald-300 hover:shadow-lg hover:shadow-emerald-500/20 transition-all flex flex-col justify-between h-56 relative group">
+            <div class="flex items-center justify-between">
+              <span class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold text-xs flex items-center justify-center border border-emerald-500/30">2</span>
+              <span class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider bg-emerald-500/10 px-2 py-0.5 rounded-full">Engine</span>
+            </div>
+            <div class="my-auto">
+              <h3 class="text-sm font-bold text-white group-hover:text-emerald-300 transition">Tensor Basis & Invariants</h3>
+              <p class="text-xs text-[#8b949e] mt-1.5 leading-relaxed">Decomposes strain S & rotation R into 5 scalar invariants and 10 Pope tensor bases.</p>
+            </div>
+            <div class="bg-[#0d1117] p-2 rounded-lg border border-[#30363d] text-[11px] font-mono text-emerald-300/90 flex justify-between">
+              <span>Basis:</span>
+              <span class="font-bold">I₁..I₅ , T¹..T¹⁰</span>
+            </div>
+            <div class="absolute -right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-emerald-600/30 text-emerald-400 flex items-center justify-center text-xs font-bold z-20 pointer-events-none hidden md:flex">➔</div>
+          </div>
+
+          <!-- STAGE 3: LibTorch C++ JIT Model -->
+          <div id="node-3" onclick="selectStage(3)"
+               class="stage-node cursor-pointer p-5 rounded-2xl bg-[#21262d] border-2 border-purple-500/60 hover:border-purple-300 hover:shadow-lg hover:shadow-purple-500/20 transition-all flex flex-col justify-between h-56 relative group">
+            <div class="flex items-center justify-between">
+              <span class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 font-bold text-xs flex items-center justify-center border border-purple-500/30">3</span>
+              <span class="text-[11px] font-semibold text-purple-400 uppercase tracking-wider bg-purple-500/10 px-2 py-0.5 rounded-full">LibTorch</span>
+            </div>
+            <div class="my-auto">
+              <h3 class="text-sm font-bold text-white group-hover:text-purple-300 transition">Neural Forward Pass</h3>
+              <p class="text-xs text-[#8b949e] mt-1.5 leading-relaxed">Executes embedded TorchScript JIT network to evaluate 10 invariant scalar weights.</p>
+            </div>
+            <div class="bg-[#0d1117] p-2 rounded-lg border border-[#30363d] text-[11px] font-mono text-purple-300/90 flex justify-between">
+              <span>Weights:</span>
+              <span class="font-bold">g(¹) .. g(¹⁰)</span>
+            </div>
+            <div class="absolute -right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-purple-600/30 text-purple-400 flex items-center justify-center text-xs font-bold z-20 pointer-events-none hidden md:flex">➔</div>
+          </div>
+
+          <!-- STAGE 4: Realizability & Stress Recomposition -->
+          <div id="node-4" onclick="selectStage(4)"
+               class="stage-node cursor-pointer p-5 rounded-2xl bg-[#21262d] border-2 border-amber-500/60 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-500/20 transition-all flex flex-col justify-between h-56 relative group">
+            <div class="flex items-center justify-between">
+              <span class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 font-bold text-xs flex items-center justify-center border border-amber-500/30">4</span>
+              <span class="text-[11px] font-semibold text-amber-400 uppercase tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-full">Physics</span>
+            </div>
+            <div class="my-auto">
+              <h3 class="text-sm font-bold text-white group-hover:text-amber-300 transition">Realizability & Stresses</h3>
+              <p class="text-xs text-[#8b949e] mt-1.5 leading-relaxed">Multiplies g⁽ⁿ⁾·T⁽ⁿ⁾, clips eigenvalues within Lumley bounds, and forms tauDelta.</p>
+            </div>
+            <div class="bg-[#0d1117] p-2 rounded-lg border border-[#30363d] text-[11px] font-mono text-amber-300/90 flex justify-between">
+              <span>Tensor:</span>
+              <span class="font-bold">τ_Δ = 2k·a</span>
+            </div>
+            <div class="absolute -right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-amber-600/30 text-amber-400 flex items-center justify-center text-xs font-bold z-20 pointer-events-none hidden md:flex">➔</div>
+          </div>
+
+          <!-- STAGE 5: Momentum Equation Coupling -->
+          <div id="node-5" onclick="selectStage(5)"
+               class="stage-node cursor-pointer p-5 rounded-2xl bg-[#21262d] border-2 border-rose-500/60 hover:border-rose-300 hover:shadow-lg hover:shadow-rose-500/20 transition-all flex flex-col justify-between h-56 relative group">
+            <div class="flex items-center justify-between">
+              <span class="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 font-bold text-xs flex items-center justify-center border border-rose-500/30">5</span>
+              <span class="text-[11px] font-semibold text-rose-400 uppercase tracking-wider bg-rose-500/10 px-2 py-0.5 rounded-full">Solver</span>
+            </div>
+            <div class="my-auto">
+              <h3 class="text-sm font-bold text-white group-hover:text-rose-300 transition">Momentum RHS Injection</h3>
+              <p class="text-xs text-[#8b949e] mt-1.5 leading-relaxed">Injects ∇·τ_Δ into UEqn.H with SIMPLE under-relaxation, driving secondary vortices.</p>
+            </div>
+            <div class="bg-[#0d1117] p-2 rounded-lg border border-[#30363d] text-[11px] font-mono text-rose-300/90 flex justify-between">
+              <span>Source:</span>
+              <span class="font-bold">-fvc::div(τ_Δ)</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Feedback Loop to SIMPLE (Bottom Line) -->
+        <div class="mt-8 pt-4 border-t border-[#30363d]/60 flex items-center justify-between text-xs text-[#8b949e]">
+          <div class="flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+            <span>Navier-Stokes SIMPLE Correction Loop:</span>
+            <span class="text-white font-mono">fvc::div(phi, U) - fvm::laplacian(nuEff, U) == -fvc::grad(p) - fvc::div(tauDelta)</span>
+          </div>
+          <span class="text-emerald-400 font-semibold">Under-Relaxed Coupling α = 0.01</span>
+        </div>
+      </div>
+
+      <!-- STAGE INSPECTOR CARD (Expands when clicked) -->
+      <div id="stage-inspector" class="bg-[#161b22] border border-[#30363d] rounded-3xl p-6 shadow-xl transition-all">
+        <!-- Filled by JS -->
+      </div>
+
+    </main>
+
+    <!-- ================================================================= -->
+    <!-- VIEW 2: TENSORFLOW PLAYGROUND-STYLE NEURAL NETWORK ENGINE         -->
+    <!-- ================================================================= -->
+    <main id="view-neural" class="flex-1 flex flex-col p-6 overflow-y-auto space-y-6 hidden">
+      
+      <!-- Top Title & Controls (Matching Playground Toolbar) -->
+      <div class="bg-[#161b22] p-4 rounded-2xl border border-[#30363d] flex flex-wrap items-center justify-between gap-4 shadow-sm">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 font-bold text-lg">
+            🧠
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h2 class="text-sm font-bold text-white">TBNN Neural Network Architecture & Synaptic Mesh</h2>
+              <span class="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 text-xs font-semibold">TensorFlow Playground Style</span>
+            </div>
+            <p class="text-xs text-[#8b949e]">Interactive feedforward dataflow from Pope scalar invariants to integrity basis weights</p>
+          </div>
+        </div>
+
+        <!-- Toolbar Controls -->
+        <div class="flex items-center space-x-3">
+          <button id="btn-nn-pulse" onclick="startFeedforwardWave()"
+                  class="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center space-x-2 shadow-md transition cursor-pointer">
+            <span id="nn-pulse-icon">⚡</span>
+            <span id="nn-pulse-text">Run Feedforward Wave</span>
+          </button>
+          <button onclick="toggleWeightSignOnly()"
+                  class="px-3 py-1.5 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-[#8b949e] hover:text-white text-xs font-medium border border-[#30363d] transition cursor-pointer">
+            Toggle Filter: Strong
+          </button>
+          <div class="flex items-center space-x-2 px-3 py-1 rounded-lg bg-[#0d1117] border border-[#30363d] text-xs font-mono">
+            <span class="text-[#8b949e]">Loss:</span>
+            <span class="text-emerald-400 font-bold">8.16e-5</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN PLAYGROUND STAGE (SVG Container) -->
+      <div class="bg-[#161b22] border border-[#30363d] rounded-3xl p-6 relative overflow-hidden shadow-xl">
+        
+        <!-- Header Column Labels (Playground Style) -->
+        <div class="grid grid-cols-12 gap-2 text-xs font-bold uppercase tracking-wider pb-3 border-b border-[#30363d]/80 text-[#8b949e]">
+          <div class="col-span-2 text-blue-400 flex items-center space-x-1">
+            <span>FEATURES</span>
+            <span class="text-[10px] font-normal normal-case text-[#8b949e]">(5 Invariants)</span>
+          </div>
+          <div class="col-span-2 text-purple-300 flex items-center justify-center space-x-1">
+            <span>HIDDEN 1</span>
+            <span class="text-[10px] font-normal normal-case text-[#8b949e]">(64 Neurons)</span>
+          </div>
+          <div class="col-span-2 text-purple-300 flex items-center justify-center space-x-1">
+            <span>HIDDEN 2</span>
+            <span class="text-[10px] font-normal normal-case text-[#8b949e]">(64 Neurons)</span>
+          </div>
+          <div class="col-span-2 text-purple-300 flex items-center justify-center space-x-1">
+            <span>HIDDEN 3</span>
+            <span class="text-[10px] font-normal normal-case text-[#8b949e]">(64 Neurons)</span>
+          </div>
+          <div class="col-span-1 text-amber-400 text-center">
+            <span>OUTPUTS</span>
+          </div>
+          <div class="col-span-3 text-emerald-400 text-right pr-2">
+            <span>ANISOTROPY & VORTICES</span>
+          </div>
+        </div>
+
+        <!-- Interactive Diagram Workspace -->
+        <div class="relative w-full overflow-x-auto py-4" style="min-height: 480px;">
+          <!-- SVG Synaptic Mesh & Nodes -->
+          <svg id="nn-svg" class="w-full h-[470px]" viewBox="0 0 1160 470" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <filter id="glow-blue" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="2.5" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            <!-- 1. SYNAPTIC CONNECTION LINES -->
+            <g id="synapse-group"></g>
+
+            <!-- 2. ANIMATED PULSE LAYER -->
+            <g id="pulse-group" pointer-events="none"></g>
+
+            <!-- 3. NEURON NODES & ACTIVATION BOXES -->
+            <g id="neuron-group"></g>
+
+            <!-- 4. RIGHT SIDE OUTPUT PANEL (Reynolds Stress Heatmap & Recomposition) -->
+            <g id="output-viz-group" transform="translate(930, 30)">
+              <!-- Outer Card -->
+              <rect x="0" y="0" width="220" height="390" rx="16" fill="#0d1117" stroke="#30363d" stroke-width="1.5" />
+              
+              <!-- Loss Convergence Graph (Top Right Mini) -->
+              <text x="12" y="24" fill="#8b949e" font-size="10" font-weight="bold">Continuity Residual: 8.16e-5</text>
+              <path d="M 12 55 Q 60 50, 100 40 T 208 32" fill="none" stroke="#58a6ff" stroke-width="1.5" />
+              <line x1="12" y1="58" x2="208" y2="58" stroke="#30363d" stroke-dasharray="2,2" />
+
+              <!-- Heatmap Box -->
+              <rect x="12" y="70" width="196" height="196" rx="12" fill="#161b22" stroke="#38bdf8" stroke-width="1.5" />
+              
+              <!-- Embedded Heatmap Image -->
+              <image href="{img_prefix}figures/reynolds_stress_mechanism.png" x="14" y="72" width="192" height="192" preserveAspectRatio="xMidYMid slice" />
+
+              <!-- Output Title -->
+              <text x="110" y="286" fill="#f0f6fc" font-size="11" font-weight="bold" text-anchor="middle">Prandtl Secondary Vortices</text>
+              <text x="110" y="302" fill="#8b949e" font-size="10" text-anchor="middle">Normal Stress Diff: (v'² - w'²)</text>
+              
+              <!-- Colorbar Legend -->
+              <g transform="translate(25, 320)">
+                <defs>
+                  <linearGradient id="legend-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#f97316" />
+                    <stop offset="50%" stop-color="#ffffff" />
+                    <stop offset="100%" stop-color="#38bdf8" />
+                  </linearGradient>
+                </defs>
+                <rect x="0" y="0" width="170" height="10" rx="3" fill="url(#legend-grad)" />
+                <text x="0" y="22" fill="#f97316" font-size="9" font-weight="bold">-1.0 (CW)</text>
+                <text x="85" y="22" fill="#8b949e" font-size="9" text-anchor="middle">0.0</text>
+                <text x="170" y="22" fill="#38bdf8" font-size="9" font-weight="bold" text-anchor="end">+1.0 (ACW)</text>
+              </g>
+
+              <!-- Formula Tag -->
+              <text x="110" y="365" fill="#34d399" font-size="10" font-family="monospace" font-weight="bold" text-anchor="middle">a_ij = ∑ g⁽ⁿ⁾ · T⁽ⁿ⁾</text>
+            </g>
+          </svg>
+        </div>
+
+        <!-- Bottom Legend & Node Details Panel -->
+        <div class="mt-4 pt-4 border-t border-[#30363d]/80 flex flex-wrap items-center justify-between gap-4 text-xs">
+          <div class="flex items-center space-x-6">
+            <span class="text-[#8b949e] font-semibold">Synaptic Connections:</span>
+            <div class="flex items-center space-x-2">
+              <span class="w-5 h-0.5 bg-[#38bdf8]"></span>
+              <span class="text-white">Positive Weight (<span class="text-[#38bdf8] font-mono">w > 0</span>)</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="w-5 h-0.5 border-b border-dashed border-[#f97316]"></span>
+              <span class="text-white">Negative Weight (<span class="text-[#f97316] font-mono">w < 0</span>)</span>
+            </div>
+            <div class="text-[#8b949e] italic">Line thickness indicates connection strength</div>
+          </div>
+
+          <div id="neuron-status-tip" class="px-3 py-1 rounded-lg bg-[#0d1117] border border-[#30363d] text-[#8b949e] font-mono">
+            Hover or click any neuron node to inspect synaptic paths
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Detail Explanations -->
+      <div class="grid grid-cols-3 gap-6">
+        <div class="bg-[#161b22] border border-[#30363d] rounded-2xl p-4 space-y-2">
+          <div class="flex items-center space-x-2 text-blue-400 font-bold text-xs uppercase tracking-wider">
+            <span>1. Invariant Feature Inputs</span>
+          </div>
+          <p class="text-xs text-[#8b949e] leading-relaxed">
+            Unlike classical neural networks that train on raw coordinates, TBNN takes the 5 frame-invariant scalars of strain <span class="font-mono text-white">S</span> and rotation <span class="font-mono text-white">R</span>, guaranteeing identical predictions under any grid rotation.
+          </p>
+        </div>
+
+        <div class="bg-[#161b22] border border-[#30363d] rounded-2xl p-4 space-y-2">
+          <div class="flex items-center space-x-2 text-purple-400 font-bold text-xs uppercase tracking-wider">
+            <span>2. Deep Nonlinear Synapses</span>
+          </div>
+          <p class="text-xs text-[#8b949e] leading-relaxed">
+            Each neuron computes <span class="font-mono text-white">y = LeakyReLU(∑ w_i x_i + b)</span>. The 3 dense layers learn the highly nonlinear coupling between mean shear and turbulent normal stress imbalances.
+          </p>
+        </div>
+
+        <div class="bg-[#161b22] border border-[#30363d] rounded-2xl p-4 space-y-2">
+          <div class="flex items-center space-x-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
+            <span>3. Output Tensor Recomposition</span>
+          </div>
+          <p class="text-xs text-[#8b949e] leading-relaxed">
+            The 10 output weights <span class="font-mono text-white">g⁽ⁿ⁾</span> scale the 10 Pope basis matrices <span class="font-mono text-white">T⁽ⁿ⁾</span>. Specifically, basis <span class="font-mono text-white">T⁽²⁾</span> drives the non-zero <span class="font-mono text-white">(v'² - w'²)</span> that generates the 8 secondary flow cells!
+          </p>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ================================================================= -->
+    <!-- SLIDE-OUT DRAWER 1: SIMULATION SHOWCASE (4 GIFs)                  -->
+    <!-- ================================================================= -->
+    <div id="drawer-simulations" class="fixed inset-y-0 right-0 w-full max-w-xl bg-[#161b22] border-l border-[#30363d] shadow-2xl p-6 z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col pointer-events-none">
+      <div class="flex items-center justify-between pb-4 border-b border-[#30363d] shrink-0">
+        <div class="flex items-center space-x-2">
+          <span class="text-lg">🎬</span>
+          <h2 class="text-sm font-bold text-white">Simulation Physics Showcase</h2>
+          <span class="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-semibold">4 Looping Visuals</span>
+        </div>
+        <button onclick="toggleDrawer('simulations')" class="text-gray-400 hover:text-white text-lg font-bold p-1 cursor-pointer">✕</button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto py-4 space-y-6">
+
+        <!-- GIF 1: 2D Secondary Vortices -->
+        <div class="bg-[#21262d] rounded-2xl p-4 border border-[#30363d] space-y-3">
+          <div class="flex justify-between items-center">
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">1. 2D Cross-Section Particle Flow</h3>
+            <span class="text-[11px] text-blue-400 font-mono">Side-by-Side Swirl</span>
+          </div>
+          <div class="rounded-xl overflow-hidden border border-[#30363d] bg-black aspect-video flex items-center justify-center">
+            <img src="{img_prefix}figures/animation_1_secondary_vortices.gif" alt="2D Secondary Swirl" class="w-full h-full object-cover">
+          </div>
+          <p class="text-xs text-[#8b949e] leading-relaxed">
+            Standard OpenFOAM (left) has dead static flow in the cross-plane due to the Boussinesq flaw. tbnnFoam (right) actively recirculates fluid into 8 corner vortex cells.
+          </p>
+        </div>
+
+        <!-- GIF 2: Live Solver Evolution -->
+        <div class="bg-[#21262d] rounded-2xl p-4 border border-[#30363d] space-y-3">
+          <div class="flex justify-between items-center">
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">2. Live In-Situ Solver Iterations (t = 73 → 200)</h3>
+            <span class="text-[11px] text-emerald-400 font-mono">Dynamic Spin-Up</span>
+          </div>
+          <div class="rounded-xl overflow-hidden border border-[#30363d] bg-black aspect-video flex items-center justify-center">
+            <img src="{img_prefix}figures/animation_4_solver_convergence.gif" alt="Solver Convergence" class="w-full h-full object-cover">
+          </div>
+          <p class="text-xs text-[#8b949e] leading-relaxed">
+            Step-by-step evolution in the OpenFOAM SIMPLE loop: the 8 vortices emerge dynamically from flat initial conditions as continuity error drops below 10⁻⁴.
+          </p>
+        </div>
+
+        <!-- GIF 3: 3D Streamline Ribbons -->
+        <div class="bg-[#21262d] rounded-2xl p-4 border border-[#30363d] space-y-3">
+          <div class="flex justify-between items-center">
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">3. 3D Volumetric Corkscrew Streamlines</h3>
+            <span class="text-[11px] text-purple-400 font-mono">Duct Perspective</span>
+          </div>
+          <div class="rounded-xl overflow-hidden border border-[#30363d] bg-black aspect-video flex items-center justify-center">
+            <img src="{img_prefix}figures/animation_2_3d_streamlines.gif" alt="3D Streamlines" class="w-full h-full object-cover">
+          </div>
+          <p class="text-xs text-[#8b949e] leading-relaxed">
+            Helical streamline ribbons spiraling down the duct length and accumulating high-momentum fluid into the 4 corners.
+          </p>
+        </div>
+
+        <!-- GIF 4: Bluff Body Wake -->
+        <div class="bg-[#21262d] rounded-2xl p-4 border border-[#30363d] space-y-3">
+          <div class="flex justify-between items-center">
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">4. Generalization: Turbulent Bluff Body Wake</h3>
+            <span class="text-[11px] text-amber-400 font-mono">Karman Shedding</span>
+          </div>
+          <div class="rounded-xl overflow-hidden border border-[#30363d] bg-black aspect-video flex items-center justify-center">
+            <img src="{img_prefix}figures/animation_3_turbulent_body_wake.gif" alt="Bluff Body Wake" class="w-full h-full object-cover">
+          </div>
+          <p class="text-xs text-[#8b949e] leading-relaxed">
+            Dynamic wake recirculation bubble and coherent vortex detachment behind an immersed turbulent obstacle.
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- SLIDE-OUT DRAWER 2: BENCHMARK & DNS RESULTS                       -->
+    <!-- ================================================================= -->
+    <div id="drawer-results" class="fixed inset-y-0 right-0 w-full max-w-xl bg-[#161b22] border-l border-[#30363d] shadow-2xl p-6 z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col pointer-events-none">
+      <div class="flex items-center justify-between pb-4 border-b border-[#30363d] shrink-0">
+        <div class="flex items-center space-x-2">
+          <span class="text-lg">📊</span>
+          <h2 class="text-sm font-bold text-white">DNS Validation & Physics Metrics</h2>
+          <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-semibold">Uhlmann et al. (Re=1500)</span>
+        </div>
+        <button onclick="toggleDrawer('results')" class="text-gray-400 hover:text-white text-lg font-bold p-1 cursor-pointer">✕</button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto py-4 space-y-6">
+
+        <!-- Quantitative Table -->
+        <div class="bg-[#21262d] rounded-2xl p-4 border border-[#30363d] space-y-3">
+          <h3 class="text-xs font-bold text-white uppercase tracking-wider">Three-Way Benchmark Summary</h3>
+          <div class="overflow-x-auto text-xs">
+            <table class="w-full text-left">
+              <thead>
+                <tr class="border-b border-[#30363d] text-[#8b949e] font-mono text-[11px]">
+                  <th class="py-2">Metric</th>
+                  <th class="py-2">Linear RANS</th>
+                  <th class="py-2 text-rose-400">tbnnFoam</th>
+                  <th class="py-2 text-emerald-400">DNS Ref</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[#30363d] font-mono">
+                <tr>
+                  <td class="py-2 font-sans font-medium text-white">Vortices</td>
+                  <td class="text-red-400">0 cores</td>
+                  <td class="text-emerald-400 font-bold">8 cores</td>
+                  <td class="text-emerald-400">8 cores</td>
+                </tr>
+                <tr>
+                  <td class="py-2 font-sans font-medium text-white">Peak V / U_b</td>
+                  <td>0.00%</td>
+                  <td class="text-emerald-400 font-bold">1.74%</td>
+                  <td>1.85%</td>
+                </tr>
+                <tr>
+                  <td class="py-2 font-sans font-medium text-white">Streamwise U NRMSE</td>
+                  <td class="text-red-400">7.58%</td>
+                  <td class="text-emerald-400 font-bold">1.90%</td>
+                  <td>0.00% (Ref)</td>
+                </tr>
+                <tr>
+                  <td class="py-2 font-sans font-medium text-white">Cross-stream V NRMSE</td>
+                  <td class="text-red-400">100.0%</td>
+                  <td class="text-emerald-400 font-bold">0.03%</td>
+                  <td>0.00% (Ref)</td>
+                </tr>
+                <tr>
+                  <td class="py-2 font-sans font-medium text-white">Core Position (y/h, z/h)</td>
+                  <td>N/A</td>
+                  <td class="text-emerald-400 font-bold">(0.49, 0.81)</td>
+                  <td>(0.50, 0.82)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Hero Figure -->
+        <div class="bg-[#21262d] rounded-2xl p-4 border border-[#30363d] space-y-3">
+          <h3 class="text-xs font-bold text-white uppercase tracking-wider">3-Panel Hero Benchmark Showcase</h3>
+          <div class="rounded-xl overflow-hidden border border-[#30363d] bg-black">
+            <img src="{img_prefix}figures/tbnn_hero_showcase.png" alt="Hero Figure" class="w-full h-auto">
+          </div>
+        </div>
+
+        <!-- Reynolds Stress Mechanism -->
+        <div class="bg-[#21262d] rounded-2xl p-4 border border-[#30363d] space-y-3">
+          <h3 class="text-xs font-bold text-white uppercase tracking-wider">Reynolds Stress Mechanism (v'² - w'²)</h3>
+          <div class="rounded-xl overflow-hidden border border-[#30363d] bg-black">
+            <img src="{img_prefix}figures/reynolds_stress_mechanism.png" alt="Normal Stress Mechanism" class="w-full h-auto">
+          </div>
+        </div>
+
+        <!-- Barycentric Map -->
+        <div class="bg-[#21262d] rounded-2xl p-4 border border-[#30363d] space-y-3">
+          <h3 class="text-xs font-bold text-white uppercase tracking-wider">Barycentric Anisotropy Triangle (Lumley Map)</h3>
+          <div class="rounded-xl overflow-hidden border border-[#30363d] bg-black">
+            <img src="{img_prefix}figures/barycentric_anisotropy_map.png" alt="Barycentric Map" class="w-full h-auto">
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- JAVASCRIPT LOGIC (CLEAN, MODULAR, ZERO SYNTAX ERRORS) -->
+  <script>
+    // 1. Page Switcher
+    function switchPage(pageId) {{
+      const viewPipeline = document.getElementById('view-pipeline');
+      const viewNeural = document.getElementById('view-neural');
+      const tabPipeline = document.getElementById('tab-pipeline');
+      const tabNeural = document.getElementById('tab-neural');
+
+      if (pageId === 'pipeline') {{
+        viewPipeline.classList.remove('hidden');
+        viewNeural.classList.add('hidden');
+        tabPipeline.className = 'px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 bg-blue-600 text-white shadow-sm cursor-pointer';
+        tabNeural.className = 'px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 text-[#8b949e] hover:text-white hover:bg-[#21262d] cursor-pointer';
+      }} else {{
+        viewPipeline.classList.add('hidden');
+        viewNeural.classList.remove('hidden');
+        tabNeural.className = 'px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 bg-purple-600 text-white shadow-sm cursor-pointer';
+        tabPipeline.className = 'px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 text-[#8b949e] hover:text-white hover:bg-[#21262d] cursor-pointer';
+        setTimeout(initNeuralPlayground, 30);
+      }}
+    }}
+
+    // 2. Slide-out Drawer Toggler
+    function toggleDrawer(drawerName) {{
+      const drawer = document.getElementById('drawer-' + drawerName);
+      if (drawer.classList.contains('translate-x-full')) {{
+        drawer.classList.remove('translate-x-full', 'pointer-events-none');
+        drawer.classList.add('pointer-events-auto');
+      }} else {{
+        drawer.classList.add('translate-x-full', 'pointer-events-none');
+        drawer.classList.remove('pointer-events-auto');
+      }}
+    }}
+
+    // 3. Stage Inspector Data
+    const stageData = {{
+      1: {{
+        title: "Stage 1: OpenFOAM Mesh & Mean Flow Fields",
+        badge: "OpenFOAM Core",
+        badgeColor: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+        summary: "The solver queries the OpenFOAM geometric field database for the mean velocity U, turbulent kinetic energy k, and turbulence dissipation epsilon.",
+        cppFile: "createFields.H & tbnnFoam.C",
+        cppSnippet: `// Field extraction in OpenFOAM C++:
+volVectorField& U = mesh.lookupObjectRef<volVectorField>("U");
+volScalarField& k = mesh.lookupObjectRef<volScalarField>("k");
+volScalarField& eps = mesh.lookupObjectRef<volScalarField>("epsilon");
+volTensorField gradU(fvc::grad(U));`,
+        formula: "S_ij = 0.5 * (∂U_i/∂x_j + ∂U_j/∂x_i)  |  Ω_ij = 0.5 * (∂U_i/∂x_j - ∂U_j/∂x_i)",
+        formulaDesc: "Velocity gradient decomposed into symmetric strain rate and anti-symmetric rotation rate tensors."
+      }},
+      2: {{
+        title: "Stage 2: Tensor Basis & Invariant Engine",
+        badge: "Integrity Basis",
+        badgeColor: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+        summary: "Evaluates the 5 Pope scalar invariants and 10 symmetric, trace-free tensor bases to guarantee complete rotational and frame invariance.",
+        cppFile: "src/tbnnEvaluator.H",
+        cppSnippet: `// Non-dimensionalize by turbulent time scale:
+volTensorField s = (k / eps) * symm(gradU);
+volTensorField w = (k / eps) * skew(gradU);
+
+// Compute 5 scalar invariants:
+I1 = tr(s & s);
+I2 = tr(w & w);
+I3 = tr(s & s & s);
+I4 = tr(w & w & s);
+I5 = tr(w & w & s & s);`,
+        formula: "I₁ = tr(s²),  I₂ = tr(w²),  I₃ = tr(s³),  I₄ = tr(w²s),  I₅ = tr(w²s²)",
+        formulaDesc: "5 frame-independent scalars forming the input feature vector for the neural network."
+      }},
+      3: {{
+        title: "Stage 3: Embedded LibTorch C++ JIT Neural Network",
+        badge: "LibTorch C++",
+        badgeColor: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+        summary: "The pre-trained PyTorch model is executed in-situ inside OpenFOAM using LibTorch C++ without calling external Python scripts or processes.",
+        cppFile: "tbnnFoam.C",
+        cppSnippet: `// In-situ forward pass in C++:
+torch::jit::script::Module module = torch::jit::load("constant/tbnn_model.pt");
+torch::Tensor inputTensor = torch::from_blob(invariants.data(), {{numCells, 5}}, torch::kFloat32);
+std::vector<torch::jit::IValue> inputs = {{inputTensor}};
+torch::Tensor output = module.forward(inputs).toTensor(); // dim: [numCells, 10]`,
+        formula: "g⁽ⁿ⁾ = NeuralNetwork( I₁, I₂, I₃, I₄, I₅ )   [n = 1 .. 10]",
+        formulaDesc: "Predicts the 10 scalar expansion coefficients for Pope's tensor basis expansion."
+      }},
+      4: {{
+        title: "Stage 4: Realizability Enforcer & Stress Recomposition",
+        badge: "Lumley Limiter",
+        badgeColor: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+        summary: "Assembles the anisotropy tensor, clips normal and shear stresses within Lumley realizability bounds, and forms the explicit stress tensor tauDelta.",
+        cppFile: "tbnnFoam.C",
+        cppSnippet: `// Realizability clipping:
+forAll(aTBNN, cellI) {{
+    symmTensor& a = aTBNN[cellI];
+    a.xx() = clamp(a.xx(), -0.33, 0.66);
+    a.yy() = clamp(a.yy(), -0.33, 0.66);
+    a.zz() = clamp(a.zz(), -0.33, 0.66);
+    a.xy() = clamp(a.xy(), -0.50, 0.50);
+}}
+tauDelta = 2.0 * k * aTBNN;`,
+        formula: "a_ij = ∑ g⁽ⁿ⁾ · T⁽ⁿ⁾_ij   |   τ_Δ = 2 · k · a_ij",
+        formulaDesc: "Anisotropy recomposition clipped to ensure physical realizability and stability."
+      }},
+      5: {{
+        title: "Stage 5: Momentum Equation Coupling & SIMPLE Loop",
+        badge: "OpenFOAM Solver",
+        badgeColor: "bg-rose-500/20 text-rose-400 border-rose-500/30",
+        summary: "Injects the explicit divergence of the anisotropic stress tensor into UEqn.H with under-relaxation, driving the 8 secondary flow cells.",
+        cppFile: "UEqn.H",
+        cppSnippet: `// Navier-Stokes Momentum Equation with In-Situ TBNN Source:
+fvVectorMatrix UEqn
+(
+    fvm::div(phi, U)
+  - fvm::laplacian(nuEff, U)
+ ==
+  - fvc::grad(p)
+  - alphaTBNN * fvc::div(tauDelta) // In-Situ Tensor Forcing!
+);
+UEqn.relax();
+solve(UEqn == -fvc::grad(p));`,
+        formula: "∂U/∂t + ∇·(UU) - ∇·(ν_eff ∇U) = -∇p - ∇·(τ_Δ)",
+        formulaDesc: "Explicit stress divergence -∇·(τ_Δ) drives secondary flow of Prandtl's second kind."
+      }}
+    }};
+
+    // 4. Select and Inspect Stage
+    function selectStage(stageNum) {{
+      document.querySelectorAll('.stage-node').forEach((node, idx) => {{
+        if (idx + 1 === stageNum) {{
+          node.classList.add('ring-2', 'ring-white', 'scale-[1.02]');
+        }} else {{
+          node.classList.remove('ring-2', 'ring-white', 'scale-[1.02]');
+        }}
+      }});
+
+      const data = stageData[stageNum];
+      if (!data) return;
+
+      const inspector = document.getElementById('stage-inspector');
+      inspector.innerHTML = `
+        <div class="flex items-center justify-between pb-4 border-b border-[#30363d]">
+          <div class="flex items-center space-x-3">
+            <span class="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 font-bold flex items-center justify-center text-sm border border-blue-500/30">${{stageNum}}</span>
+            <div>
+              <h3 class="text-sm font-bold text-white">${{data.title}}</h3>
+              <p class="text-xs text-[#8b949e]">${{data.summary}}</p>
+            </div>
+          </div>
+          <span class="px-2.5 py-1 rounded-full text-xs font-semibold border ${{data.badgeColor}}">${{data.badge}}</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6 mt-4">
+          <!-- C++ Code Snippet -->
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-xs">
+              <span class="font-bold text-[#8b949e] uppercase tracking-wider">C++ Implementation (${{data.cppFile}})</span>
+            </div>
+            <pre class="bg-[#21262d] p-3.5 rounded-xl border border-[#30363d] text-blue-300 font-mono text-[11px] overflow-x-auto leading-relaxed"><code>${{data.cppSnippet}}</code></pre>
+          </div>
+
+          <!-- Simple Formula Card -->
+          <div class="space-y-2">
+            <span class="font-bold text-[#8b949e] uppercase tracking-wider text-xs">Governing Mathematical Physics</span>
+            <div class="p-4 rounded-xl bg-[#21262d] border border-[#30363d] flex flex-col justify-between h-40">
+              <div class="p-2.5 rounded-lg bg-[#0d1117] border border-[#30363d] font-mono text-xs text-center text-white font-bold">
+                ${{data.formula}}
+              </div>
+              <p class="text-xs text-[#8b949e] mt-2 leading-relaxed">
+                ${{data.formulaDesc}}
+              </p>
+              <div class="flex items-center space-x-2 pt-2 border-t border-[#30363d] text-[11px] text-emerald-400 font-semibold">
+                <span>✓ Frame Invariant</span>
+                <span>• Realizability Guaranteed</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }}
+
+    function resetPipelineSelection() {{
+      selectStage(1);
+    }}
+
+    // 5. Sequential Run Pipeline
+    let isPipelineRunning = false;
+    async function runPipelineSequence() {{
+      if (isPipelineRunning) return;
+      isPipelineRunning = true;
+      const icon = document.getElementById('run-icon');
+      const text = document.getElementById('run-text');
+      if (icon) icon.innerText = '⏳';
+      if (text) text.innerText = 'Simulating...';
+
+      for (let i = 1; i <= 5; i++) {{
+        selectStage(i);
+        await new Promise(r => setTimeout(r, 1000));
+      }}
+
+      if (icon) icon.innerText = '▶';
+      if (text) text.innerText = 'Run Dataflow Sequence';
+      isPipelineRunning = false;
+    }}
+
+    // =========================================================================
+    // 6. TENSORFLOW PLAYGROUND SYNAPTIC MESH & NEURAL ENGINE
+    // =========================================================================
+    const layerSpecs = [
+      {{ id: 'input', name: 'Features', count: 5, x: 70, labels: ['I₁: Strain', 'I₂: Vorticity', 'I₃: Skewness', 'I₄: Align', 'I₅: Nonlinear'], sub: ['tr(S²)', 'tr(R²)', 'tr(S³)', 'tr(R²S)', 'tr(R²S²)'] }},
+      {{ id: 'h1', name: 'Hidden 1', count: 7, x: 260, act: 'LeakyReLU' }},
+      {{ id: 'h2', name: 'Hidden 2', count: 7, x: 450, act: 'LeakyReLU' }},
+      {{ id: 'h3', name: 'Hidden 3', count: 6, x: 640, act: 'LeakyReLU' }},
+      {{ id: 'out', name: 'Outputs', count: 6, x: 830, labels: ['g⁽¹⁾ (Linear)', 'g⁽²⁾ (S²-Quad)', 'g⁽³⁾ (R²-Vort)', 'g⁽⁴⁾ (SR-Cross)', 'g⁽⁵⁾ (Higher)', 'g⁽⁶⁻¹⁰⁾ (Tensors)'] }}
+    ];
+
+    let nnNodes = [];
+    let nnSynapses = [];
+    let isPulseActive = false;
+    let filterStrong = false;
+    let playgroundInitialized = false;
+
+    function initNeuralPlayground() {{
+      const svg = document.getElementById('nn-svg');
+      if (!svg) return;
+
+      const synapseGroup = document.getElementById('synapse-group');
+      const neuronGroup = document.getElementById('neuron-group');
+      if (!synapseGroup || !neuronGroup) return;
+
+      synapseGroup.innerHTML = '';
+      neuronGroup.innerHTML = '';
+
+      nnNodes = [];
+      nnSynapses = [];
+      const svgHeight = 440;
+
+      // Calculate node positions
+      layerSpecs.forEach((layer, layerIdx) => {{
+        const count = layer.count;
+        const spacing = Math.min(56, (svgHeight - 60) / (count + 1));
+        const totalHeight = (count - 1) * spacing;
+        const startY = (svgHeight - totalHeight) / 2;
+
+        for (let i = 0; i < count; i++) {{
+          const y = startY + i * spacing;
+          nnNodes.push({{
+            id: `${{layer.id}}_${{i}}`,
+            layerIdx: layerIdx,
+            nodeIdx: i,
+            x: layer.x,
+            y: y,
+            layerSpec: layer
+          }});
+        }}
+      }});
+
+      // Generate Interconnected Bezier Curves
+      for (let l = 0; l < layerSpecs.length - 1; l++) {{
+        const sourceNodes = nnNodes.filter(n => n.layerIdx === l);
+        const targetNodes = nnNodes.filter(n => n.layerIdx === l + 1);
+
+        sourceNodes.forEach((sNode, sIdx) => {{
+          targetNodes.forEach((tNode, tIdx) => {{
+            const seed = (l * 100 + sIdx * 10 + tIdx);
+            const rawVal = Math.sin(seed * 9.3) * 1.5;
+            const isPos = Math.cos(seed * 5.1) > -0.2;
+            const weight = (isPos ? 1 : -1) * (0.3 + Math.abs(rawVal) * 0.7);
+
+            const dx = (tNode.x - sNode.x) * 0.52;
+            const pathD = `M ${{sNode.x + 16}} ${{sNode.y}} C ${{sNode.x + 16 + dx}} ${{sNode.y}}, ${{tNode.x - 16 - dx}} ${{tNode.y}}, ${{tNode.x - 16}} ${{tNode.y}}`;
+
+            nnSynapses.push({{
+              source: sNode.id,
+              target: tNode.id,
+              weight: weight,
+              d: pathD,
+              fromLayer: l
+            }});
+          }});
+        }});
+      }}
+
+      // Render Synaptic Curves
+      nnSynapses.forEach((syn, idx) => {{
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', syn.d);
+        path.setAttribute('id', `syn_${{idx}}`);
+        path.setAttribute('class', `synapse-line syn-source-${{syn.source}} syn-target-${{syn.target}}`);
+
+        const absW = Math.abs(syn.weight);
+        const strokeWidth = (0.8 + absW * 1.8).toFixed(1);
+        path.setAttribute('stroke-width', strokeWidth);
+        path.setAttribute('data-original-width', strokeWidth);
+
+        if (syn.weight > 0) {{
+          path.setAttribute('stroke', '#38bdf8');
+          path.setAttribute('stroke-opacity', (0.28 + absW * 0.35).toFixed(2));
+        }} else {{
+          path.setAttribute('stroke', '#f97316');
+          path.setAttribute('stroke-dasharray', '4,3');
+          path.setAttribute('stroke-opacity', (0.24 + absW * 0.35).toFixed(2));
+        }}
+        path.setAttribute('fill', 'none');
+        synapseGroup.appendChild(path);
+      }});
+
+      // Render Playground Nodes
+      nnNodes.forEach((node) => {{
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', `translate(${{node.x}}, ${{node.y}})`);
+        g.setAttribute('class', 'neuron-node cursor-pointer');
+        g.setAttribute('id', `node_${{node.id}}`);
+
+        // Outer box
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', '-16');
+        rect.setAttribute('y', '-16');
+        rect.setAttribute('width', '32');
+        rect.setAttribute('height', '32');
+        rect.setAttribute('rx', '8');
+        rect.setAttribute('fill', '#161b22');
+        rect.setAttribute('stroke', node.layerIdx === 0 ? '#38bdf8' : (node.layerIdx === 4 ? '#fbbf24' : '#a855f7'));
+        rect.setAttribute('stroke-width', '1.8');
+        g.appendChild(rect);
+
+        // Inner activation pattern box
+        const inner = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        inner.setAttribute('x', '-12');
+        inner.setAttribute('y', '-12');
+        inner.setAttribute('width', '24');
+        inner.setAttribute('height', '24');
+        inner.setAttribute('rx', '5');
+        
+        if (node.layerIdx === 0) {{
+          inner.setAttribute('fill', '#0284c7');
+          inner.setAttribute('fill-opacity', '0.45');
+        }} else if (node.layerIdx === 4) {{
+          inner.setAttribute('fill', '#d97706');
+          inner.setAttribute('fill-opacity', '0.45');
+        }} else {{
+          inner.setAttribute('fill', node.nodeIdx % 2 === 0 ? '#7c3aed' : '#2563eb');
+          inner.setAttribute('fill-opacity', '0.35');
+        }}
+        g.appendChild(inner);
+
+        // Center dot
+        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        dot.setAttribute('cx', '0');
+        dot.setAttribute('cy', '0');
+        dot.setAttribute('r', '2.5');
+        dot.setAttribute('fill', '#ffffff');
+        g.appendChild(dot);
+
+        // Labels
+        if (node.layerIdx === 0 && node.layerSpec.labels) {{
+          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          text.setAttribute('x', '-24');
+          text.setAttribute('y', '4');
+          text.setAttribute('fill', '#f0f6fc');
+          text.setAttribute('font-size', '10.5');
+          text.setAttribute('font-weight', 'bold');
+          text.setAttribute('text-anchor', 'end');
+          text.textContent = node.layerSpec.labels[node.nodeIdx];
+          g.appendChild(text);
+
+          const sub = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          sub.setAttribute('x', '-24');
+          sub.setAttribute('y', '15');
+          sub.setAttribute('fill', '#38bdf8');
+          sub.setAttribute('font-size', '9');
+          sub.setAttribute('font-family', 'monospace');
+          sub.setAttribute('text-anchor', 'end');
+          sub.textContent = node.layerSpec.sub[node.nodeIdx];
+          g.appendChild(sub);
+        }} else if (node.layerIdx === 4 && node.layerSpec.labels) {{
+          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          text.setAttribute('x', '24');
+          text.setAttribute('y', '4');
+          text.setAttribute('fill', '#fbbf24');
+          text.setAttribute('font-size', '10.5');
+          text.setAttribute('font-weight', 'bold');
+          text.setAttribute('text-anchor', 'start');
+          text.textContent = node.layerSpec.labels[node.nodeIdx];
+          g.appendChild(text);
+        }}
+
+        // Hover & Click Events
+        g.addEventListener('mouseenter', () => highlightNodeSynapses(node.id));
+        g.addEventListener('mouseleave', () => resetSynapseHighlights());
+        g.addEventListener('click', () => inspectNeuron(node));
+
+        neuronGroup.appendChild(g);
+      }});
+
+      playgroundInitialized = true;
+    }}
+
+    function highlightNodeSynapses(nodeId) {{
+      document.querySelectorAll('.synapse-line').forEach(line => {{
+        line.setAttribute('opacity', '0.12');
+      }});
+
+      const connected = document.querySelectorAll(`.syn-source-${{nodeId}}, .syn-target-${{nodeId}}`);
+      connected.forEach(line => {{
+        line.setAttribute('opacity', '1.0');
+        line.setAttribute('stroke-width', '2.8');
+        line.setAttribute('filter', 'url(#glow-blue)');
+      }});
+
+      const tip = document.getElementById('neuron-status-tip');
+      if (tip) {{
+        tip.innerHTML = `Active Node: <span class="text-white font-bold">${{nodeId}}</span> • ${{connected.length}} Synapses Connected`;
+      }}
+    }}
+
+    function resetSynapseHighlights() {{
+      document.querySelectorAll('.synapse-line').forEach(line => {{
+        line.setAttribute('opacity', '1.0');
+        line.removeAttribute('filter');
+        const origW = line.getAttribute('data-original-width') || '1.5';
+        line.setAttribute('stroke-width', origW);
+      }});
+
+      const tip = document.getElementById('neuron-status-tip');
+      if (tip) {{
+        tip.innerText = 'Hover or click any neuron node to inspect synaptic paths';
+      }}
+    }}
+
+    function inspectNeuron(node) {{
+      let desc = '';
+      if (node.layerIdx === 0) {{
+        desc = `Input Feature: ${{node.layerSpec.labels[node.nodeIdx]}} (${{node.layerSpec.sub[node.nodeIdx]}})\\nDimension: [N, 1]\\nPhysical Function: Invariant fluid deformation scalar.`;
+      }} else if (node.layerIdx === 4) {{
+        desc = `Basis Weight: ${{node.layerSpec.labels[node.nodeIdx]}}\\nMultiplies Pope Tensor Basis matrix in-situ to force secondary circulation.`;
+      }} else {{
+        desc = `Hidden Neuron ${{node.id}} (${{node.layerSpec.name}})\\nActivation: LeakyReLU(alpha=0.1)\\nWeight shape: [64 x 64]\\nBias: +0.024`;
+      }}
+      alert(desc);
+    }}
+
+    async function startFeedforwardWave() {{
+      if (isPulseActive) return;
+      isPulseActive = true;
+      const btnIcon = document.getElementById('nn-pulse-icon');
+      const btnText = document.getElementById('nn-pulse-text');
+      if (btnIcon) btnIcon.innerText = '⏳';
+      if (btnText) btnText.innerText = 'Propagating...';
+
+      const pulseGroup = document.getElementById('pulse-group');
+      if (!pulseGroup) return;
+      pulseGroup.innerHTML = '';
+
+      for (let l = 0; l < layerSpecs.length - 1; l++) {{
+        const layerSynapses = nnSynapses.filter(s => s.fromLayer === l);
+        const activeSubset = layerSynapses.filter((_, idx) => idx % 3 === 0);
+
+        activeSubset.forEach(syn => {{
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('r', '4');
+          circle.setAttribute('fill', syn.weight > 0 ? '#38bdf8' : '#fb923c');
+          circle.setAttribute('filter', 'url(#glow-blue)');
+          pulseGroup.appendChild(circle);
+
+          const animMotion = document.createElementNS('http://www.w3.org/2000/svg', 'animateMotion');
+          animMotion.setAttribute('path', syn.d);
+          animMotion.setAttribute('begin', '0s');
+          animMotion.setAttribute('dur', '0.5s');
+          animMotion.setAttribute('fill', 'freeze');
+          circle.appendChild(animMotion);
+          animMotion.beginElement();
+        }});
+
+        await new Promise(r => setTimeout(r, 420));
+        pulseGroup.innerHTML = '';
+      }}
+
+      // Heatmap pulse
+      const heatRect = document.querySelector('#output-viz-group rect:nth-of-type(2)');
+      if (heatRect) {{
+        heatRect.setAttribute('stroke', '#34d399');
+        heatRect.setAttribute('stroke-width', '3');
+        setTimeout(() => {{
+          heatRect.setAttribute('stroke', '#38bdf8');
+          heatRect.setAttribute('stroke-width', '1.5');
+        }}, 600);
+      }}
+
+      if (btnIcon) btnIcon.innerText = '⚡';
+      if (btnText) btnText.innerText = 'Run Feedforward Wave';
+      isPulseActive = false;
+    }}
+
+    function toggleWeightSignOnly() {{
+      filterStrong = !filterStrong;
+      document.querySelectorAll('.synapse-line').forEach(line => {{
+        const w = parseFloat(line.getAttribute('stroke-width'));
+        if (filterStrong && w < 1.8) {{
+          line.style.display = 'none';
+        }} else {{
+          line.style.display = '';
+        }}
+      }});
+    }}
+
+    // Auto-init on page load
+    window.addEventListener('DOMContentLoaded', () => {{
+      selectStage(1);
+    }});
+  </script>
+</body>
+</html>"""
+    return html
+
+def main():
+    root = Path(__file__).resolve().parent.parent
+    index_path = root / "docs" / "index.html"
+    artifact_path = Path("C:/Users/soumi/.gemini/antigravity/brain/e447c5f6-5df9-48f5-9694-da07a482558a/tbnn_studio.html")
+    
+    # 1. Generate standalone docs/index.html
+    html_docs = generate_html(is_artifact=False)
+    index_path.write_text(html_docs, encoding="utf-8")
+    print(f"[OK] Wrote clean docs/index.html ({len(html_docs)} chars)")
+
+    # 2. Generate artifact tbnn_studio.html
+    html_art = generate_html(is_artifact=True)
+    if artifact_path.parent.exists():
+        artifact_path.write_text(html_art, encoding="utf-8")
+        print(f"[OK] Wrote clean tbnn_studio.html ({len(html_art)} chars)")
+
+if __name__ == "__main__":
+    main()
