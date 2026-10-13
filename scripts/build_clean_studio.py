@@ -32,13 +32,14 @@ def generate_html(is_artifact: bool = False) -> str:
     ::-webkit-scrollbar-thumb:hover {{ background: #8b949e; }}
     
     .synapse-line {{
-      transition: opacity 0.2s ease, stroke-width 0.2s ease;
+      transition: stroke-opacity 0.15s ease, stroke-width 0.15s ease;
     }}
-    .neuron-node {{
-      transition: transform 0.15s ease;
+    .neuron-node rect:first-child {{
+      transition: stroke 0.15s ease, stroke-width 0.15s ease;
     }}
-    .neuron-node:hover {{
-      transform: scale(1.08);
+    .neuron-node:hover rect:first-child {{
+      stroke: #ffffff !important;
+      stroke-width: 2.5px !important;
     }}
   </style>
 </head>
@@ -987,26 +988,24 @@ solve(UEqn == -fvc::grad(p));`,
 
     function highlightNodeSynapses(nodeId) {{
       document.querySelectorAll('.synapse-line').forEach(line => {{
-        line.setAttribute('opacity', '0.12');
+        line.style.opacity = '0.08';
       }});
 
       const connected = document.querySelectorAll(`.syn-source-${{nodeId}}, .syn-target-${{nodeId}}`);
       connected.forEach(line => {{
-        line.setAttribute('opacity', '1.0');
-        line.setAttribute('stroke-width', '2.8');
-        line.setAttribute('filter', 'url(#glow-blue)');
+        line.style.opacity = '1.0';
+        line.setAttribute('stroke-width', '2.5');
       }});
 
       const tip = document.getElementById('neuron-status-tip');
       if (tip) {{
-        tip.innerHTML = `Active Node: <span class="text-white font-bold">${{nodeId}}</span> • ${{connected.length}} Synapses Connected`;
+        tip.innerHTML = `Active Node: <span class="text-white font-bold">${{nodeId}}</span> • ${{connected.length}} Synaptic Connections`;
       }}
     }}
 
     function resetSynapseHighlights() {{
       document.querySelectorAll('.synapse-line').forEach(line => {{
-        line.setAttribute('opacity', '1.0');
-        line.removeAttribute('filter');
+        line.style.opacity = '1.0';
         const origW = line.getAttribute('data-original-width') || '1.5';
         line.setAttribute('stroke-width', origW);
       }});
@@ -1018,15 +1017,17 @@ solve(UEqn == -fvc::grad(p));`,
     }}
 
     function inspectNeuron(node) {{
-      let desc = '';
+      const tip = document.getElementById('neuron-status-tip');
+      if (!tip) return;
       if (node.layerIdx === 0) {{
-        desc = `Input Feature: ${{node.layerSpec.labels[node.nodeIdx]}} (${{node.layerSpec.sub[node.nodeIdx]}})\\nDimension: [N, 1]\\nPhysical Function: Invariant fluid deformation scalar.`;
+        tip.innerHTML = `<span class="text-blue-400 font-bold">Input Feature:</span> <span class="text-white font-bold">${{node.layerSpec.labels[node.nodeIdx]}}</span> (<span class="text-emerald-400 font-mono">${{node.layerSpec.sub[node.nodeIdx]}}</span>) • <span class="text-gray-300">dim: [N, 1]</span> • <span class="text-gray-400 italic">Invariant fluid deformation scalar</span>`;
       }} else if (node.layerIdx === 4) {{
-        desc = `Basis Weight: ${{node.layerSpec.labels[node.nodeIdx]}}\\nMultiplies Pope Tensor Basis matrix in-situ to force secondary circulation.`;
+        tip.innerHTML = `<span class="text-amber-400 font-bold">Basis Weight:</span> <span class="text-white font-bold">${{node.layerSpec.labels[node.nodeIdx]}}</span> • <span class="text-gray-300">Scales Tensor Basis T⁽${{node.nodeIdx + 1}}⁾ in-situ to drive secondary flow</span>`;
       }} else {{
-        desc = `Hidden Neuron ${{node.id}} (${{node.layerSpec.name}})\\nActivation: LeakyReLU(alpha=0.1)\\nWeight shape: [64 x 64]\\nBias: +0.024`;
+        tip.innerHTML = `<span class="text-purple-400 font-bold">Hidden Neuron:</span> <span class="text-white font-bold">${{node.id}}</span> (<span class="text-purple-300">${{node.layerSpec.name}}</span>) • <span class="text-emerald-400 font-mono">LeakyReLU(0.1)</span> • <span class="text-gray-300">weights: [64 × 64]</span>`;
       }}
-      alert(desc);
+      tip.classList.add('ring-2', 'ring-purple-400/50');
+      setTimeout(() => tip.classList.remove('ring-2', 'ring-purple-400/50'), 1500);
     }}
 
     async function startFeedforwardWave() {{
