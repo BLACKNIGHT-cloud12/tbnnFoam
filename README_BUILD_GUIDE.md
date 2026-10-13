@@ -1,11 +1,14 @@
 # tbnnFoam: OpenFOAM C++ In-Solver Tensor Basis Neural Network RANS Closure
 
 `tbnnFoam` is a custom OpenFOAM steady-state RANS solver with in-situ **LibTorch** C++ integration. It evaluates Pope's (1975) 10-tensor basis integrity expansion to predict the non-linear Reynolds stress anisotropy tensor $\mathbf{a}$ at every cell:
+
 $$\mathbf{a} = \sum_{n=1}^{10} g^{(n)}(\lambda_1, \dots, \lambda_5) \, \mathbf{T}^{(n)}$$
+
 $$\boldsymbol{\tau}^R = 2 k \left(\mathbf{a} + \frac{1}{3}\mathbf{I}\right)$$
 
 Numerical stability is preserved via **semi-implicit eddy-viscosity splitting**:
-$$\nabla \cdot \boldsymbol{\tau}^R = \underbrace{- \nabla \cdot (\nu_{t,\text{base}} \nabla \mathbf{U})}_{\text{Implicit Left-Hand Side (fvm::laplacian)}} + \underbrace{\nabla \cdot (\boldsymbol{\tau}_{\text{TBNN}}^R - \boldsymbol{\tau}_{\text{Boussinesq}}^R)}_{\text{Explicit Non-Linear Stress Correction (fvc::div)}}$$
+
+$$\nabla \cdot \boldsymbol{\tau}^R = \underbrace{- \nabla \cdot (\nu_{t,\text{base}} \nabla \mathbf{U})}_{\text{Implicit LHS: } \mathtt{fvm::laplacian}} + \underbrace{\nabla \cdot (\boldsymbol{\tau}_{\text{TBNN}}^R - \boldsymbol{\tau}_{\text{Boussinesq}}^R)}_{\text{Explicit Correction: } \mathtt{fvc::div}}$$
 
 ---
 
