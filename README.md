@@ -84,7 +84,7 @@ Both implementations enforce identical Pope (1975) 10-tensor basis contraction, 
 ## Numerical Results & Physics Verification
 
 ### 1. Cross-Section Secondary Flow Dynamics
-Advected through genuine converged OpenFOAM simulation velocity fields (`verification_squareDuct/300/U`):
+Advected through genuine OpenFOAM simulation velocity fields (`verification_squareDuct/300/U`):
 
 ![Cross-Section Particle Dynamics](docs/figures/animation_1_secondary_vortices.gif)
 
@@ -96,9 +96,9 @@ Continuity residual convergence directly extracted from [`verification_squareDuc
 
 ![Solver Convergence](docs/figures/animation_4_solver_convergence.gif)
 
-* **$t = 73$ (Initialization):** Standard RANS converged initial condition; zero cross-stream secondary flow.
+* **$t = 73$ (Initialization):** Standard RANS initial condition; zero cross-stream secondary flow.
 * **$t = 73 \to 140$ (TBNN Coupling):** Under-relaxed anisotropic stress divergence injection activates ($\alpha = 0.01$). Secondary circulation cells establish progressively.
-* **$t = 300$ (Converged):** Continuity residuals converge with stable in-plane secondary convection (global residual $5.56 \times 10^{-7} < 10^{-6}$, local sum $1.50 \times 10^{-5}$, cumulative error $6.13 \times 10^{-4}$).
+* **$t = 300$ (300-Iteration Run State):** Continuity residuals reach $5.56 \times 10^{-7} < 10^{-6}$ with stable in-plane secondary convection (while pressure and velocity component residuals level off near $1.5\text{--}2.8 \times 10^{-4}$).
 
 ### 3. 3D Streamline Ribbons
 Streamlines integrated through the genuine 3D velocity field (`verification_squareDuct/300/U`):
@@ -160,9 +160,22 @@ While conventional linear eddy-viscosity RANS models enforce $V = W \equiv 0$ ($
 
 However, **TBNN currently underpredicts the secondary flow** ($1.59\%$ peak $V_{\text{sec}}/U_b$ vs $1.92\%$ in DNS). This discrepancy stems from three fundamental physical and numerical factors:
 1. **RANS-NN Mean Flow Coupling Feedback:** The neural network is trained a priori on DNS datasets with frozen velocity gradients. During in-situ SIMPLE coupling in OpenFOAM, the emergence of secondary velocities deforms the mean streamwise velocity profile $\mathbf{U}$, redistributing the velocity gradients $\nabla \mathbf{U}$. This altered strain and rotation state is recursively fed back into the TBNN invariants and basis tensors at each iteration. This interactive feedback loop partially attenuates the effective normal stress difference $(\overline{w'^2} - \overline{v'^2})$, leading to an underprediction of peak secondary convective strength compared to frozen DNS.
-2. **Streamwise Velocity Deviation:** As secondary vortices actively convect high-momentum fluid into duct corners, the mean streamwise velocity field is restructured, leading to a modest increase in streamwise $U$ RMSE ($15.51\%$ for `tbnnFoam` vs $6.12\%$ for linear baseline) because the standard $k\text{--}\omega$ SST scale equations ($k$ and $\omega$) are not simultaneously recalibrated for non-linear anisotropic turbulence.
+2. **Streamwise Velocity Deviation:** As secondary vortices actively convect high-momentum fluid into duct corners, the mean streamwise velocity field is restructured, leading to an increase in streamwise $U$ RMSE ($15.51\%$ for `tbnnFoam` vs $6.12\%$ for linear baseline) because the standard $k\text{--}\omega$ SST scale equations ($k$ and $\omega$) are not simultaneously recalibrated for non-linear anisotropic turbulence.
 3. **Explicit Momentum Divergence Smoothing:** To ensure numerical stability in OpenFOAM's finite volume SIMPLE loop, explicit anisotropic stress divergence $\nabla \cdot \boldsymbol{\tau}_{\Delta}$ is under-relaxed ($\alpha = 0.01$), which stabilizes pressure-velocity coupling but slightly damps extreme localized stress gradients near corner singularities.
-4. **Boundary Condition Distinction (Developing Duct vs. Periodic DNS):** The reference DNS benchmark of Pirozzoli et al. (2018) represents an idealized, fully developed streamwise-periodic box driven by a body force. In contrast, the OpenFOAM benchmark case models a spatially developing duct of length $L = 10 D_h$ with uniform inlet velocity ($U_b = 1.0\text{ m/s}$) and downstream outlet. Analysis of the simulated 3D field confirms that in-plane secondary convection reaches streamwise stationarity by $x/D_h \ge 6.0$ ($V_{\text{sec}}/U_b$ stabilizes at $1.64\% \pm 0.03\%$), whereas the centerline streamwise velocity is still developing toward its asymptotic state ($U_{\text{center}} \approx 1.4\text{ m/s}$ in CFD vs $1.9\text{ m/s}$ in periodic DNS). This explains the flatter velocity profile in the duct core.
+
+### Benchmark Comparability and Boundary-Condition Limitations
+
+A critical physical distinction must be emphasized when interpreting the quantitative comparison between the OpenFOAM CFD solution and the DNS reference:
+
+1. **DNS Benchmark Setup (Fully Developed Periodic Duct):**
+   The benchmark dataset of Pirozzoli et al. (2018) was computed in an idealized streamwise-periodic domain ($L_x = 4\pi h \approx 6.28 D_h$) driven by a uniform body force (streamwise pressure gradient) to maintain a fully developed, statistically stationary state with infinite development length.
+
+2. **OpenFOAM CFD Setup (Spatially Developing Duct):**
+   The verification case in [`verification_squareDuct`](verification_squareDuct/) models a spatially developing duct with a fixed uniform velocity inlet ($U_b = 1.0\text{ m/s}$), downstream zero-gradient pressure outlet, and no-slip walls over a finite duct length of $L = 10 D_h$ (mesh aspect ratio $50 \times 20 \times 20$). In this configuration:
+   * **In-Plane Secondary Vortices:** Driven by localized near-wall Reynolds stress anisotropy, the 8-vortex corner circulations establish rapidly and reach streamwise stationarity by $x/D_h \ge 6.0$ ($V_{\text{sec}}/U_b$ stabilizes at $1.64\% \pm 0.03\%$).
+   * **Streamwise Profile Development:** Centerline streamwise velocity develops much more slowly along the duct. Across the mid-duct averaging window ($x/D_h \in [4.0, 8.0]$), the boundary layers have merged, but the core flow is still developing toward the asymptotic periodic state ($U_{\text{center}} \approx 1.25\text{ m/s}$ in CFD vs $1.33\text{ m/s}$ in periodic DNS).
+   * **Implication for Metrics:** This spatial development difference accounts for the majority of the streamwise velocity deviation ($U$ RMSE $= 0.1551\text{ m/s}$). Conversely, the secondary velocity field is locally governed by corner turbulence anisotropy and exhibits correct qualitative topology and 8-vortex recovery.
+   * **Recommended Next Step:** For canonical one-to-one equivalence with DNS, future iterations should configure cyclic periodic boundary conditions with an OpenFOAM `fvOptions` driving force (`meanVelocityForce` or `pressureGradientExplicitSource`).
 
 ---
 
@@ -224,7 +237,7 @@ To address numerical resolution sensitivity in resolving wall-bounded secondary 
 * **Coarse Mesh (M1):** $50 \times 20 \times 20 = 20{,}000$ cells ($\Delta y = \Delta z = 0.005\text{ m}$).
 * **Refined Mesh (M2):** $50 \times 40 \times 40 = 80{,}000$ cells ($\Delta y = \Delta z = 0.0025\text{ m}$).
 
-Both cases were executed with `tbnnFoam` to full convergence ($300$ iterations) and evaluated via [`scripts/validation/evaluate_mesh_sensitivity.py`](scripts/validation/evaluate_mesh_sensitivity.py):
+Both cases were executed with `tbnnFoam` through iteration 300 (the end of the configured 300-iteration SIMPLE run) and evaluated via [`scripts/validation/evaluate_mesh_sensitivity.py`](scripts/validation/evaluate_mesh_sensitivity.py). While continuity residuals fall below $10^{-6}$, logged pressure and velocity component residuals level off between $1.5 \times 10^{-4}$ and $2.8 \times 10^{-4}$ (above the $10^{-4}$ stopping threshold); results are evaluated as a finite-iteration mesh-sensitivity comparison:
 
 ![Cross-Sectional Mesh Sensitivity Study](docs/figures/mesh_sensitivity_study.png)
 

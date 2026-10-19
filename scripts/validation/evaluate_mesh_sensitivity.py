@@ -51,11 +51,15 @@ def run_mesh_sensitivity_study(repo_root: Path):
             dns_rows.append(r)
     Ny_dns = int(round(np.sqrt(len(dns_rows))))
     Nz_dns = Ny_dns
+    assert len(dns_rows) == Nz_dns * Ny_dns
     dns_y_1d = np.linspace(-1.0, 1.0, Ny_dns)
     dns_z_1d = np.linspace(-1.0, 1.0, Nz_dns)
-    dns_u_2d = np.array([float(r['U']) for r in dns_rows]).reshape(Ny_dns, Nz_dns)
-    dns_v_2d = np.array([float(r['V']) for r in dns_rows]).reshape(Ny_dns, Nz_dns)
-    dns_w_2d = np.array([float(r['W']) for r in dns_rows]).reshape(Ny_dns, Nz_dns)
+    Z_dns_mesh, Y_dns_mesh = np.meshgrid(dns_z_1d, dns_y_1d, indexing='ij')
+    assert Z_dns_mesh.shape == (Nz_dns, Ny_dns)
+    assert Y_dns_mesh.shape == (Nz_dns, Ny_dns)
+    dns_u_2d = np.array([float(r['U']) for r in dns_rows]).reshape(Nz_dns, Ny_dns)
+    dns_v_2d = np.array([float(r['V']) for r in dns_rows]).reshape(Nz_dns, Ny_dns)
+    dns_w_2d = np.array([float(r['W']) for r in dns_rows]).reshape(Nz_dns, Ny_dns)
 
     u_coarse_raw = parse_foam_vec(coarse_u_file)
     u_fine_raw = parse_foam_vec(fine_u_file)
@@ -95,14 +99,19 @@ def run_mesh_sensitivity_study(repo_root: Path):
     z_f_coords = np.linspace(-0.975, 0.975, Nz_f)
     cores_f = detect_vortex_cores(omega_x_f, y_f_coords, z_f_coords)
 
-    q1_cores_c = [c for c in cores_c if c['y'] > 0.0 and c['z'] > 0.0]
-    q1_cores_f = [c for c in cores_f if c['y'] > 0.0 and c['z'] > 0.0]
+    acw_q1_cores_c = [c for c in cores_c if c['y'] > 0.0 and c['z'] > 0.0 and c['type'] == 'acw']
+    if not acw_q1_cores_c:
+        raise RuntimeError('No first-quadrant ACW vortex core detected on coarse mesh.')
+    best_c = max(acw_q1_cores_c, key=lambda c: abs(c['strength']))
+    core_c_y = best_c['y']
+    core_c_z = best_c['z']
 
-    core_c_y = q1_cores_c[0]['y'] if q1_cores_c else 0.56
-    core_c_z = q1_cores_c[0]['z'] if q1_cores_c else 0.91
-
-    core_f_y = q1_cores_f[0]['y'] if q1_cores_f else 0.525
-    core_f_z = q1_cores_f[0]['z'] if q1_cores_f else 0.850
+    acw_q1_cores_f = [c for c in cores_f if c['y'] > 0.0 and c['z'] > 0.0 and c['type'] == 'acw']
+    if not acw_q1_cores_f:
+        raise RuntimeError('No first-quadrant ACW vortex core detected on refined mesh.')
+    best_f = max(acw_q1_cores_f, key=lambda c: abs(c['strength']))
+    core_f_y = best_f['y']
+    core_f_z = best_f['z']
 
     dist_err_c = float(np.sqrt((core_c_y - dns_core_y)**2 + (core_c_z - dns_core_z)**2))
     dist_err_f = float(np.sqrt((core_f_y - dns_core_y)**2 + (core_f_z - dns_core_z)**2))
@@ -115,14 +124,13 @@ def run_mesh_sensitivity_study(repo_root: Path):
     z_f_pad = np.pad(z_f_coords, (1, 1), 'constant', constant_values=(-1.0, 1.0))
     u_f_pad = np.pad(u_f_mid, ((1, 1), (1, 1), (0, 0)), 'constant', constant_values=0.0)
 
-    eval_pts = np.column_stack([np.meshgrid(dns_z_1d, dns_y_1d, indexing='ij')[0].flatten(),
-                                np.meshgrid(dns_z_1d, dns_y_1d, indexing='ij')[1].flatten()])
+    eval_pts = np.column_stack([Z_dns_mesh.flatten(), Y_dns_mesh.flatten()])
 
     rgi_uc = RegularGridInterpolator((z_c_pad, y_c_pad), u_c_pad[:, :, 0], bounds_error=False, fill_value=0.0)
     rgi_uf = RegularGridInterpolator((z_f_pad, y_f_pad), u_f_pad[:, :, 0], bounds_error=False, fill_value=0.0)
 
-    u_c_interp = rgi_uc(eval_pts).reshape(Ny_dns, Nz_dns)
-    u_f_interp = rgi_uf(eval_pts).reshape(Ny_dns, Nz_dns)
+    u_c_interp = rgi_uc(eval_pts).reshape(Nz_dns, Ny_dns)
+    u_f_interp = rgi_uf(eval_pts).reshape(Nz_dns, Ny_dns)
 
     rmse_c = float(np.sqrt(np.mean((u_c_interp - dns_u_2d)**2)))
     rmse_f = float(np.sqrt(np.mean((u_f_interp - dns_u_2d)**2)))

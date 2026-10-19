@@ -66,9 +66,10 @@ class ValidationEngine:
         Nz = Ny
         self.Ny = Ny
         self.Nz = Nz
-        dns_u = np.array([float(r['U']) for r in dns_data]).reshape(Ny, Nz)
-        dns_v = np.array([float(r['V']) for r in dns_data]).reshape(Ny, Nz)
-        dns_w = np.array([float(r['W']) for r in dns_data]).reshape(Ny, Nz)
+        assert len(dns_data) == self.Nz * self.Ny
+        dns_u = np.array([float(r['U']) for r in dns_data]).reshape(self.Nz, self.Ny)
+        dns_v = np.array([float(r['V']) for r in dns_data]).reshape(self.Nz, self.Ny)
+        dns_w = np.array([float(r['W']) for r in dns_data]).reshape(self.Nz, self.Ny)
         return (dns_u, dns_v, dns_w)
 
     def load_cfd_cs(self, time_dir: str):
@@ -85,13 +86,15 @@ class ValidationEngine:
         y_dns = np.linspace(-1.0, 1.0, self.Ny)
         z_dns = np.linspace(-1.0, 1.0, self.Nz)
         Z_m, Y_m = np.meshgrid(z_dns, y_dns, indexing='ij')
+        assert Z_m.shape == (self.Nz, self.Ny)
+        assert Y_m.shape == (self.Nz, self.Ny)
         pts = np.column_stack([Z_m.flatten(), Y_m.flatten()])
         rgi_u = RegularGridInterpolator((z_g, y_g), pad_cs[:, :, 0], bounds_error=False, fill_value=0.0)
         rgi_v = RegularGridInterpolator((z_g, y_g), pad_cs[:, :, 1], bounds_error=False, fill_value=0.0)
         rgi_w = RegularGridInterpolator((z_g, y_g), pad_cs[:, :, 2], bounds_error=False, fill_value=0.0)
-        u_i = rgi_u(pts).reshape(self.Ny, self.Nz)
-        v_i = rgi_v(pts).reshape(self.Ny, self.Nz)
-        w_i = rgi_w(pts).reshape(self.Ny, self.Nz)
+        u_i = rgi_u(pts).reshape(self.Nz, self.Ny)
+        v_i = rgi_v(pts).reshape(self.Nz, self.Ny)
+        w_i = rgi_w(pts).reshape(self.Nz, self.Ny)
         return (u_i, v_i, w_i)
 
     def evaluate_case(self, u_cfd, v_cfd, w_cfd, u_dns, v_dns, w_dns):
@@ -101,18 +104,20 @@ class ValidationEngine:
         nrmse_v = float(rmse_v / self.Ub * 100.0)
         v_sec = np.sqrt(v_cfd ** 2 + w_cfd ** 2)
         v_max_ratio = float(np.max(v_sec) / self.Ub)
-        Ny_e = u_cfd.shape[0]
-        Nz_e = u_cfd.shape[1]
-        dy = 2.0 / (Ny_e - 1)
+        Nz_e = u_cfd.shape[0]
+        Ny_e = u_cfd.shape[1]
         dz = 2.0 / (Nz_e - 1)
+        dy = 2.0 / (Ny_e - 1)
         omega_x = np.gradient(w_cfd, axis=1) / dy - np.gradient(v_cfd, axis=0) / dz
         y_1d = np.linspace(-1.0, 1.0, Ny_e)
         z_1d = np.linspace(-1.0, 1.0, Nz_e)
         Z_g, Y_g = np.meshgrid(z_1d, y_1d, indexing='ij')
+        assert Z_g.shape == (Nz_e, Ny_e)
+        assert Y_g.shape == (Nz_e, Ny_e)
         cores = detect_vortex_cores(omega_x, y_1d, z_1d, min_separation=0.2, min_strength=0.03, min_area=3, wall_margin=0.08)
         vortex_count = len(cores)
         if vortex_count > 0:
-            q1_cores = [c for c in cores if c['y'] > 0 and c['z'] > 0]
+            q1_cores = [c for c in cores if c['y'] > 0 and c['z'] > 0 and c['type'] == 'acw']
             if len(q1_cores) > 0:
                 best_q1 = max(q1_cores, key=lambda c: abs(c['strength']))
                 core_y = best_q1['y']
