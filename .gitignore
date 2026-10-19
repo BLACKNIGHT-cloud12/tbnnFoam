@@ -2,6 +2,7 @@
 **/Make/linux*
 test_evaluator_parity
 verification_squareDuct/constant/polyMesh
+verification_squareDuct/fine_mesh/constant/polyMesh
 verification_squareDuct/50
 verification_squareDuct/100
 verification_squareDuct/150
@@ -9,6 +10,7 @@ verification_squareDuct/250
 !verification_squareDuct/200/
 !verification_squareDuct/300/
 !verification_squareDuct/baseline_sst/
+!verification_squareDuct/fine_mesh/300/
 *.o
 *.so
 

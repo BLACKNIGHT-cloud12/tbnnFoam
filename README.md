@@ -218,6 +218,28 @@ To rigorously verify that this modeling discrepancy does not induce an out-of-di
 * **100% In-Distribution Coverage:** Every single cell across the entire 3D duct domain falls strictly within the bounding envelope of the DNS training manifold across all 5 invariants, confirming the neural network operates purely in interpolation mode during simulation.
 * **Automated Verification:** Verified continuously via [`tests/test_timescale_distribution.py`](tests/test_timescale_distribution.py).
 
+### 5. Cross-Sectional Mesh Resolution & Grid Convergence Study
+
+To address numerical resolution sensitivity in resolving wall-bounded secondary vortices, an independent grid study was conducted comparing the standard base mesh against a 4x refined cross-sectional grid:
+* **Coarse Mesh (M1):** $50 \times 20 \times 20 = 20{,}000$ cells ($\Delta y = \Delta z = 0.005\text{ m}$).
+* **Refined Mesh (M2):** $50 \times 40 \times 40 = 80{,}000$ cells ($\Delta y = \Delta z = 0.0025\text{ m}$).
+
+Both cases were executed with `tbnnFoam` to full convergence ($300$ iterations) and evaluated via [`scripts/validation/evaluate_mesh_sensitivity.py`](scripts/validation/evaluate_mesh_sensitivity.py):
+
+![Cross-Sectional Mesh Sensitivity Study](docs/figures/mesh_sensitivity_study.png)
+
+| Grid Resolution | Mesh Topology | Cells | Peak $V_{\text{sec}} / U_b$ | Q1 Core Centroid $(y/h, z/h)$ | Core Localization Error | Cores Detected | Streamwise $U$ RMSE |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Coarse Base (M1)** | $50 \times 20 \times 20$ | 20,000 | 1.64% | $(0.450, 0.850)$ | 0.058 h | 8 cores | 0.1551 m/s |
+| **Refined Grid (M2)** | $50 \times 40 \times 40$ | 80,000 | 2.31% | $(0.525, 0.825)$ | 0.025 h | 8 cores | 0.0832 m/s |
+| **DNS Benchmark Target** | $65 \times 65$ (Cross-section) | N/A | **2.03%** | **$(0.500, 0.820)$** | **0.000 h (Ref)** | **8 cores** | **0.0000 m/s** |
+
+* **Monotonic Core Convergence:** The detected vortex core centroid moves directly toward the canonical DNS benchmark position $(0.50, 0.82)$, cutting the localization distance error by $57\%$ (down to $0.025 h$).
+* **Topological Stability:** Both meshes stably identify exactly **8 distinct vortex cores** using connected-region component labeling ([`scripts/validation/vortex_detector.py`](scripts/validation/vortex_detector.py)).
+* **Secondary Momentum Recovery:** Reducing cross-stream numerical diffusion increases peak secondary circulation from $1.64\%$ to $2.31\%$, closely bracketing the DNS reference value ($2.03\%$).
+* **Streamwise Error Reduction:** Streamwise velocity RMSE against DNS decreases by $46.4\%$ (from $0.1551\text{ m/s}$ down to $0.0832\text{ m/s}$).
+* **Automated Verification:** Verified continuously via [`tests/test_mesh_sensitivity.py`](tests/test_mesh_sensitivity.py).
+
 ---
 
 ## Reproducibility & Benchmark Execution
