@@ -99,35 +99,45 @@ class ValidationEngine:
         Nz_e = u_cfd.shape[1]
         dy = 2.0 / (Ny_e - 1)
         dz = 2.0 / (Nz_e - 1)
-        omega_x = np.gradient(w_cfd, axis=0) / dy - np.gradient(v_cfd, axis=1) / dz
+        omega_x = np.gradient(w_cfd, axis=1) / dy - np.gradient(v_cfd, axis=0) / dz
         y_1d = np.linspace(-1.0, 1.0, Ny_e)
         z_1d = np.linspace(-1.0, 1.0, Nz_e)
         Z_g, Y_g = np.meshgrid(z_1d, y_1d, indexing='ij')
         q1_mask = (Y_g > 0.1) & (Z_g > 0.1) & (Y_g < 0.95) & (Z_g < 0.95)
-        if np.max(v_sec) > 0.005:
+        q2_mask = (Y_g < -0.1) & (Z_g > 0.1) & (Y_g > -0.95) & (Z_g < 0.95)
+        q3_mask = (Y_g < -0.1) & (Z_g < -0.1) & (Y_g > -0.95) & (Z_g > -0.95)
+        q4_mask = (Y_g > 0.1) & (Z_g < -0.1) & (Y_g < 0.95) & (Z_g > -0.95)
+        vort_thresh = 0.05 * (self.Ub / self.h)
+        vortex_count = 0
+        for qm in [q1_mask, q2_mask, q3_mask, q4_mask]:
+            v_sub = omega_x[qm]
+            if len(v_sub) > 0:
+                if np.max(v_sub) > vort_thresh:
+                    vortex_count += 1
+                if np.min(v_sub) < -vort_thresh:
+                    vortex_count += 1
+        if vortex_count > 0:
             abs_vort = np.abs(omega_x) * q1_mask
             max_idx = np.unravel_index(np.argmax(abs_vort), omega_x.shape)
             core_y = float(Y_g[max_idx])
             core_z = float(Z_g[max_idx])
             delta_r = float(math.sqrt((core_y - self.dns_core_y) ** 2 + (core_z - self.dns_core_z) ** 2))
-            vortex_count = 8
         else:
             core_y = float('nan')
             core_z = float('nan')
             delta_r = float('nan')
-            vortex_count = 0
         return {'rmse_u': rmse_u, 'nrmse_u': nrmse_u, 'rmse_v': rmse_v, 'nrmse_v': nrmse_v, 'v_max_ratio': v_max_ratio, 'vortex_count': vortex_count, 'core_y': core_y, 'core_z': core_z, 'delta_r': delta_r}
 
     def print_report(self):
         u_dns, v_dns, w_dns = self.load_dns()
-        tbnn_dir = '200' if (self.repo_root / 'verification_squareDuct' / '200' / 'U').exists() else '300'
+        tbnn_dir = '300' if (self.repo_root / 'verification_squareDuct' / '300' / 'U').exists() else '200'
         base_dir = 'baseline_73' if (self.repo_root / 'verification_squareDuct' / 'baseline_73' / 'U').exists() else '50'
         u_tbnn, v_tbnn, w_tbnn = self.load_cfd_cs(tbnn_dir)
         u_base, v_base, w_base = self.load_cfd_cs(base_dir)
         m_tbnn = self.evaluate_case(u_tbnn, v_tbnn, w_tbnn, u_dns, v_dns, w_dns)
         m_base = self.evaluate_case(u_base, v_base, w_base, u_dns, v_dns, w_dns)
         table = []
-        table.append('| Independent Metric | Conventional OpenFOAM (k-omega SST) | tbnnFoam (TBNN Solver) | Reference DNS (CaNS) | Verification Proof |')
+        table.append('| Independent Metric | Conventional OpenFOAM (k-omega SST) | tbnnFoam (TBNN Solver) | Reference DNS (Pirozzoli et al. 2018) | Verification Proof |')
         table.append('| :--- | :---: | :---: | :---: | :--- |')
         table.append(f"| **Vortex Cores Detected** | {m_base['vortex_count']} cores | {m_tbnn['vortex_count']} cores | 8 cores | Prandtl 2nd kind secondary cells |")
         table.append(f"| **Peak Secondary V_sec / Ub** | {m_base['v_max_ratio']*100:.2f}% | {m_tbnn['v_max_ratio']*100:.2f}% | {self.dns_vmax_ratio*100:.2f}% | Non-zero secondary flow generation |")

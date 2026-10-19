@@ -126,16 +126,11 @@ public:
         parse1D(content, "inv_mean", inv_mean_);
         parse1D(content, "inv_std", inv_std_);
 
-        if (!ok || W0_.empty() || W1_.empty() || W2_.empty() || W3_.empty())
+        if (!ok || W0_.size() != 30 || W1_.size() != 30 || W2_.size() != 30 || W3_.size() != 10)
         {
-            W0_.assign(30, std::vector<scalar>(5, 0.01));
-            b0_.assign(30, 0.0);
-            W1_.assign(30, std::vector<scalar>(30, 0.01));
-            b1_.assign(30, 0.0);
-            W2_.assign(30, std::vector<scalar>(30, 0.01));
-            b2_.assign(30, 0.0);
-            W3_.assign(10, std::vector<scalar>(30, 0.01));
-            b3_.assign(10, 0.0);
+            Info << "tbnnEvaluator: Error parsing weights from " << jsonPath << ". Invalid format or dimensions." << endl;
+            initialized_ = false;
+            return false;
         }
 
         initialized_ = true;

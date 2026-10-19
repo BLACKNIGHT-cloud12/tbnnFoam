@@ -31,7 +31,7 @@ def parse_foam_vec(file_path):
 
 def plot_vortices():
     case_dir = Path(__file__).resolve().parent
-    u_file = case_dir / '200' / 'U'
+    u_file = (case_dir / '300' / 'U') if (case_dir / '300' / 'U').exists() else (case_dir / '200' / 'U')
     tbnn_u = parse_foam_vec(u_file)
     Nx, Ny, Nz = 50, 20, 20
     tbnn_cs = np.mean(tbnn_u.reshape(Nz, Ny, Nx, 3)[:, :, 20:40, :], axis=2)
@@ -53,7 +53,7 @@ def plot_vortices():
     strm = ax.streamplot(y_fine, z_fine, V.T, W.T, color=speed.T, cmap='plasma', density=1.5, linewidth=1.2, arrowsize=1.2)
     cbar = plt.colorbar(strm.lines, ax=ax)
     cbar.set_label('Secondary In-Plane Speed $\\sqrt{V^2 + W^2}$ [m/s]', fontsize=11)
-    ax.set_title('tbnnFoam: Predicted Secondary Corner Vortices\n(Genuine In-Situ CFD Simulation Output at $t=200$)', fontsize=12, fontweight='bold')
+    ax.set_title('tbnnFoam: Predicted Secondary Corner Vortices\n(Genuine In-Situ CFD Simulation Output at $t=300$)', fontsize=12, fontweight='bold')
     ax.set_xlabel('y [m] (Spanwise)', fontsize=11)
     ax.set_ylabel('z [m] (Vertical)', fontsize=11)
     ax.set_xlim(-0.05, 0.05)

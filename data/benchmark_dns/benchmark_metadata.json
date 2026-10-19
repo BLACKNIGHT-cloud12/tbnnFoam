@@ -7,12 +7,13 @@
     "raw_source_file": "plotyz_Retau150.dat"
   },
   "flow_parameters": {
-    "bulk_reynolds_number_Re_b": 2200,
+    "bulk_reynolds_number_Re_b": 4410,
+    "half_width_reynolds_number_Re_h": 2205,
     "friction_reynolds_number_Re_tau": 150.0,
     "duct_half_width_h_m": 0.5,
     "hydraulic_diameter_Dh_m": 1.0,
     "bulk_velocity_Ub_m_s": 1.0,
-    "kinematic_viscosity_nu_m2_s": 0.0006666667,
+    "kinematic_viscosity_nu_m2_s": 0.000226757,
     "friction_velocity_u_tau_m_s": 0.0675
   },
   "geometry_and_domain": {
@@ -29,17 +30,18 @@
     "peak_secondary_velocity_ratio_Vmax_over_Ub": 0.0203
   },
   "held_out_benchmark": {
-    "case_name": "Square Duct DNS at Re_tau = 220 (Re_b = 3500)",
+    "case_name": "Square Duct DNS at Re_tau = 220 (Re_b = 7000, Re_h = 3500)",
     "citation": "Pirozzoli, S., Modesti, D., Orlandi, P., & Grasso, F. (2018). Turbulence and secondary motions in square duct flow. Journal of Fluid Mechanics, 840, 634-655.",
     "database_repository": "Sapienza University CFD Group DNS Database (http://newton.dma.uniroma1.it/square_duct/)",
     "raw_source_file": "plotyz_Retau220.dat",
     "dataset_file": "square_duct_dns_Re2200.csv",
-    "bulk_reynolds_number_Re_b": 3500,
+    "bulk_reynolds_number_Re_b": 7000,
+    "half_width_reynolds_number_Re_h": 3500,
     "friction_reynolds_number_Re_tau": 220.0,
     "duct_half_width_h_m": 0.5,
     "hydraulic_diameter_Dh_m": 1.0,
     "bulk_velocity_Ub_m_s": 1.0,
-    "kinematic_viscosity_nu_m2_s": 0.0004545,
+    "kinematic_viscosity_nu_m2_s": 0.000142857,
     "friction_velocity_u_tau_m_s": 0.0628,
     "peak_secondary_velocity_ratio_Vmax_over_Ub": 0.0215
   }

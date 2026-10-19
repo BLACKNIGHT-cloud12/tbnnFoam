@@ -67,10 +67,52 @@ def test_evaluator_parity():
     assert np.isclose(T[0, 0, 0, 1], S12)
     assert np.isclose(T[0, 1, 0, 0], -2.0 * S12 * W12)
 
+def test_torchscript_parity():
+    import torch
+    from tbnn_train import TensorBasisNeuralNetwork
+    model_pt = Path(__file__).resolve().parent.parent / 'tbnn_model.pt'
+    weights_pth = Path(__file__).resolve().parent.parent / 'tbnn_weights.pth'
+    if not model_pt.exists() or not weights_pth.exists():
+        pytest.skip("Model files not found")
+    py_model = TensorBasisNeuralNetwork()
+    py_model.load_state_dict(torch.load(weights_pth, map_location='cpu'))
+    py_model.eval()
+    ts_model = torch.jit.load(str(model_pt))
+    ts_model.eval()
+    np.random.seed(42)
+    inv_np = np.random.uniform(-5.0, 5.0, size=(10, 5)).astype(np.float32)
+    bases_np = np.random.uniform(-2.0, 2.0, size=(10, 10, 3, 3)).astype(np.float32)
+    inv_t = torch.tensor(inv_np)
+    bases_t = torch.tensor(bases_np)
+    with torch.no_grad():
+        out_py = py_model(inv_t, bases_t)
+        out_ts = ts_model(inv_t, bases_t)
+    assert torch.allclose(out_py, out_ts, atol=1e-5)
+
+def test_json_weights_parity():
+    import json
+    weights_json = Path(__file__).resolve().parent.parent / 'export_weights' / 'weights.json'
+    if not weights_json.exists():
+        pytest.skip("weights.json not found")
+    with open(weights_json, 'r') as f:
+        data = json.load(f)
+    assert '0.weight' in data and len(data['0.weight']) == 30 and len(data['0.weight'][0]) == 5
+    assert '0.bias' in data and len(data['0.bias']) == 30
+    assert '2.weight' in data and len(data['2.weight']) == 30 and len(data['2.weight'][0]) == 30
+    assert '2.bias' in data and len(data['2.bias']) == 30
+    assert '4.weight' in data and len(data['4.weight']) == 30 and len(data['4.weight'][0]) == 30
+    assert '4.bias' in data and len(data['4.bias']) == 30
+    assert '6.weight' in data and len(data['6.weight']) == 10 and len(data['6.weight'][0]) == 30
+    assert '6.bias' in data and len(data['6.bias']) == 10
+    assert 'inv_mean' in data and len(data['inv_mean']) == 5
+    assert 'inv_std' in data and len(data['inv_std']) == 5
+
 if __name__ == '__main__':
     test_basis_trace_freedom()
     test_basis_symmetry()
     test_cardano_eigenvalue_accuracy()
     test_realizability_bounds()
     test_evaluator_parity()
-    print('[+] All parity and realizability verification tests passed!')
+    test_torchscript_parity()
+    test_json_weights_parity()
+    print('[+] All parity and cross-implementation verification tests passed!')

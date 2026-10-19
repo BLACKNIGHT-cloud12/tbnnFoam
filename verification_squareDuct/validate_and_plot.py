@@ -81,7 +81,7 @@ def validate():
     U_dns_2d = dns_u.reshape(Ny, Nz)
     V_dns_2d = dns_v.reshape(Ny, Nz)
     W_dns_2d = dns_w.reshape(Ny, Nz)
-    tbnn_file = (case_dir / '200' / 'U') if (case_dir / '200' / 'U').exists() else (case_dir / '300' / 'U')
+    tbnn_file = (case_dir / '300' / 'U') if (case_dir / '300' / 'U').exists() else (case_dir / '200' / 'U')
     base_file = (case_dir / 'baseline_73' / 'U') if (case_dir / 'baseline_73' / 'U').exists() else (case_dir / '50' / 'U')
     tbnn_u = parse_foam_vec(tbnn_file)
     base_u = parse_foam_vec(base_file)
@@ -173,17 +173,27 @@ def validate():
     ax_b.set_ylim(0, 27)
     ax_b.legend(loc='lower center', fontsize=9.5, framealpha=0.95)
     ax_b.grid(True, linestyle=':', alpha=0.6)
-    fig.text(0.74, 0.94, 'Streamwise Secondary Vortex Distribution\nPirozzoli et al. (2018) — $Re_\\tau = 150$', ha='center', va='center', fontsize=12, fontweight='bold')
-    acw_cores = [(-0.5, 0.82), (0.82, 0.5), (0.5, -0.82), (-0.82, -0.5)]
-    cw_cores = [(0.5, 0.82), (0.82, -0.5), (-0.5, -0.82), (-0.82, 0.5)]
+    fig.text(0.74, 0.94, 'Streamwise Secondary Vorticity Field\ntbnnFoam Simulation ($Re_b = 4410$)', ha='center', va='center', fontsize=12, fontweight='bold')
+    vort_acw = np.clip(-omega_x * (h / Ub), 0.0, None)
+    vort_cw = np.clip(omega_x * (h / Ub), 0.0, None)
 
-    def calc_pdf(cores, grid_y, grid_z, sigma=0.1):
-        pdf = np.zeros_like(grid_y)
-        for yc, zc in cores:
-            pdf += np.exp(-((grid_y - yc) ** 2 + (grid_z - zc) ** 2) / (2 * sigma ** 2))
-        return pdf / np.max(pdf)
-    pdf_acw = calc_pdf(acw_cores, yn, zn)
-    pdf_cw = calc_pdf(cw_cores, yn, zn)
+    def find_vortex_cores(vort):
+        cores = []
+        masks = [
+            (yn > 0.05) & (zn > 0.05),
+            (yn < -0.05) & (zn > 0.05),
+            (yn < -0.05) & (zn < -0.05),
+            (yn > 0.05) & (zn < -0.05),
+        ]
+        for m in masks:
+            sub = vort * m
+            if np.max(sub) > 0.01:
+                idx = np.unravel_index(np.argmax(sub), sub.shape)
+                cores.append((float(yn[idx]), float(zn[idx])))
+        return cores
+
+    acw_cores = find_vortex_cores(vort_acw)
+    cw_cores = find_vortex_cores(vort_cw)
     skip = 4
     Y_sub = yn[::skip, ::skip]
     Z_sub = zn[::skip, ::skip]
@@ -193,41 +203,44 @@ def validate():
     ax_r1_vec.quiver(Y_sub, Z_sub, V_sub, W_sub, color='black', alpha=0.7, scale=0.5, width=0.005)
     for c in acw_cores:
         draw_circle_arrow(ax_r1_vec, c, radius=0.18, direction='anticlockwise', color='blue', width=2.0)
-    ax_r1_vec.set_ylabel('$y / h$', fontsize=10)
-    ax_r1_vec.set_title('Secondary flow', fontsize=10, fontweight='bold')
+    ax_r1_vec.set_ylabel('$z / h$', fontsize=10)
+    ax_r1_vec.set_title('Secondary Flow & ACW Cores', fontsize=10, fontweight='bold')
     ax_r1_vec.set_xlim(-1, 1)
     ax_r1_vec.set_ylim(-1, 1)
     ax_r1_vec.set_aspect('equal')
     ax_r1_vec.grid(True, linestyle=':', alpha=0.4)
     ax_r1_pdf = fig.add_subplot(gs[0, 3])
-    im1 = ax_r1_pdf.contourf(x_1d, y_1d, pdf_acw.T, levels=30, cmap='jet')
-    ax_r1_pdf.set_title('PDF $\\omega_x < 0$ (anti-clockwise)', fontsize=10, fontweight='bold', color='blue')
+    im1 = ax_r1_pdf.contourf(x_1d, y_1d, vort_acw, levels=30, cmap='Blues')
+    ax_r1_pdf.set_title('Vorticity $-\\omega_x h / U_b$ (anti-clockwise)', fontsize=10, fontweight='bold', color='blue')
+    ax_r1_pdf.set_ylabel('$z / h$', fontsize=10)
     ax_r1_pdf.set_xlim(-1, 1)
     ax_r1_pdf.set_ylim(-1, 1)
     ax_r1_pdf.set_aspect('equal')
     ax_r1_pdf.grid(True, linestyle=':', alpha=0.4)
     cbar_r1 = plt.colorbar(im1, ax=ax_r1_pdf, fraction=0.046, pad=0.04)
-    cbar_r1.set_label('Vortex Center PDF', fontsize=9)
+    cbar_r1.set_label('Normalized $-\\omega_x h / U_b$', fontsize=9)
     ax_r2_vec = fig.add_subplot(gs[1, 2])
     ax_r2_vec.quiver(Y_sub, Z_sub, V_sub, W_sub, color='black', alpha=0.7, scale=0.5, width=0.005)
     for c in cw_cores:
         draw_circle_arrow(ax_r2_vec, c, radius=0.18, direction='clockwise', color='red', width=2.0)
-    ax_r2_vec.set_xlabel('$z / h$', fontsize=10)
-    ax_r2_vec.set_ylabel('$y / h$', fontsize=10)
+    ax_r2_vec.set_xlabel('$y / h$', fontsize=10)
+    ax_r2_vec.set_ylabel('$z / h$', fontsize=10)
+    ax_r2_vec.set_title('Secondary Flow & CW Cores', fontsize=10, fontweight='bold')
     ax_r2_vec.set_xlim(-1, 1)
     ax_r2_vec.set_ylim(-1, 1)
     ax_r2_vec.set_aspect('equal')
     ax_r2_vec.grid(True, linestyle=':', alpha=0.4)
     ax_r2_pdf = fig.add_subplot(gs[1, 3])
-    im2 = ax_r2_pdf.contourf(x_1d, y_1d, pdf_cw.T, levels=30, cmap='jet')
-    ax_r2_pdf.set_title('PDF $\\omega_x > 0$ (clockwise)', fontsize=10, fontweight='bold', color='red')
-    ax_r2_pdf.set_xlabel('$z / h$', fontsize=10)
+    im2 = ax_r2_pdf.contourf(x_1d, y_1d, vort_cw, levels=30, cmap='Reds')
+    ax_r2_pdf.set_title('Vorticity $\\omega_x h / U_b$ (clockwise)', fontsize=10, fontweight='bold', color='red')
+    ax_r2_pdf.set_xlabel('$y / h$', fontsize=10)
+    ax_r2_pdf.set_ylabel('$z / h$', fontsize=10)
     ax_r2_pdf.set_xlim(-1, 1)
     ax_r2_pdf.set_ylim(-1, 1)
     ax_r2_pdf.set_aspect('equal')
     ax_r2_pdf.grid(True, linestyle=':', alpha=0.4)
     cbar_r2 = plt.colorbar(im2, ax=ax_r2_pdf, fraction=0.046, pad=0.04)
-    cbar_r2.set_label('Vortex Center PDF', fontsize=9)
+    cbar_r2.set_label('Normalized $\\omega_x h / U_b$', fontsize=9)
     out_fig = case_dir / 'tbnn_hero_showcase.png'
     plt.savefig(out_fig, bbox_inches='tight')
     print(f'[+] Saved Pixel-Perfect Hero Showcase to: {out_fig}')

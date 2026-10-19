@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![OpenFOAM](https://img.shields.io/badge/OpenFOAM-v2012%20--%20v2406-004C87.svg?logo=openfoam&logoColor=white)](https://www.openfoam.com)
+[![OpenFOAM](https://img.shields.io/badge/OpenFOAM-v2012%20--%20v2606-004C87.svg?logo=openfoam&logoColor=white)](https://www.openfoam.com)
 [![LibTorch](https://img.shields.io/badge/LibTorch-C%2B%2B11_ABI-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org)
 [![Python](https://img.shields.io/badge/Python-3.9%20--%203.12-3776AB.svg?logo=python&logoColor=white)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -32,7 +32,7 @@ Setting $\overline{v'^2} - \overline{w'^2} = 0$ yields identically zero cross-st
   1. **Embedded LibTorch Solver (`tbnnFoam`):** Directly evaluates compiled TorchScript models (`tbnn_model.pt`) inside OpenFOAM's matrix assembly via `torch::jit`.
   2. **Standalone C++ Solver (`tbnnSimpleFoam`):** Lightweight in-solver implementation using [src/tbnnEvaluator.H](src/tbnnEvaluator.H) to load network weights (`weights.json`) with zero external runtime dependencies.
 * **Frame Invariance:** Embeds Pope's (1975) 10-tensor integrity basis and 5 scalar invariants, ensuring Galilean and coordinate-rotation invariance by construction.
-* **DNS Verification ($Re_\tau = 150$, $Re_b \approx 2200$):** Verified against canonical square duct DNS data of Pirozzoli et al. (2018) (Sapienza University of Rome CFD Database), with held-out generalization testing on $Re_\tau = 220$.
+* **DNS Verification ($Re_\tau = 150$, $Re_b \approx 4410$ / $Re_h \approx 2205$):** Verified against canonical square duct DNS data of Pirozzoli et al. (2018) (Sapienza University of Rome CFD Database), with held-out generalization testing on $Re_\tau = 220$ ($Re_b \approx 7000$ / $Re_h \approx 3500$).
 
 ---
 
@@ -63,12 +63,26 @@ The network embeds Pope's (1975) integrity basis expansion directly into the mod
   $$\mathbf{a} = \sum_{n=1}^{10} g^{(n)}(\boldsymbol{\lambda}) \, \mathbf{T}^{(n)}$$
 * **Physical Stress:** $\boldsymbol{\tau}^R = 2k\left(\mathbf{a} + \frac{1}{3}\mathbf{I}\right)$.
 
+### Dual Model Implementation & Parity
+
+The repository provides two distinct inference paths tailored for production CFD:
+1. **Embedded LibTorch Solver (`tbnnFoam`):**
+   * **Topology:** 64 hidden units per layer with ReLU activations.
+   * **Input Preprocessing:** Unnormalized invariants $\boldsymbol{\lambda} \in \mathbb{R}^5$ clamped to $[-50.0, 50.0]$ with time scale clipped to $\tau = \min(1/\omega, 5.0)\text{ s}$.
+   * **Execution:** Direct in-memory C++ evaluation via `torch::jit` module (`tbnn_model.pt`).
+2. **Standalone C++ Solver (`tbnnSimpleFoam`):**
+   * **Topology:** 30 hidden units per layer with ReLU activations.
+   * **Input Preprocessing:** Standardized invariants $\hat{\boldsymbol{\lambda}} = (\boldsymbol{\lambda} - \boldsymbol{\mu}_{\lambda}) / \boldsymbol{\sigma}_{\lambda}$ with time scale clipped to $\tau = \min(1/\omega, 5.0)\text{ s}$.
+   * **Execution:** Header-only matrix-vector multiplication engine ([src/tbnnEvaluator.H](src/tbnnEvaluator.H)) parsing JSON weights ([export_weights/weights.json](export_weights/weights.json)) with zero external third-party dependencies.
+
+Both implementations enforce identical Pope (1975) 10-tensor basis contraction, time-scale limiters ($\tau \le 5.0$), and Cardano eigensolver Lumley realizability clipping. Parity across both architectures and PyTorch training is verified via [`tests/test_parity.py`](tests/test_parity.py).
+
 ---
 
 ## Numerical Results & Physics Verification
 
 ### 1. Cross-Section Secondary Flow Dynamics
-Advected through genuine converged OpenFOAM simulation velocity fields (`verification_squareDuct/200/U`):
+Advected through genuine converged OpenFOAM simulation velocity fields (`verification_squareDuct/300/U`):
 
 ![Cross-Section Particle Dynamics](docs/figures/animation_1_secondary_vortices.gif)
 
@@ -82,10 +96,10 @@ Continuity residual convergence directly extracted from [`verification_squareDuc
 
 * **$t = 73$ (Initialization):** Standard RANS converged initial condition; zero cross-stream secondary flow.
 * **$t = 73 \to 140$ (TBNN Coupling):** Under-relaxed anisotropic stress divergence injection activates ($\alpha = 0.01$). Secondary circulation cells establish progressively.
-* **$t = 200$ (Converged):** Local continuity residuals drop to $10^{-5}$ with stable in-plane secondary convection.
+* **$t = 300$ (Converged):** Continuity residuals converge with stable in-plane secondary convection (global residual $5.56 \times 10^{-7} < 10^{-6}$, local sum $1.50 \times 10^{-5}$, cumulative error $6.13 \times 10^{-4}$).
 
 ### 3. 3D Streamline Ribbons
-Streamlines integrated through the genuine 3D velocity field (`verification_squareDuct/200/U`):
+Streamlines integrated through the genuine 3D velocity field (`verification_squareDuct/300/U`):
 
 ![3D Streamline Ribbons](docs/figures/animation_2_3d_streamlines.gif)
 
@@ -100,7 +114,7 @@ $$\frac{\partial^2}{\partial y \partial z} \left(\overline{w'^2} - \overline{v'^
 ![Reynolds Stress Mechanism](docs/figures/reynolds_stress_mechanism.png)
 
 * **Linear Eddy-Viscosity Models:** Predict $\overline{v'^2} - \overline{w'^2} \equiv 0$ everywhere due to scalar viscosity.
-* **`tbnnFoam`:** Extracted directly from OpenFOAM simulation outputs (`verification_squareDuct/200/tauR`), capturing the alternating quadrant lobe distribution of normal stress differences.
+* **`tbnnFoam`:** Extracted directly from OpenFOAM simulation outputs (`verification_squareDuct/300/tauR`), capturing the alternating quadrant lobe distribution of normal stress differences.
 
 ---
 
@@ -111,11 +125,11 @@ The Barycentric Map (Banerjee et al., 2007) illustrates the eigenvalue distribut
 ![Barycentric Anisotropy Map](docs/figures/barycentric_anisotropy_map.png)
 
 * **Standard OpenFOAM:** Confined to the axisymmetric contraction boundary, failing to capture near-wall 2-component behavior.
-* **`tbnnFoam`:** Computed from genuine eigenvalues of in-situ simulation outputs (`verification_squareDuct/200/aTBNN`), approaching the 2-component limit near solid boundaries while satisfying Lumley realizability constraints.
+* **`tbnnFoam`:** Computed from genuine eigenvalues of in-situ simulation outputs (`verification_squareDuct/300/aTBNN`), approaching the 2-component limit near solid boundaries while satisfying Lumley realizability constraints.
 
 ---
 
-## Benchmark Validation ($Re_\tau = 150$, $Re_b \approx 2200$)
+## Benchmark Validation ($Re_\tau = 150$, $Re_b \approx 4410$, $Re_h \approx 2205$)
 
 Validation against the genuine DNS benchmark of Pirozzoli et al. (2018) in a square duct:
 
@@ -123,7 +137,7 @@ Validation against the genuine DNS benchmark of Pirozzoli et al. (2018) in a squ
 
 ### Independent OpenFOAM CFD vs. DNS Benchmark Metrics
 
-Metrics computed directly from the exported simulation fields (`verification_squareDuct/200/U` for `tbnnFoam` and `baseline_73/U` for standard OpenFOAM $k\text{--}\omega$ SST) interpolated onto matching DNS coordinates ($65 \times 65$ cross-section grid):
+Metrics computed directly from the exported simulation fields (`verification_squareDuct/300/U` for `tbnnFoam` and `baseline_73/U` for standard OpenFOAM $k\text{--}\omega$ SST) interpolated onto matching DNS coordinates ($65 \times 65$ cross-section grid):
 
 | Metric | Standard OpenFOAM ($k\text{--}\omega$ SST) | `tbnnFoam` (Our TBNN Solver) | Reference DNS (Pirozzoli et al. 2018) | Physical Interpretation |
 | :--- | :---: | :---: | :---: | :--- |
@@ -133,10 +147,10 @@ Metrics computed directly from the exported simulation fields (`verification_squ
 | **Secondary Vortices** | 0 cores | **8 cores** | 8 cores | Recovers Prandtl's 2nd kind secondary cells |
 | **Peak Secondary $V_{\text{sec}} / U_b$** | $0.23\%$ (Noise) | $\mathbf{1.59\%}$ | $1.92\%$ | Active convective in-plane secondary circulation |
 | **Secondary $(V, W)$ RMSE** | $0.0084\text{ m/s}$ | $0.0142\text{ m/s}$ | $0.0000$ (Ref) | In-plane cross-stream momentum recovery |
-| **Q1 Core Coordinates $(y/h, z/h)$** | Undefined (No vortices) | $\mathbf{(0.44, 0.91)}$ | $(0.50, 0.82)$ | Secondary vortex centroid localization |
+| **Q1 Core Coordinates $(y/h, z/h)$** | Undefined (No vortices) | $\mathbf{(0.56, 0.91)}$ | $(0.50, 0.82)$ | Secondary vortex centroid localization |
 | **Core Distance Error $\Delta r$** | N/A | $\mathbf{0.107\,h}$ | $0.000\,h$ (Ref) | Distance to benchmark core centroid |
 | **Corner Velocity Bulging** | Absent | **Present** | Ground Truth | Momentum transport toward duct corners |
-| **Continuity Residual** | $< 10^{-6}$ | $< 10^{-6}$ | N/A | Numerical stability & SIMPLE convergence |
+| **Continuity Residual** | Global: $4.18 \times 10^{-7}$ | Global: $\mathbf{5.56 \times 10^{-7}}$ (Local: $1.50 \times 10^{-5}$, Cumulative: $6.13 \times 10^{-4}$) | N/A | Numerical stability & SIMPLE convergence ($< 10^{-6}$) |
 
 ### Physical Findings & Solver Limitations: Secondary Flow Underprediction
 
@@ -196,7 +210,7 @@ pytest tests/test_parity.py
 ```
 
 ### 3. Model Training & Multi-Re Generalization
-Train the TBNN model with a physical spatial quadrant hold-out ($y > 0, z > 0$ as validation set) and evaluate generalization on the held-out $Re_b = 2200$ DNS benchmark:
+Train the TBNN model with a physical spatial quadrant hold-out ($y > 0, z > 0$ as validation set) and evaluate generalization on the held-out $Re_b = 7000$ ($Re_h = 3500$, $Re_\tau = 220$) DNS benchmark:
 ```bash
 python tbnn_train.py
 ```
@@ -214,7 +228,7 @@ cd verification_squareDuct
 ```
 
 ### 6. Automated DNS Benchmark Validation & Plotting
-Parse genuine OpenFOAM simulation outputs (`200/U` and `baseline_73/U`), interpolate onto the DNS grid, calculate independent error metrics, and regenerate figures:
+Parse genuine OpenFOAM simulation outputs (`300/U` and `baseline_73/U`), interpolate onto the DNS grid, calculate independent error metrics, and regenerate figures:
 ```bash
 python verification_squareDuct/validate_and_plot.py
 ```
@@ -237,13 +251,13 @@ tbnnFoam/
 ├── export_weights/
 │   └── weights.json               # Trained model weights & normalization parameters
 ├── data/
-│   └── benchmark_dns/             # Reference square duct DNS dataset (Re_b=1500)
+│   └── benchmark_dns/             # Reference square duct DNS dataset (Re_b=4410, Re_tau=150)
 ├── docs/figures/                  # Validation figures and animations
 ├── scripts/
 │   ├── generate_all_showcase_assets.py  # Validation figure generation
 │   ├── generate_showcase_animations.py  # Showcase animations
 │   └── validation/                # Quantitative DNS evaluation scripts
-└── verification_squareDuct/       # Square duct benchmark case (Re_b=1500)
+└── verification_squareDuct/       # Square duct benchmark case (Re_b=4410, Re_tau=150)
     ├── 0/                         # Boundary conditions
     ├── constant/                  # Transport & turbulence properties
     ├── system/                    # OpenFOAM schemes and solution controls

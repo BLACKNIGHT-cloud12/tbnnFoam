@@ -53,7 +53,7 @@ def project_realizable(A):
 
 def comp_inv_and_bases(grad_U, omega):
     N = grad_U.shape[0]
-    tau = 1.0 / np.clip(omega, 0.0001, 1000000.0)
+    tau = np.minimum(1.0 / np.clip(omega, 0.0001, 1000000.0), 5.0)
     S = 0.5 * (grad_U + np.swapaxes(grad_U, 1, 2))
     W = 0.5 * (grad_U - np.swapaxes(grad_U, 1, 2))
     s = S * tau[:, None, None]
