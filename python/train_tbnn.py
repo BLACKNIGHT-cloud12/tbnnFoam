@@ -78,12 +78,18 @@ def train():
     a_true[:, 0, 2] = a_true[:, 2, 0] = df['a_13'].values
     a_true[:, 1, 2] = a_true[:, 2, 1] = df['a_23'].values
     invariants, basis_tensors = comp_inv_and_bases(grad_U, omega)
-    inv_mean = np.mean(invariants, axis=0)
-    inv_std = np.std(invariants, axis=0) + 1e-06
+    val_mask = (df['y'].values > 0.0) & (df['z'].values > 0.0)
+    train_mask = ~val_mask
+    print(f'Spatial split: {np.sum(train_mask)} training points, {np.sum(val_mask)} validation points')
+    inv_mean = np.mean(invariants[train_mask], axis=0)
+    inv_std = np.std(invariants[train_mask], axis=0) + 1e-06
     invariants_norm = (invariants - inv_mean) / inv_std
-    X_inv = torch.tensor(invariants_norm, dtype=torch.float32).to(device)
-    X_basis = torch.tensor(basis_tensors, dtype=torch.float32).to(device)
-    Y_a = torch.tensor(a_true, dtype=torch.float32).to(device)
+    X_inv_tr = torch.tensor(invariants_norm[train_mask], dtype=torch.float32).to(device)
+    X_basis_tr = torch.tensor(basis_tensors[train_mask], dtype=torch.float32).to(device)
+    Y_a_tr = torch.tensor(a_true[train_mask], dtype=torch.float32).to(device)
+    X_inv_val = torch.tensor(invariants_norm[val_mask], dtype=torch.float32).to(device)
+    X_basis_val = torch.tensor(basis_tensors[val_mask], dtype=torch.float32).to(device)
+    Y_a_val = torch.tensor(a_true[val_mask], dtype=torch.float32).to(device)
     model = TBNN(hidden_dim=30).to(device)
     optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-05)
     criterion = nn.MSELoss()
@@ -92,13 +98,17 @@ def train():
     for epoch in range(1, epochs + 1):
         model.train()
         optimizer.zero_grad()
-        a_pred, _ = model(X_inv, X_basis)
-        loss = criterion(a_pred, Y_a)
+        a_pred, _ = model(X_inv_tr, X_basis_tr)
+        loss = criterion(a_pred, Y_a_tr)
         loss.backward()
         optimizer.step()
         if epoch % 100 == 0 or epoch == epochs:
-            frob_err = torch.mean(torch.norm(a_pred - Y_a, dim=(1, 2))).item()
-            print(f'Epoch [{epoch:4d}/{epochs}] | MSE Loss: {loss.item():.6e} | Mean Frobenius Error: {frob_err:.6e}')
+            model.eval()
+            with torch.no_grad():
+                a_val_pred, _ = model(X_inv_val, X_basis_val)
+                val_loss = criterion(a_val_pred, Y_a_val)
+                frob_err = torch.mean(torch.norm(a_val_pred - Y_a_val, dim=(1, 2))).item()
+            print(f'Epoch [{epoch:4d}/{epochs}] | Train Loss: {loss.item():.6e} | Val Loss: {val_loss.item():.6e} | Val Frob: {frob_err:.6e}')
     print('Training complete!')
     export_dir = Path('export_weights')
     export_dir.mkdir(parents=True, exist_ok=True)
@@ -111,8 +121,8 @@ def train():
         json.dump(weights_dict, f, indent=2)
     print(f'[+] Saved lightweight C++ weights to {json_path}')
     model.eval()
-    example_inv = X_inv[:1]
-    example_basis = X_basis[:1]
+    example_inv = X_inv_tr[:1]
+    example_basis = X_basis_tr[:1]
     traced_model = torch.jit.trace(model, (example_inv, example_basis))
     pt_path = export_dir / 'tbnn_model.pt'
     traced_model.save(str(pt_path))

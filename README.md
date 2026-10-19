@@ -58,7 +58,7 @@ The network embeds Pope's (1975) integrity basis expansion directly into the mod
 
 * **Inputs:** 5 scalar invariants $\boldsymbol{\lambda} \in \mathbb{R}^5$:
   $$\lambda_1 = \mathrm{tr}(\mathbf{s}^2), \quad \lambda_2 = \mathrm{tr}(\mathbf{w}^2), \quad \lambda_3 = \mathrm{tr}(\mathbf{s}^3), \quad \lambda_4 = \mathrm{tr}(\mathbf{w}^2\mathbf{s}), \quad \lambda_5 = \mathrm{tr}(\mathbf{w}^2\mathbf{s}^2)$$
-* **Hidden Layers:** Multilayer perceptron with LeakyReLU activations mapping invariants $\boldsymbol{\lambda} \mapsto \mathbf{g} \in \mathbb{R}^{10}$.
+* **Hidden Layers:** Multilayer perceptron with ReLU activations mapping invariants $\boldsymbol{\lambda} \mapsto \mathbf{g} \in \mathbb{R}^{10}$.
 * **Tensor Contraction:**
   $$\mathbf{a} = \sum_{n=1}^{10} g^{(n)}(\boldsymbol{\lambda}) \, \mathbf{T}^{(n)}$$
 * **Physical Stress:** $\boldsymbol{\tau}^R = 2k\left(\mathbf{a} + \frac{1}{3}\mathbf{I}\right)$.
@@ -68,31 +68,26 @@ The network embeds Pope's (1975) integrity basis expansion directly into the mod
 ## Numerical Results & Physics Verification
 
 ### 1. Cross-Section Secondary Flow Dynamics
-Comparison between standard linear eddy-viscosity RANS and the TBNN closure:
+Advected through genuine converged OpenFOAM simulation velocity fields (`verification_squareDuct/200/U`):
 
 ![Cross-Section Particle Dynamics](docs/figures/animation_1_secondary_vortices.gif)
 
 * **Standard Linear RANS:** Fluid particles move strictly axially ($V = W = 0$).
-* **`tbnnFoam`:** Cross-stream convection transports fluid toward the corners along diagonals and recirculates inward along wall bisectors.
+* **`tbnnFoam`:** Cross-stream secondary convection transports fluid toward the duct corners along diagonals and recirculates inward along wall bisectors.
 
-### 2. In-Situ Solver Evolution ($t = 73 \to 200$)
-Solution evolution inside OpenFOAM's SIMPLE iteration loop:
+### 2. In-Situ Solver Evolution & Residual History
+Continuity residual convergence directly extracted from [`verification_squareDuct/log.tbnnFoam`](verification_squareDuct/log.tbnnFoam):
 
 ![Solver Convergence](docs/figures/animation_4_solver_convergence.gif)
 
-* **$t = 73$ (Initialization):** Standard RANS converged field; zero cross-stream velocity.
-* **$t = 73 \to 140$ (TBNN Coupling):** Under-relaxed stress divergence injection activates ($\alpha = 0.01$). The 8 corner cells establish progressively.
-* **$t = 200$ (Converged):** Continuity residuals drop below $10^{-5}$ with peak secondary velocity stabilizing at $1.74\% \, U_b$ (DNS: $1.85\%$).
+* **$t = 73$ (Initialization):** Standard RANS converged initial condition; zero cross-stream secondary flow.
+* **$t = 73 \to 140$ (TBNN Coupling):** Under-relaxed anisotropic stress divergence injection activates ($\alpha = 0.01$). Secondary circulation cells establish progressively.
+* **$t = 200$ (Converged):** Local continuity residuals drop to $10^{-5}$ with stable in-plane secondary convection.
 
 ### 3. 3D Streamline Ribbons
-Corkscrewing streamline ribbons illustrating fluid transport from the core into the four corners:
+Streamlines integrated through the genuine 3D velocity field (`verification_squareDuct/200/U`):
 
 ![3D Streamline Ribbons](docs/figures/animation_2_3d_streamlines.gif)
-
-### 4. Bluff Body Wake Dynamics
-Validation on unsteady shedding and recirculation past an immersed bluff body:
-
-![Bluff Body Wake](docs/figures/animation_3_turbulent_body_wake.gif)
 
 ---
 
@@ -105,7 +100,7 @@ $$\frac{\partial^2}{\partial y \partial z} \left(\overline{w'^2} - \overline{v'^
 ![Reynolds Stress Mechanism](docs/figures/reynolds_stress_mechanism.png)
 
 * **Linear Eddy-Viscosity Models:** Predict $\overline{v'^2} - \overline{w'^2} \equiv 0$ everywhere due to scalar viscosity.
-* **`tbnnFoam`:** Captures the alternating quadrant lobe distribution of normal stress differences, matching benchmark DNS trends.
+* **`tbnnFoam`:** Extracted directly from OpenFOAM simulation outputs (`verification_squareDuct/200/tauR`), capturing the alternating quadrant lobe distribution of normal stress differences.
 
 ---
 
@@ -116,7 +111,7 @@ The Barycentric Map (Banerjee et al., 2007) illustrates the eigenvalue distribut
 ![Barycentric Anisotropy Map](docs/figures/barycentric_anisotropy_map.png)
 
 * **Standard OpenFOAM:** Confined to the axisymmetric contraction boundary, failing to capture near-wall 2-component behavior.
-* **`tbnnFoam`:** Approaches the 2-component limit near solid boundaries while satisfying Lumley realizability constraints.
+* **`tbnnFoam`:** Computed from genuine eigenvalues of in-situ simulation outputs (`verification_squareDuct/200/aTBNN`), approaching the 2-component limit near solid boundaries while satisfying Lumley realizability constraints.
 
 ---
 
@@ -126,39 +121,80 @@ Validation against the DNS benchmark of Uhlmann et al. (2007) in a square duct:
 
 ![Benchmark Validation](docs/figures/tbnn_hero_showcase.png)
 
-### Summary Comparison Table
+### Independent OpenFOAM CFD vs. DNS Benchmark Metrics
 
-| Metric | Standard OpenFOAM ($k\text{--}\omega$ SST) | `tbnnFoam` | Reference DNS (Uhlmann et al.) | Analysis |
+Metrics computed directly from the exported simulation fields (`verification_squareDuct/200/U` for `tbnnFoam` and `baseline_73/U` for standard OpenFOAM $k\text{--}\omega$ SST) interpolated onto matching DNS coordinates ($Re_b = 1500$):
+
+| Metric | Standard OpenFOAM ($k\text{--}\omega$ SST) | `tbnnFoam` (Our TBNN Solver) | Reference DNS (CaNS / Uhlmann et al.) | Physical Interpretation |
 | :--- | :---: | :---: | :---: | :--- |
-| **Secondary Vortices** | 0 cores | 8 cores | 8 cores | Recovers full 8-cell structure |
-| **Peak Secondary $V / U_b$** | $0.00\%$ | $1.74\%$ | $1.85\%$ | Secondary convective intensity |
-| **Q1 Core Centroid $(y/h, z/h)$** | Undefined | $(0.49, 0.81)$ | $(0.50, 0.82)$ | Core localization within $< 2\%$ |
-| **Centroid Distance $\Delta r_{\text{core}}$** | N/A | $0.014\text{ }h$ | $0.000$ (Ref) | Core spatial error |
-| **Streamwise $U$ NRMSE** | $7.58\%$ | $1.90\%$ | $0.00\%$ (Ref) | Corrects axial velocity profile |
-| **Cross-Stream $V$ NRMSE** | $100.00\%$ | $0.03\%$ | $0.00\%$ (Ref) | In-plane momentum recovery |
-| **Corner Velocity Bulging** | Absent | Present | Ground Truth | Turbulent momentum transport |
-| **Friction Factor $C_f$** | $0.0089$ | $0.0094$ | $0.0096$ | Perimeter wall shear stress |
-| **Continuity Residual** | $< 10^{-6}$ | $< 10^{-6}$ | N/A | Numerical stability |
+| **Streamwise $U$ RMSE** | $0.0983\text{ m/s}$ | $\mathbf{0.0862\text{ m/s}}$ | $0.0000$ (Ref) | Lower overall profile error |
+| **Streamwise $U$ NRMSE** | $9.83\%$ | $\mathbf{8.62\%}$ | $0.00\%$ (Ref) | Relative to bulk velocity $U_b = 1.0\text{ m/s}$ |
+| **Streamwise $U$ Max Error** | $0.4288\text{ m/s}$ | $\mathbf{0.4006\text{ m/s}}$ | $0.0000$ (Ref) | Near-wall peak deviation |
+| **Secondary Vortices** | 0 cores | **8 cores** | 8 cores | Recovers Prandtl's 2nd kind secondary cells |
+| **Peak Secondary $V_{\text{sec}} / U_b$** | $0.32\%$ (Noise) | $\mathbf{5.71\%}$ | $2.03\%$ | Active convective in-plane secondary circulation |
+| **Secondary $(V, W)$ RMSE** | $0.0063\text{ m/s}$ | $0.0217\text{ m/s}$ | $0.0000$ (Ref) | Captures genuine non-zero cross-stream momentum |
+| **Corner Velocity Bulging** | Absent | **Present** | Ground Truth | Momentum transport toward duct corners |
+| **Continuity Residual** | $< 10^{-6}$ | $< 10^{-6}$ | N/A | Numerical stability & SIMPLE convergence |
 
 ---
 
 ## Mathematical Formulation
 
 ### 1. Pope (1975) Integrity Basis
-The trace-free anisotropic Reynolds stress tensor $\mathbf{a} = \frac{\boldsymbol{\tau}^R}{2k} - \frac{1}{3}\mathbf{I}$ is expanded as:
+The trace-free anisotropic Reynolds stress tensor $\mathbf{a} = \frac{\boldsymbol{\tau}^R}{2k} - \frac{1}{3}\mathbf{I}$ is expanded in 10 integrity bases:
 
 $$\mathbf{a} = \sum_{n=1}^{10} g^{(n)}(\lambda_1 \dots \lambda_5) \, \mathbf{T}^{(n)}$$
 
-where $\mathbf{T}^{(1)} \dots \mathbf{T}^{(10)}$ are the symmetric, trace-free tensor bases formed from normalized strain $\mathbf{s}$ and rotation $\mathbf{w}$.
+where $\mathbf{T}^{(1)} \dots \mathbf{T}^{(10)}$ are symmetric and trace-free tensor bases formed from normalized strain rate $\mathbf{s} = \frac{1}{\omega}\mathbf{S}$ and rotation rate $\mathbf{w} = \frac{1}{\omega}\mathbf{W}$.
 
-### 2. Numerical Coupling & Stress Splitting
-To preserve diagonal dominance in the discretized momentum equations:
+### 2. Physical Realizability via Lumley Triangle Projection
+Physical realizability mandates that the Reynolds stress tensor $\boldsymbol{\tau}^R = 2k\left(\mathbf{a} + \frac{1}{3}\mathbf{I}\right)$ remain positive semi-definite ($\boldsymbol{\tau}^R \succeq 0$), which corresponds to the Lumley triangle eigenvalue bounds:
+
+$$-\frac{1}{3} \le \lambda_3 \le \lambda_2 \le \lambda_1 \le \frac{2}{3}, \quad \sum_{i=1}^3 \lambda_i = 0$$
+
+Rather than naive component-wise clipping (which can violate tensor positive definiteness), `tbnnFoam` and `src/tbnnEvaluator.H` enforce realizability via exact Cardano matrix diagonalization:
+1. Extract deviatoric part: $\mathbf{a}_{\text{dev}} = \mathbf{a} - \frac{1}{3}\mathrm{tr}(\mathbf{a})\mathbf{I}$.
+2. Compute invariants $p = \frac{1}{2}\mathrm{tr}(\mathbf{a}_{\text{dev}}^2)$ and $q = \det(\mathbf{a}_{\text{dev}})$.
+3. Solve eigenvalues analytically via Cardano's formula: $\lambda_k = 2\sqrt{p/3} \cos\left(\frac{1}{3}\arccos\left(\frac{3q}{p \cdot 2\sqrt{p/3}}\right) - \frac{2\pi k}{3}\right)$.
+4. Project onto the Lumley bounds: if $\lambda_3 < -1/3$ or $\lambda_1 > 2/3$, scale $\mathbf{a} \leftarrow s \mathbf{a}_{\text{dev}}$ such that $-\frac{1}{3} \le \lambda_3$ and $\lambda_1 \le \frac{2}{3}$.
+
+### 3. Numerical Coupling & Stress Splitting
+To preserve diagonal dominance in OpenFOAM's discretized momentum equations:
 
 $$\nabla \cdot \boldsymbol{\tau}^R = \underbrace{- \nabla \cdot (\nu_{\text{eff}} \nabla \mathbf{U})}_{\text{Implicit: } \mathtt{fvm::laplacian}} + \underbrace{\nabla \cdot (\alpha_{\text{TBNN}} \, 2k\mathbf{a})}_{\text{Stabilized Explicit: } \mathtt{fvc::div}}$$
 
-with Lumley realizability bounds applied on diagonal and off-diagonal elements:
+---
 
-$$a_{11}, a_{22}, a_{33} \in [-0.33, 0.66], \quad a_{12}, a_{13}, a_{23} \in [-0.5, 0.5]$$
+## Reproducibility & Benchmark Execution
+
+### 1. Python Environment Setup
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Numerical Parity & Realizability Verification
+Verify trace-freedom, symmetry, Cardano eigensolver accuracy, and Lumley realizability:
+```bash
+pytest tests/test_parity.py
+```
+
+### 3. Model Training with Spatial Validation Hold-Out
+Train the TBNN model with a physical spatial quadrant hold-out ($y > 0, z > 0$ as validation set) and export the TorchScript checkpoint:
+```bash
+python tbnn_train.py
+```
+
+### 4. OpenFOAM Simulation Execution
+```bash
+cd verification_squareDuct
+./Allrun
+```
+
+### 5. Automated DNS Benchmark Validation & Plotting
+Parse genuine OpenFOAM simulation outputs (`200/U` and `baseline_73/U`), interpolate onto the DNS grid, calculate independent error metrics, and regenerate figures:
+```bash
+python verification_squareDuct/validate_and_plot.py
+```
 
 ---
 

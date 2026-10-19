@@ -6,7 +6,15 @@ class TensorBasisNeuralNetwork(nn.Module):
 
     def __init__(self, num_invariants=5, num_bases=10, hidden_dim=64):
         super(TensorBasisNeuralNetwork, self).__init__()
-        self.mlp = nn.Sequential(nn.Linear(num_invariants, hidden_dim), nn.LeakyReLU(0.1), nn.Linear(hidden_dim, hidden_dim), nn.LeakyReLU(0.1), nn.Linear(hidden_dim, hidden_dim), nn.LeakyReLU(0.1), nn.Linear(hidden_dim, num_bases))
+        self.mlp = nn.Sequential(
+            nn.Linear(num_invariants, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, num_bases)
+        )
         nn.init.zeros_(self.mlp[-1].weight)
         nn.init.zeros_(self.mlp[-1].bias)
 

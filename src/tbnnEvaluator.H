@@ -229,6 +229,38 @@ public:
         T[9] = ((w & s2) & w2) - ((w2 & s2) & w);
     }
 
+    static symmTensor enforceRealizability(const symmTensor& a)
+    {
+        symmTensor aDev = dev(a);
+        scalar pVal = 0.5 * (sqr(aDev.xx()) + sqr(aDev.yy()) + sqr(aDev.zz())
+                           + 2.0 * (sqr(aDev.xy()) + sqr(aDev.xz()) + sqr(aDev.yz())));
+        scalar qVal = det(aDev);
+
+        scalar scale = 1.0;
+        if (pVal > 1e-14)
+        {
+            scalar mVal = 2.0 * sqrt(pVal / 3.0);
+            scalar arg = std::clamp(3.0 * qVal / (pVal * mVal), -1.0, 1.0);
+            scalar theta = (1.0 / 3.0) * acos(arg);
+            scalar l1 = mVal * cos(theta);
+            scalar l2 = mVal * cos(theta - 2.0 * M_PI / 3.0);
+            scalar l3 = mVal * cos(theta + 2.0 * M_PI / 3.0);
+
+            scalar lMax = max(l1, max(l2, l3));
+            scalar lMin = min(l1, min(l2, l3));
+
+            if (lMin < -1.0 / 3.0)
+            {
+                scale = min(scale, (1.0 / 3.0) / std::abs(lMin));
+            }
+            if (lMax > 2.0 / 3.0)
+            {
+                scale = min(scale, (2.0 / 3.0) / lMax);
+            }
+        }
+        return scale * aDev;
+    }
+
     static symmTensor calcAnisotropy(const scalar g[10], const tensor T[10])
     {
         tensor a = tensor::zero;
@@ -236,7 +268,7 @@ public:
         {
             a += g[n] * T[n];
         }
-        return symm(a);
+        return enforceRealizability(symm(a));
     }
 };
 

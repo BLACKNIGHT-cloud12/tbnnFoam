@@ -88,21 +88,25 @@ int main(int argc, char *argv[])
             invAccessor[cellI][4] = std::clamp(static_cast<float>(tr_w2s2), -50.0f, 50.0f);
 
             tensor T1 = sTensor;
-
             tensor T2 = sw - ws;
-
             tensor T3 = s2 - (1.0/3.0)*tr_s2*tensor::I;
-
             tensor T4 = w2 - (1.0/3.0)*tr_w2*tensor::I;
+            tensor T5 = (wTensor & s2) - (s2 & wTensor);
+            tensor T6 = (w2 & sTensor) + (sTensor & w2) - (2.0/3.0)*tr_w2s*tensor::I;
+            tensor T7 = ((wTensor & sTensor) & w2) - ((w2 & sTensor) & wTensor);
+            tensor T8 = ((sTensor & wTensor) & s2) - ((s2 & wTensor) & sTensor);
+            tensor T9 = (w2 & s2) + (s2 & w2) - (2.0/3.0)*tr_w2s2*tensor::I;
+            tensor T10 = ((wTensor & s2) & w2) - ((w2 & s2) & wTensor);
 
-            for (int r = 0; r < 3; ++r)
+            tensor allT[10] = {T1, T2, T3, T4, T5, T6, T7, T8, T9, T10};
+            for (int b = 0; b < 10; ++b)
             {
-                for (int c = 0; c < 3; ++c)
+                for (int r = 0; r < 3; ++r)
                 {
-                    basisAccessor[cellI][0][r][c] = static_cast<float>(T1[r*3 + c]);
-                    basisAccessor[cellI][1][r][c] = static_cast<float>(T2[r*3 + c]);
-                    basisAccessor[cellI][2][r][c] = static_cast<float>(T3[r*3 + c]);
-                    basisAccessor[cellI][3][r][c] = static_cast<float>(T4[r*3 + c]);
+                    for (int c = 0; c < 3; ++c)
+                    {
+                        basisAccessor[cellI][b][r][c] = static_cast<float>(allT[b][r*3 + c]);
+                    }
                 }
             }
         }
@@ -118,15 +122,45 @@ int main(int argc, char *argv[])
 
         for (label cellI = 0; cellI < nCells; ++cellI)
         {
+            symmTensor aRaw
+            (
+                anisoAccessor[cellI][0][0],
+                0.5 * (anisoAccessor[cellI][0][1] + anisoAccessor[cellI][1][0]),
+                0.5 * (anisoAccessor[cellI][0][2] + anisoAccessor[cellI][2][0]),
+                anisoAccessor[cellI][1][1],
+                0.5 * (anisoAccessor[cellI][1][2] + anisoAccessor[cellI][2][1]),
+                anisoAccessor[cellI][2][2]
+            );
+            symmTensor aDev = dev(aRaw);
 
-            scalar axx = std::clamp(static_cast<double>(anisoAccessor[cellI][0][0]), -0.33, 0.66);
-            scalar ayy = std::clamp(static_cast<double>(anisoAccessor[cellI][1][1]), -0.33, 0.66);
-            scalar azz = std::clamp(static_cast<double>(anisoAccessor[cellI][2][2]), -0.33, 0.66);
-            scalar axy = std::clamp(static_cast<double>(anisoAccessor[cellI][0][1]), -0.5, 0.5);
-            scalar axz = std::clamp(static_cast<double>(anisoAccessor[cellI][0][2]), -0.5, 0.5);
-            scalar ayz = std::clamp(static_cast<double>(anisoAccessor[cellI][1][2]), -0.5, 0.5);
+            scalar pVal = 0.5 * (sqr(aDev.xx()) + sqr(aDev.yy()) + sqr(aDev.zz())
+                               + 2.0 * (sqr(aDev.xy()) + sqr(aDev.xz()) + sqr(aDev.yz())));
+            scalar qVal = det(aDev);
 
-            symmTensor aVal(axx, axy, axz, ayy, ayz, azz);
+            scalar scale = 1.0;
+            if (pVal > 1e-14)
+            {
+                scalar mVal = 2.0 * sqrt(pVal / 3.0);
+                scalar arg = std::clamp(3.0 * qVal / (pVal * mVal), -1.0, 1.0);
+                scalar theta = (1.0 / 3.0) * acos(arg);
+                scalar l1 = mVal * cos(theta);
+                scalar l2 = mVal * cos(theta - 2.0 * M_PI / 3.0);
+                scalar l3 = mVal * cos(theta + 2.0 * M_PI / 3.0);
+
+                scalar lMax = max(l1, max(l2, l3));
+                scalar lMin = min(l1, min(l2, l3));
+
+                if (lMin < -1.0 / 3.0)
+                {
+                    scale = min(scale, (1.0 / 3.0) / std::abs(lMin));
+                }
+                if (lMax > 2.0 / 3.0)
+                {
+                    scale = min(scale, (2.0 / 3.0) / lMax);
+                }
+            }
+
+            symmTensor aVal = scale * aDev;
             aTBNN[cellI] = aVal;
 
             scalar kVal = k[cellI];

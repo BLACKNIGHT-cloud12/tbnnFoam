@@ -3,6 +3,7 @@ import json
 import csv
 from pathlib import Path
 import numpy as np
+from scipy.interpolate import RegularGridInterpolator
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.gridspec as gridspec
@@ -79,10 +80,61 @@ def validate():
     U_dns_2d = dns_u.reshape(Ny, Nz)
     V_dns_2d = dns_v.reshape(Ny, Nz)
     W_dns_2d = dns_w.reshape(Ny, Nz)
-    V_tbnn_2d = 0.94 * V_dns_2d
-    W_tbnn_2d = 0.94 * W_dns_2d
-    U_tbnn_2d = 0.98 * U_dns_2d
-    U_base_2d = 0.92 * U_dns_2d
+    tbnn_file = case_dir / '200' / 'U'
+    base_file = case_dir / 'baseline_73' / 'U'
+    tbnn_u = parse_foam_vec(tbnn_file)
+    base_u = parse_foam_vec(base_file)
+    Nx_c, Ny_c, Nz_c = 50, 20, 20
+    tbnn_cs = np.mean(tbnn_u.reshape(Nz_c, Ny_c, Nx_c, 3)[:, :, 20:40, :], axis=2)
+    base_cs = np.mean(base_u.reshape(Nz_c, Ny_c, Nx_c, 3)[:, :, 20:40, :], axis=2)
+    y_c = np.linspace(-0.95, 0.95, Ny_c)
+    z_c = np.linspace(-0.95, 0.95, Nz_c)
+    y_g = np.pad(y_c, (1, 1), 'constant', constant_values=(-1.0, 1.0))
+    z_g = np.pad(z_c, (1, 1), 'constant', constant_values=(-1.0, 1.0))
+    tbnn_pad = np.pad(tbnn_cs, ((1, 1), (1, 1), (0, 0)), 'constant', constant_values=0.0)
+    base_pad = np.pad(base_cs, ((1, 1), (1, 1), (0, 0)), 'constant', constant_values=0.0)
+    y_1d = np.linspace(-1.0, 1.0, Ny)
+    z_1d = np.linspace(-1.0, 1.0, Nz)
+    Z_mesh, Y_mesh = np.meshgrid(z_1d, y_1d, indexing='ij')
+    eval_pts = np.column_stack([Z_mesh.flatten(), Y_mesh.flatten()])
+    rgi_u_tbnn = RegularGridInterpolator((z_g, y_g), tbnn_pad[:, :, 0], bounds_error=False, fill_value=0.0)
+    rgi_v_tbnn = RegularGridInterpolator((z_g, y_g), tbnn_pad[:, :, 1], bounds_error=False, fill_value=0.0)
+    rgi_w_tbnn = RegularGridInterpolator((z_g, y_g), tbnn_pad[:, :, 2], bounds_error=False, fill_value=0.0)
+    rgi_u_base = RegularGridInterpolator((z_g, y_g), base_pad[:, :, 0], bounds_error=False, fill_value=0.0)
+    rgi_v_base = RegularGridInterpolator((z_g, y_g), base_pad[:, :, 1], bounds_error=False, fill_value=0.0)
+    rgi_w_base = RegularGridInterpolator((z_g, y_g), base_pad[:, :, 2], bounds_error=False, fill_value=0.0)
+    U_tbnn_2d = rgi_u_tbnn(eval_pts).reshape(Ny, Nz)
+    V_tbnn_2d = rgi_v_tbnn(eval_pts).reshape(Ny, Nz)
+    W_tbnn_2d = rgi_w_tbnn(eval_pts).reshape(Ny, Nz)
+    U_base_2d = rgi_u_base(eval_pts).reshape(Ny, Nz)
+    V_base_2d = rgi_v_base(eval_pts).reshape(Ny, Nz)
+    W_base_2d = rgi_w_base(eval_pts).reshape(Ny, Nz)
+    rmse_u_tbnn = np.sqrt(np.mean((U_tbnn_2d - U_dns_2d) ** 2))
+    nrmse_u_tbnn = rmse_u_tbnn / Ub
+    max_err_u_tbnn = np.max(np.abs(U_tbnn_2d - U_dns_2d))
+    rmse_u_base = np.sqrt(np.mean((U_base_2d - U_dns_2d) ** 2))
+    nrmse_u_base = rmse_u_base / Ub
+    max_err_u_base = np.max(np.abs(U_base_2d - U_dns_2d))
+    rmse_v_tbnn = np.sqrt(np.mean((V_tbnn_2d - V_dns_2d) ** 2))
+    rmse_w_tbnn = np.sqrt(np.mean((W_tbnn_2d - W_dns_2d) ** 2))
+    rmse_sec_tbnn = np.sqrt(rmse_v_tbnn ** 2 + rmse_w_tbnn ** 2)
+    rmse_v_base = np.sqrt(np.mean((V_base_2d - V_dns_2d) ** 2))
+    rmse_w_base = np.sqrt(np.mean((W_base_2d - W_dns_2d) ** 2))
+    rmse_sec_base = np.sqrt(rmse_v_base ** 2 + rmse_w_base ** 2)
+    vmax_tbnn = np.max(np.sqrt(V_tbnn_2d ** 2 + W_tbnn_2d ** 2)) / Ub
+    vmax_dns = np.max(np.sqrt(V_dns_2d ** 2 + W_dns_2d ** 2)) / Ub
+    vmax_base = np.max(np.sqrt(V_base_2d ** 2 + W_base_2d ** 2)) / Ub
+    print("==================================================================")
+    print("  INDEPENDENT OPENFOAM CFD VS DNS BENCHMARK VERIFICATION METRICS  ")
+    print("==================================================================")
+    print(f"  Streamwise Velocity U:")
+    print(f"    tbnnFoam      : RMSE = {rmse_u_tbnn:.4f} m/s | NRMSE = {nrmse_u_tbnn*100:.2f}% | Max Error = {max_err_u_tbnn:.4f} m/s")
+    print(f"    Baseline RANS : RMSE = {rmse_u_base:.4f} m/s | NRMSE = {nrmse_u_base*100:.2f}% | Max Error = {max_err_u_base:.4f} m/s")
+    print(f"  Secondary In-Plane Flow (V, W):")
+    print(f"    tbnnFoam      : Secondary RMSE = {rmse_sec_tbnn:.4f} m/s | Peak V_sec/Ub = {vmax_tbnn*100:.2f}%")
+    print(f"    Baseline RANS : Secondary RMSE = {rmse_sec_base:.4f} m/s | Peak V_sec/Ub = {vmax_base*100:.2f}%")
+    print(f"    Reference DNS : Peak V_sec/Ub = {vmax_dns*100:.2f}%")
+    print("==================================================================")
     yn = Y_grid / h
     zn = Z_grid / h
     dy = np.gradient(Y_grid, axis=0)
