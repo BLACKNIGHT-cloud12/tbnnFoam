@@ -117,7 +117,7 @@ class ValidationEngine:
         cores = detect_vortex_cores(omega_x, y_1d, z_1d, min_separation=0.2, min_strength=0.03, min_area=3, wall_margin=0.08)
         vortex_count = len(cores)
         if vortex_count > 0:
-            q1_cores = [c for c in cores if c['y'] > 0 and c['z'] > 0 and c['type'] == 'acw']
+            q1_cores = [c for c in cores if c['y'] > 0 and c['z'] > 0 and c['type'] == 'cw']
             if len(q1_cores) > 0:
                 best_q1 = max(q1_cores, key=lambda c: abs(c['strength']))
                 core_y = best_q1['y']

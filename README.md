@@ -149,8 +149,8 @@ Metrics computed directly from the exported simulation fields (`verification_squ
 | **Secondary Vortices** | 0 cores | **8 cores** | 8 cores | Recovers Prandtl's 2nd kind secondary cells |
 | **Peak Secondary $V_{\text{sec}} / U_b$** | $0.45\%$ (Noise) | $\mathbf{1.59\%}$ | $1.92\%$ | Active convective in-plane secondary circulation |
 | **Secondary $(V, W)$ RMSE** | $\mathbf{0.0087\text{ m/s}}$ | $0.0142\text{ m/s}$ | $0.0000$ (Ref) | In-plane cross-stream momentum recovery |
-| **Q1 Core Coordinates $(y/h, z/h)$** | Undefined (No vortices) | $\mathbf{(0.56, 0.91)}$ | $(0.50, 0.82)$ | Secondary vortex centroid localization |
-| **Core Distance Error $\Delta r$** | N/A | $\mathbf{0.107\,h}$ | $0.000\,h$ (Ref) | Distance to benchmark core centroid |
+| **Q1 Core Coordinates $(y/h, z/h)$** | Undefined (No vortices) | $\mathbf{(0.91, 0.56)}$ | $(0.50, 0.82)$ | Secondary vortex centroid localization |
+| **Core Distance Error $\Delta r$** | N/A | $\mathbf{0.481\,h}$ | $0.000\,h$ (Ref) | Distance to benchmark core centroid |
 | **Corner Velocity Bulging** | Absent | **Present** | Ground Truth | Momentum transport toward duct corners |
 | **Continuity Residual** | Global: $\mathbf{7.10 \times 10^{-8}}$ (Local: $1.59 \times 10^{-7}$) | Global: $\mathbf{5.56 \times 10^{-7}}$ (Local: $1.50 \times 10^{-5}$, Cumulative: $6.13 \times 10^{-4}$) | N/A | Numerical stability & SIMPLE convergence ($< 10^{-6}$) |
 
@@ -171,7 +171,7 @@ A critical physical distinction must be emphasized when interpreting the quantit
    The benchmark dataset of Pirozzoli et al. (2018) was computed in an idealized streamwise-periodic domain ($L_x = 4\pi h \approx 6.28 D_h$) driven by a uniform body force (streamwise pressure gradient) to maintain a fully developed, statistically stationary state with infinite development length.
 
 2. **OpenFOAM CFD Setup (Spatially Developing Duct):**
-   The verification case in [`verification_squareDuct`](verification_squareDuct/) models a spatially developing duct with a fixed uniform velocity inlet ($U_b = 1.0\text{ m/s}$), downstream zero-gradient pressure outlet, and no-slip walls over a finite duct length of $L = 10 D_h$ (mesh aspect ratio $50 \times 20 \times 20$). In this configuration:
+   The CFD case in [`verification_squareDuct`](verification_squareDuct/) uses a uniform fixed-velocity inlet ($U_b = 1.0\text{ m/s}$), a zero-gradient velocity outlet with fixed-value pressure, and no-slip walls over a finite duct length of $L = 10 D_h$ (mesh aspect ratio $50 \times 20 \times 20$). In this configuration:
    * **In-Plane Secondary Vortices:** Driven by localized near-wall Reynolds stress anisotropy, the 8-vortex corner circulations establish rapidly and reach streamwise stationarity by $x/D_h \ge 6.0$ ($V_{\text{sec}}/U_b$ stabilizes at $1.64\% \pm 0.03\%$).
    * **Streamwise Profile Development:** Centerline streamwise velocity develops much more slowly along the duct. Across the mid-duct averaging window ($x/D_h \in [4.0, 8.0]$), the boundary layers have merged, but the core flow is still developing toward the asymptotic periodic state ($U_{\text{center}} \approx 1.25\text{ m/s}$ in CFD vs $1.33\text{ m/s}$ in periodic DNS).
    * **Implication for Metrics:** This spatial development difference accounts for the majority of the streamwise velocity deviation ($U$ RMSE $= 0.1551\text{ m/s}$). Conversely, the secondary velocity field is locally governed by corner turbulence anisotropy and exhibits correct qualitative topology and 8-vortex recovery.
@@ -231,7 +231,7 @@ To rigorously verify that this modeling discrepancy does not induce an out-of-di
 * **100% In-Distribution Coverage:** Every single cell across the entire 3D duct domain falls strictly within the bounding envelope of the DNS training manifold across all 5 invariants, confirming the neural network operates purely in interpolation mode during simulation.
 * **Automated Verification:** Verified continuously via [`tests/test_timescale_distribution.py`](tests/test_timescale_distribution.py).
 
-### 5. Cross-Sectional Mesh Resolution & Grid Convergence Study
+### 5. Cross-Sectional Mesh Resolution and Sensitivity Study
 
 To address numerical resolution sensitivity in resolving wall-bounded secondary vortices, an independent grid study was conducted comparing the standard base mesh against a 4x refined cross-sectional grid:
 * **Coarse Mesh (M1):** $50 \times 20 \times 20 = 20{,}000$ cells ($\Delta y = \Delta z = 0.005\text{ m}$).
@@ -243,11 +243,11 @@ Both cases were executed with `tbnnFoam` through iteration 300 (the end of the c
 
 | Grid Resolution | Mesh Topology | Cells | Peak $V_{\text{sec}} / U_b$ | Q1 Core Centroid $(y/h, z/h)$ | Core Localization Error | Cores Detected | Streamwise $U$ RMSE |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Coarse Base (M1)** | $50 \times 20 \times 20$ | 20,000 | 1.64% | $(0.450, 0.850)$ | 0.058 h | 8 cores | 0.1551 m/s |
-| **Refined Grid (M2)** | $50 \times 40 \times 40$ | 80,000 | 2.31% | $(0.525, 0.825)$ | 0.025 h | 8 cores | 0.0832 m/s |
+| **Coarse Base (M1)** | $50 \times 20 \times 20$ | 20,000 | 1.64% | $(0.850, 0.450)$ | 0.509 h | 8 cores | 0.1551 m/s |
+| **Refined Grid (M2)** | $50 \times 40 \times 40$ | 80,000 | 2.31% | $(0.825, 0.525)$ | 0.439 h | 8 cores | 0.0832 m/s |
 | **DNS Benchmark Target** | $65 \times 65$ (Cross-section) | N/A | **2.03%** | **$(0.500, 0.820)$** | **0.000 h (Ref)** | **8 cores** | **0.0000 m/s** |
 
-* **Monotonic Core Convergence:** The detected vortex core centroid moves directly toward the canonical DNS benchmark position $(0.50, 0.82)$, cutting the localization distance error by $57\%$ (down to $0.025 h$).
+* **Core-Location Change Across the Two Tested Meshes:** The detected clockwise vortex core centroid moves from $(0.850, 0.450)$ on the coarse mesh to $(0.825, 0.525)$ on the refined mesh, shifting by $0.070 h$ closer toward the reference core $(0.50, 0.82)$.
 * **Topological Stability:** Both meshes stably identify exactly **8 distinct vortex cores** using connected-region component labeling ([`scripts/validation/vortex_detector.py`](scripts/validation/vortex_detector.py)).
 * **Secondary Momentum Recovery:** Reducing cross-stream numerical diffusion increases peak secondary circulation from $1.64\%$ to $2.31\%$, closely bracketing the DNS reference value ($2.03\%$).
 * **Streamwise Error Reduction:** Streamwise velocity RMSE against DNS decreases by $46.4\%$ (from $0.1551\text{ m/s}$ down to $0.0832\text{ m/s}$).

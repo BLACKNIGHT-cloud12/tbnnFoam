@@ -99,17 +99,17 @@ def run_mesh_sensitivity_study(repo_root: Path):
     z_f_coords = np.linspace(-0.975, 0.975, Nz_f)
     cores_f = detect_vortex_cores(omega_x_f, y_f_coords, z_f_coords)
 
-    acw_q1_cores_c = [c for c in cores_c if c['y'] > 0.0 and c['z'] > 0.0 and c['type'] == 'acw']
-    if not acw_q1_cores_c:
-        raise RuntimeError('No first-quadrant ACW vortex core detected on coarse mesh.')
-    best_c = max(acw_q1_cores_c, key=lambda c: abs(c['strength']))
+    cw_q1_cores_c = [c for c in cores_c if c['y'] > 0.0 and c['z'] > 0.0 and c['type'] == 'cw']
+    if not cw_q1_cores_c:
+        raise RuntimeError('No first-quadrant CW vortex core detected on coarse mesh.')
+    best_c = max(cw_q1_cores_c, key=lambda c: abs(c['strength']))
     core_c_y = best_c['y']
     core_c_z = best_c['z']
 
-    acw_q1_cores_f = [c for c in cores_f if c['y'] > 0.0 and c['z'] > 0.0 and c['type'] == 'acw']
-    if not acw_q1_cores_f:
-        raise RuntimeError('No first-quadrant ACW vortex core detected on refined mesh.')
-    best_f = max(acw_q1_cores_f, key=lambda c: abs(c['strength']))
+    cw_q1_cores_f = [c for c in cores_f if c['y'] > 0.0 and c['z'] > 0.0 and c['type'] == 'cw']
+    if not cw_q1_cores_f:
+        raise RuntimeError('No first-quadrant CW vortex core detected on refined mesh.')
+    best_f = max(cw_q1_cores_f, key=lambda c: abs(c['strength']))
     core_f_y = best_f['y']
     core_f_z = best_f['z']
 
