@@ -96,13 +96,15 @@ def test_json_weights_parity():
         pytest.skip("weights.json not found")
     with open(weights_json, 'r') as f:
         data = json.load(f)
-    assert '0.weight' in data and len(data['0.weight']) == 30 and len(data['0.weight'][0]) == 5
-    assert '0.bias' in data and len(data['0.bias']) == 30
-    assert '2.weight' in data and len(data['2.weight']) == 30 and len(data['2.weight'][0]) == 30
-    assert '2.bias' in data and len(data['2.bias']) == 30
-    assert '4.weight' in data and len(data['4.weight']) == 30 and len(data['4.weight'][0]) == 30
-    assert '4.bias' in data and len(data['4.bias']) == 30
-    assert '6.weight' in data and len(data['6.weight']) == 10 and len(data['6.weight'][0]) == 30
+    assert '0.weight' in data and len(data['0.weight'][0]) == 5
+    H = len(data['0.weight'])
+    assert H in [30, 64]
+    assert '0.bias' in data and len(data['0.bias']) == H
+    assert '2.weight' in data and len(data['2.weight']) == H and len(data['2.weight'][0]) == H
+    assert '2.bias' in data and len(data['2.bias']) == H
+    assert '4.weight' in data and len(data['4.weight']) == H and len(data['4.weight'][0]) == H
+    assert '4.bias' in data and len(data['4.bias']) == H
+    assert '6.weight' in data and len(data['6.weight']) == 10 and len(data['6.weight'][0]) == H
     assert '6.bias' in data and len(data['6.bias']) == 10
     assert 'inv_mean' in data and len(data['inv_mean']) == 5
     assert 'inv_std' in data and len(data['inv_std']) == 5
@@ -138,7 +140,7 @@ def test_standalone_cpp_numerical_parity():
         inv_py, T_py = comp_inv_and_bases(gradU[None, ...], np.array([omega]))
         inv_py = inv_py[0]
         T_py = T_py[0]
-        x0 = (inv_py - mean) / (std + 1e-6)
+        x0 = np.clip((inv_py - mean) / (std + 1e-6), -50.0, 50.0)
         h0 = np.maximum(0.0, W0 @ x0 + b0)
         h1 = np.maximum(0.0, W1 @ h0 + b1)
         h2 = np.maximum(0.0, W2 @ h1 + b2)

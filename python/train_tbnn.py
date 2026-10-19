@@ -41,7 +41,7 @@ def comp_inv_and_bases(grad_U, omega):
 
 class TBNN(nn.Module):
 
-    def __init__(self, hidden_dim=30):
+    def __init__(self, hidden_dim=64):
         super(TBNN, self).__init__()
         self.mlp = nn.Sequential(nn.Linear(5, hidden_dim), nn.ReLU(), nn.Linear(hidden_dim, hidden_dim), nn.ReLU(), nn.Linear(hidden_dim, hidden_dim), nn.ReLU(), nn.Linear(hidden_dim, 10))
 

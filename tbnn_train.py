@@ -189,9 +189,31 @@ def train():
     traced = torch.jit.trace(model_cpu, (dummy_inv, dummy_bases))
     traced.save('tbnn_model.pt')
     case_pt = Path('verification_squareDuct/constant/tbnn_model.pt')
-    case_pt.parent.mkdir(parents=True, exist_ok=True)
     traced.save(str(case_pt))
     print(f'[+] Saved trained model to {case_pt}')
+    import json
+    export_dir = Path('export_weights')
+    export_dir.mkdir(parents=True, exist_ok=True)
+    json_path = export_dir / 'weights.json'
+    weights_dict = {
+        'inv_mean': [0.0, 0.0, 0.0, 0.0, 0.0],
+        'inv_std': [1.0, 1.0, 1.0, 1.0, 1.0],
+        '0.weight': model_cpu.mlp[0].weight.detach().numpy().tolist(),
+        '0.bias': model_cpu.mlp[0].bias.detach().numpy().tolist(),
+        '2.weight': model_cpu.mlp[2].weight.detach().numpy().tolist(),
+        '2.bias': model_cpu.mlp[2].bias.detach().numpy().tolist(),
+        '4.weight': model_cpu.mlp[4].weight.detach().numpy().tolist(),
+        '4.bias': model_cpu.mlp[4].bias.detach().numpy().tolist(),
+        '6.weight': model_cpu.mlp[6].weight.detach().numpy().tolist(),
+        '6.bias': model_cpu.mlp[6].bias.detach().numpy().tolist()
+    }
+    with open(json_path, 'w', encoding='utf-8') as f:
+        json.dump(weights_dict, f, indent=2)
+    print(f'[+] Saved C++ weights to {json_path}')
+    case_json_dir = Path('verification_squareDuct/constant/tbnn')
+    case_json_dir.mkdir(parents=True, exist_ok=True)
+    with open(case_json_dir / 'weights.json', 'w', encoding='utf-8') as f:
+        json.dump(weights_dict, f, indent=2)
 
 if __name__ == '__main__':
     train()

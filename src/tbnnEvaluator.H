@@ -126,7 +126,16 @@ public:
         parse1D(content, "inv_mean", inv_mean_);
         parse1D(content, "inv_std", inv_std_);
 
-        if (!ok || W0_.size() != 30 || W1_.size() != 30 || W2_.size() != 30 || W3_.size() != 10)
+        if (!ok || W0_.empty() || W1_.empty() || W2_.empty() || W3_.empty()
+            || W0_[0].size() != 5
+            || W1_[0].size() != W0_.size()
+            || W2_[0].size() != W1_.size()
+            || W3_[0].size() != W2_.size()
+            || W3_.size() != 10
+            || b0_.size() != W0_.size()
+            || b1_.size() != W1_.size()
+            || b2_.size() != W2_.size()
+            || b3_.size() != 10)
         {
             Info << "tbnnEvaluator: Error parsing weights from " << jsonPath << ". Invalid format or dimensions." << endl;
             initialized_ = false;
@@ -134,7 +143,8 @@ public:
         }
 
         initialized_ = true;
-        Info << "tbnnEvaluator: Successfully loaded network architecture (5 -> 30 -> 30 -> 30 -> 10)." << endl;
+        Info << "tbnnEvaluator: Successfully loaded network architecture (5 -> "
+             << W0_.size() << " -> " << W1_.size() << " -> " << W2_.size() << " -> 10)." << endl;
         return true;
     }
 
@@ -149,37 +159,43 @@ public:
         scalar x0[5];
         for (int i = 0; i < 5; ++i)
         {
-            x0[i] = (I[i] - inv_mean_[i]) / (inv_std_[i] + 1e-6);
+            scalar mean = (inv_mean_.size() == 5 ? inv_mean_[i] : 0.0);
+            scalar std = (inv_std_.size() == 5 ? inv_std_[i] : 1.0);
+            x0[i] = std::clamp((I[i] - mean) / (std + 1e-6), -50.0, 50.0);
         }
 
-        scalar h0[30];
-        for (int i = 0; i < 30; ++i)
+        const size_t H0 = W0_.size();
+        const size_t H1 = W1_.size();
+        const size_t H2 = W2_.size();
+
+        std::vector<scalar> h0(H0, 0.0);
+        for (size_t i = 0; i < H0; ++i)
         {
             scalar sum = b0_[i];
             for (int j = 0; j < 5; ++j) sum += W0_[i][j] * x0[j];
             h0[i] = relu(sum);
         }
 
-        scalar h1[30];
-        for (int i = 0; i < 30; ++i)
+        std::vector<scalar> h1(H1, 0.0);
+        for (size_t i = 0; i < H1; ++i)
         {
             scalar sum = b1_[i];
-            for (int j = 0; j < 30; ++j) sum += W1_[i][j] * h0[j];
+            for (size_t j = 0; j < H0; ++j) sum += W1_[i][j] * h0[j];
             h1[i] = relu(sum);
         }
 
-        scalar h2[30];
-        for (int i = 0; i < 30; ++i)
+        std::vector<scalar> h2(H2, 0.0);
+        for (size_t i = 0; i < H2; ++i)
         {
             scalar sum = b2_[i];
-            for (int j = 0; j < 30; ++j) sum += W2_[i][j] * h1[j];
+            for (size_t j = 0; j < H1; ++j) sum += W2_[i][j] * h1[j];
             h2[i] = relu(sum);
         }
 
         for (int i = 0; i < 10; ++i)
         {
             scalar sum = b3_[i];
-            for (int j = 0; j < 30; ++j) sum += W3_[i][j] * h2[j];
+            for (size_t j = 0; j < H2; ++j) sum += W3_[i][j] * h2[j];
             g[i] = sum;
         }
     }
