@@ -1,0 +1,38 @@
+{
+  "benchmark_name": "Turbulent Flow in a Straight Square Duct",
+  "primary_reference": {
+    "citation": "Uhlmann, M., Pinelli, A., Sekimoto, A., & Kawahara, G. (2007). Marginally turbulent flow in a square duct. Journal of Fluid Mechanics, 588, 153-162.",
+    "secondary_reference": "Gavrilakis, S. (1992). Numerical simulation of low-Reynolds-number turbulent flow through a straight rectangular duct. J. Fluid Mech., 244, 101-129.",
+    "dns_codebase": "CaNS (Canonical Navier-Stokes solver, Costa et al.)"
+  },
+  "flow_parameters": {
+    "bulk_reynolds_number_Re_b": 1500,
+    "friction_reynolds_number_Re_tau": 150.0,
+    "duct_half_width_h_m": 0.5,
+    "hydraulic_diameter_Dh_m": 1.0,
+    "bulk_velocity_Ub_m_s": 1.0,
+    "kinematic_viscosity_nu_m2_s": 0.0006666667,
+    "friction_velocity_u_tau_m_s": 0.050,
+    "streamwise_driving_pressure_gradient_dp_dx": -0.010
+  },
+  "geometry_and_domain": {
+    "cross_section": "2h x 2h square",
+    "y_range": [-0.5, 0.5],
+    "z_range": [-0.5, 0.5],
+    "streamwise_length_Lx": "4 * pi * h",
+    "symmetry": "8-fold octant symmetry"
+  },
+  "boundary_conditions": {
+    "top_wall_y_plus_h": "noSlip (fixedValue U=(0 0 0))",
+    "bottom_wall_y_minus_h": "noSlip (fixedValue U=(0 0 0))",
+    "left_wall_z_minus_h": "noSlip (fixedValue U=(0 0 0))",
+    "right_wall_z_plus_h": "noSlip (fixedValue U=(0 0 0))",
+    "streamwise_x": "cyclic (periodic inlet/outlet driven by fvOptions meanVelocityForce)"
+  },
+  "reference_vortex_cores_quadrant1": {
+    "description": "Normalized core coordinate in quadrant y/h in [0, 1], z/h in [0, 1]",
+    "y_core_over_h": 0.50,
+    "z_core_over_h": 0.82,
+    "peak_secondary_velocity_ratio_Vmax_over_Ub": 0.0185
+  }
+}
