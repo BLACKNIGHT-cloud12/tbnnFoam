@@ -19,8 +19,14 @@ def parse_foam_vec(file_path: Path):
         return None
     chunk = content[idx:]
     open_paren = chunk.find('(')
-    close_paren = chunk.rfind(')')
-    if open_paren == -1 or close_paren == -1:
+    if open_paren == -1:
+        return None
+    close_paren = chunk.find('\n)\n;', open_paren)
+    if close_paren == -1:
+        close_paren = chunk.find('\n);', open_paren)
+    if close_paren == -1:
+        close_paren = chunk.rfind(')')
+    if close_paren == -1:
         return None
     data_str = chunk[open_paren + 1:close_paren].strip()
     vectors = []
@@ -78,8 +84,16 @@ class ValidationEngine:
         Nx, Ny, Nz = 50, 20, 20
         u_3d = u_vec.reshape(Nz, Ny, Nx, 3)
         cs = np.mean(u_3d[:, :, 20:40, :], axis=2)
-        y_c = np.linspace(-0.95, 0.95, Ny)
-        z_c = np.linspace(-0.95, 0.95, Nz)
+        c_file = self.repo_root / 'verification_squareDuct' / '0' / 'C'
+        if c_file.exists():
+            c_raw = parse_foam_vec(c_file)
+            c_3d = c_raw.reshape(Nz, Ny, Nx, 3)
+            h = 0.05
+            y_c = c_3d[0, :, 0, 1] / h
+            z_c = c_3d[:, 0, 0, 2] / h
+        else:
+            y_c = np.linspace(-0.95, 0.95, Ny)
+            z_c = np.linspace(-0.95, 0.95, Nz)
         y_g = np.pad(y_c, (1, 1), 'constant', constant_values=(-1.0, 1.0))
         z_g = np.pad(z_c, (1, 1), 'constant', constant_values=(-1.0, 1.0))
         pad_cs = np.pad(cs, ((1, 1), (1, 1), (0, 0)), 'constant', constant_values=0.0)

@@ -14,8 +14,19 @@ from scripts.validation.vortex_detector import detect_vortex_cores
 def parse_foam_vec(file_path: Path):
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
-    chunk = content[content.find('internalField'):]
-    data_str = chunk[chunk.find('(') + 1:chunk.rfind(')')].strip()
+    idx = content.find('internalField')
+    if idx == -1:
+        return np.array([])
+    chunk = content[idx:]
+    open_paren = chunk.find('(')
+    if open_paren == -1:
+        return np.array([])
+    close_paren = chunk.find('\n)\n;', open_paren)
+    if close_paren == -1:
+        close_paren = chunk.find('\n);', open_paren)
+    if close_paren == -1:
+        close_paren = chunk.rfind(')')
+    data_str = chunk[open_paren + 1:close_paren].strip()
     vectors = []
     for line in data_str.split('\n'):
         parts = line.strip().strip('()').split()
@@ -91,12 +102,28 @@ def run_mesh_sensitivity_study(repo_root: Path):
     dz_f = 2.0 / Nz_f
     omega_x_f = (np.gradient(W_f / Ub, axis=1) / dy_f) - (np.gradient(V_f / Ub, axis=0) / dz_f)
 
-    y_c_coords = np.linspace(-0.95, 0.95, Ny_c)
-    z_c_coords = np.linspace(-0.95, 0.95, Nz_c)
+    c_coarse_file = case_dir / '0' / 'C'
+    if c_coarse_file.exists():
+        c_c_raw = parse_foam_vec(c_coarse_file)
+        c_c_3d = c_c_raw.reshape(Nz_c, Ny_c, Nx_c, 3)
+        h_duct = 0.05
+        y_c_coords = c_c_3d[0, :, 0, 1] / h_duct
+        z_c_coords = c_c_3d[:, 0, 0, 2] / h_duct
+    else:
+        y_c_coords = np.linspace(-0.95, 0.95, Ny_c)
+        z_c_coords = np.linspace(-0.95, 0.95, Nz_c)
     cores_c = detect_vortex_cores(omega_x_c, y_c_coords, z_c_coords, min_separation=0.2, min_strength=0.04, min_area=4, wall_margin=0.08)
 
-    y_f_coords = np.linspace(-0.975, 0.975, Ny_f)
-    z_f_coords = np.linspace(-0.975, 0.975, Nz_f)
+    c_fine_file = case_dir / 'fine_mesh' / '0' / 'C'
+    if c_fine_file.exists():
+        c_f_raw = parse_foam_vec(c_fine_file)
+        c_f_3d = c_f_raw.reshape(Nz_f, Ny_f, Nx_f, 3)
+        h_duct = 0.05
+        y_f_coords = c_f_3d[0, :, 0, 1] / h_duct
+        z_f_coords = c_f_3d[:, 0, 0, 2] / h_duct
+    else:
+        y_f_coords = np.linspace(-0.975, 0.975, Ny_f)
+        z_f_coords = np.linspace(-0.975, 0.975, Nz_f)
     cores_f = detect_vortex_cores(omega_x_f, y_f_coords, z_f_coords, min_separation=0.2, min_strength=0.04, min_area=4, wall_margin=0.08)
 
     acw_q1_cores_c = [c for c in cores_c if c['y'] > 0.0 and c['z'] > 0.0 and c['type'] == 'acw']
