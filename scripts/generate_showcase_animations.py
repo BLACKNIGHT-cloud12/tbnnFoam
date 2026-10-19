@@ -34,7 +34,7 @@ def parse_foam_vec(file_path: Path):
 
 def gen_cross_section(repo_root: Path, out_path: Path):
     print('--> Generating Animation 1: Cross-Section Particle Dynamics from Genuine 200/U Field...')
-    u_file = repo_root / 'verification_squareDuct' / '200' / 'U'
+    u_file = (repo_root / 'verification_squareDuct' / '300' / 'U') if (repo_root / 'verification_squareDuct' / '300' / 'U').exists() else (repo_root / 'verification_squareDuct' / '200' / 'U')
     tbnn_u = parse_foam_vec(u_file)
     Nx, Ny_c, Nz_c = 50, 20, 20
     u_3d = tbnn_u.reshape(Nz_c, Ny_c, Nx, 3)
@@ -68,7 +68,7 @@ def gen_cross_section(repo_root: Path, out_path: Path):
             spine.set_color('#30363d')
             spine.set_linewidth(1.5)
     ax_left.set_title('Standard OpenFOAM (Linear RANS)\nZero Cross-Stream Motion (v = w = 0)', fontsize=12, fontweight='bold', color='#58a6ff', pad=12)
-    ax_right.set_title('tbnnFoam (Genuine 200/U Simulation Field)\n8 Secondary Circulation Vortices (Prandtl 2nd Kind)', fontsize=12, fontweight='bold', color='#f0883e', pad=12)
+    ax_right.set_title('tbnnFoam (Genuine CFD Simulation Field)\n8 Secondary Circulation Vortices (Prandtl 2nd Kind)', fontsize=12, fontweight='bold', color='#f0883e', pad=12)
     ax_left.set_xlabel('y / h', color='white', fontsize=11)
     ax_left.set_ylabel('z / h', color='white', fontsize=11)
     ax_right.set_xlabel('y / h', color='white', fontsize=11)
@@ -112,7 +112,7 @@ def gen_3d_ribbons(repo_root: Path, out_path: Path):
     ax.plot([0, 0], [h, h], [-h, h], color='#30363d', lw=1.2)
     ax.plot([L, L], [-h, -h], [-h, h], color='#30363d', lw=1.2)
     ax.plot([L, L], [h, h], [-h, h], color='#30363d', lw=1.2)
-    u_file = repo_root / 'verification_squareDuct' / '200' / 'U'
+    u_file = (repo_root / 'verification_squareDuct' / '300' / 'U') if (repo_root / 'verification_squareDuct' / '300' / 'U').exists() else (repo_root / 'verification_squareDuct' / '200' / 'U')
     tbnn_u = parse_foam_vec(u_file)
     Nx, Ny_c, Nz_c = 50, 20, 20
     u_3d = tbnn_u.reshape(Nz_c, Ny_c, Nx, 3)
@@ -145,7 +145,7 @@ def gen_3d_ribbons(repo_root: Path, out_path: Path):
     for x_t, y_t, z_t, c in trajectories:
         ax.plot(x_t, y_t, z_t, color=c, alpha=0.35, lw=1.2)
     dots = [ax.plot([], [], [], marker='o', markersize=6, color=c)[0] for _, _, _, c in trajectories]
-    ax.set_title('tbnnFoam: 3D Streamlines Integrated from Solver Velocity (200/U)\n(Secondary Convection Transporting Fluid into the 4 Corners)', color='white', fontsize=12, fontweight='bold', pad=15)
+    ax.set_title('tbnnFoam: 3D Streamlines Integrated from Solver Velocity Field\n(Secondary Convection Transporting Fluid into the 4 Corners)', color='white', fontsize=12, fontweight='bold', pad=15)
     ax.set_xlabel('x (Streamwise)', color='white', labelpad=8)
     ax.set_ylabel('y (Spanwise)', color='white', labelpad=8)
     ax.set_zlabel('z (Vertical)', color='white', labelpad=8)

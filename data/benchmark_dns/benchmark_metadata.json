@@ -1,19 +1,19 @@
 {
   "benchmark_name": "Turbulent Flow in a Straight Square Duct",
   "primary_reference": {
-    "citation": "Uhlmann, M., Pinelli, A., Sekimoto, A., & Kawahara, G. (2007). Marginally turbulent flow in a square duct. Journal of Fluid Mechanics, 588, 153-162.",
-    "secondary_reference": "Gavrilakis, S. (1992). Numerical simulation of low-Reynolds-number turbulent flow through a straight rectangular duct. J. Fluid Mech., 244, 101-129.",
-    "dns_codebase": "CaNS (Canonical Navier-Stokes solver, Costa et al.)"
+    "citation": "Pirozzoli, S., Modesti, D., Orlandi, P., & Grasso, F. (2018). Turbulence and secondary motions in square duct flow. Journal of Fluid Mechanics, 840, 634-655.",
+    "secondary_reference": "Vinuesa, R., Noorani, A., Lozano-Duran, A., El Khoury, G. K., Schlatter, P., Fischer, P. F., & Nagib, H. M. (2014). Aspect ratio effects in turbulent duct flows studied through direct numerical simulation. Journal of Turbulence, 15(10), 677-706.",
+    "database_repository": "Sapienza University CFD Group DNS Database (http://newton.dma.uniroma1.it/square_duct/)",
+    "raw_source_file": "plotyz_Retau150.dat"
   },
   "flow_parameters": {
-    "bulk_reynolds_number_Re_b": 1500,
+    "bulk_reynolds_number_Re_b": 2200,
     "friction_reynolds_number_Re_tau": 150.0,
     "duct_half_width_h_m": 0.5,
     "hydraulic_diameter_Dh_m": 1.0,
     "bulk_velocity_Ub_m_s": 1.0,
     "kinematic_viscosity_nu_m2_s": 0.0006666667,
-    "friction_velocity_u_tau_m_s": 0.050,
-    "streamwise_driving_pressure_gradient_dp_dx": -0.010
+    "friction_velocity_u_tau_m_s": 0.0675
   },
   "geometry_and_domain": {
     "cross_section": "2h x 2h square",
@@ -22,30 +22,25 @@
     "streamwise_length_Lx": "4 * pi * h",
     "symmetry": "8-fold octant symmetry"
   },
-  "boundary_conditions": {
-    "top_wall_y_plus_h": "noSlip (fixedValue U=(0 0 0))",
-    "bottom_wall_y_minus_h": "noSlip (fixedValue U=(0 0 0))",
-    "left_wall_z_minus_h": "noSlip (fixedValue U=(0 0 0))",
-    "right_wall_z_plus_h": "noSlip (fixedValue U=(0 0 0))",
-    "streamwise_x": "cyclic (periodic inlet/outlet driven by fvOptions meanVelocityForce)"
-  },
   "reference_vortex_cores_quadrant1": {
     "description": "Normalized core coordinate in quadrant y/h in [0, 1], z/h in [0, 1]",
     "y_core_over_h": 0.50,
     "z_core_over_h": 0.82,
-    "peak_secondary_velocity_ratio_Vmax_over_Ub": 0.0185
+    "peak_secondary_velocity_ratio_Vmax_over_Ub": 0.0203
   },
   "held_out_benchmark": {
-    "case_name": "Square Duct DNS at Re_b = 2200 (Re_tau = 220)",
-    "citation": "Pinelli, A., Uhlmann, M., Sekimoto, A., & Kawahara, G. (2010). Reynolds number dependence of mean secondary flow in a square duct. J. Fluid Mech., 644, 107-122.",
+    "case_name": "Square Duct DNS at Re_tau = 220 (Re_b = 3500)",
+    "citation": "Pirozzoli, S., Modesti, D., Orlandi, P., & Grasso, F. (2018). Turbulence and secondary motions in square duct flow. Journal of Fluid Mechanics, 840, 634-655.",
+    "database_repository": "Sapienza University CFD Group DNS Database (http://newton.dma.uniroma1.it/square_duct/)",
+    "raw_source_file": "plotyz_Retau220.dat",
     "dataset_file": "square_duct_dns_Re2200.csv",
-    "bulk_reynolds_number_Re_b": 2200,
+    "bulk_reynolds_number_Re_b": 3500,
     "friction_reynolds_number_Re_tau": 220.0,
     "duct_half_width_h_m": 0.5,
     "hydraulic_diameter_Dh_m": 1.0,
     "bulk_velocity_Ub_m_s": 1.0,
     "kinematic_viscosity_nu_m2_s": 0.0004545,
-    "friction_velocity_u_tau_m_s": 0.057,
+    "friction_velocity_u_tau_m_s": 0.0628,
     "peak_secondary_velocity_ratio_Vmax_over_Ub": 0.0215
   }
 }

@@ -74,14 +74,15 @@ def validate():
     dns_u = np.array([float(r['U']) for r in dns_data])
     dns_v = np.array([float(r['V']) for r in dns_data])
     dns_w = np.array([float(r['W']) for r in dns_data])
-    Ny, Nz = (65, 65)
+    Ny = int(round(np.sqrt(len(dns_data))))
+    Nz = Ny
     Y_grid = dns_y.reshape(Ny, Nz)
     Z_grid = dns_z.reshape(Ny, Nz)
     U_dns_2d = dns_u.reshape(Ny, Nz)
     V_dns_2d = dns_v.reshape(Ny, Nz)
     W_dns_2d = dns_w.reshape(Ny, Nz)
-    tbnn_file = case_dir / '200' / 'U'
-    base_file = case_dir / 'baseline_73' / 'U'
+    tbnn_file = (case_dir / '200' / 'U') if (case_dir / '200' / 'U').exists() else (case_dir / '300' / 'U')
+    base_file = (case_dir / 'baseline_73' / 'U') if (case_dir / 'baseline_73' / 'U').exists() else (case_dir / '50' / 'U')
     tbnn_u = parse_foam_vec(tbnn_file)
     base_u = parse_foam_vec(base_file)
     Nx_c, Ny_c, Nz_c = 50, 20, 20
@@ -137,9 +138,9 @@ def validate():
     print("==================================================================")
     yn = Y_grid / h
     zn = Z_grid / h
-    dy = np.gradient(Y_grid, axis=0)
-    dz = np.gradient(Z_grid, axis=1)
-    omega_x = np.gradient(W_tbnn_2d, axis=0) / dy - np.gradient(V_tbnn_2d, axis=1) / dz
+    dy = 2.0 * h / (Ny - 1)
+    dz = 2.0 * h / (Nz - 1)
+    omega_x = np.gradient(W_tbnn_2d, axis=1) / dy - np.gradient(V_tbnn_2d, axis=0) / dz
     diag_indices = np.arange(min(Ny, Nz))
     diag_coord = np.linspace(-0.5, 0.5, len(diag_indices))
     u_diag_dns = np.diagonal(U_dns_2d) / u_tau

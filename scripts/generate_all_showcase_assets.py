@@ -131,16 +131,21 @@ def gen_convergence(repo_root: Path, data):
     out_path = repo_root / 'docs' / 'figures' / 'animation_4_solver_convergence.gif'
     log_path = repo_root / 'verification_squareDuct' / 'log.tbnnFoam'
     iters, cont_locals, cont_globals = parse_log_residuals(log_path)
-    u_file = repo_root / 'verification_squareDuct' / '200' / 'U'
+    u_file = (repo_root / 'verification_squareDuct' / '300' / 'U') if (repo_root / 'verification_squareDuct' / '300' / 'U').exists() else (repo_root / 'verification_squareDuct' / '200' / 'U')
+    base_file = (repo_root / 'verification_squareDuct' / 'baseline_73' / 'U') if (repo_root / 'verification_squareDuct' / 'baseline_73' / 'U').exists() else (repo_root / 'verification_squareDuct' / '50' / 'U')
     tbnn_u = parse_foam_vec(u_file)
+    base_u = parse_foam_vec(base_file)
     Nx, Ny_c, Nz_c = 50, 20, 20
     u_3d = tbnn_u.reshape(Nz_c, Ny_c, Nx, 3)
+    base_3d = base_u.reshape(Nz_c, Ny_c, Nx, 3)
     cs = np.mean(u_3d[:, :, 20:40, :], axis=2)
+    base_cs = np.mean(base_3d[:, :, 20:40, :], axis=2)
     y_c = np.linspace(-0.95, 0.95, Ny_c)
     z_c = np.linspace(-0.95, 0.95, Nz_c)
     y_g = np.pad(y_c, (1, 1), 'constant', constant_values=(-1.0, 1.0))
     z_g = np.pad(z_c, (1, 1), 'constant', constant_values=(-1.0, 1.0))
     pad_cs = np.pad(cs, ((1, 1), (1, 1), (0, 0)), 'constant', constant_values=0.0)
+    pad_base = np.pad(base_cs, ((1, 1), (1, 1), (0, 0)), 'constant', constant_values=0.0)
     y_fine = np.linspace(-1.0, 1.0, 65)
     z_fine = np.linspace(-1.0, 1.0, 65)
     Z_m, Y_m = np.meshgrid(z_fine, y_fine, indexing='ij')
@@ -148,12 +153,15 @@ def gen_convergence(repo_root: Path, data):
     rgi_u = RegularGridInterpolator((z_g, y_g), pad_cs[:, :, 0], bounds_error=False, fill_value=0.0)
     rgi_v = RegularGridInterpolator((z_g, y_g), pad_cs[:, :, 1], bounds_error=False, fill_value=0.0)
     rgi_w = RegularGridInterpolator((z_g, y_g), pad_cs[:, :, 2], bounds_error=False, fill_value=0.0)
+    rgi_u_base = RegularGridInterpolator((z_g, y_g), pad_base[:, :, 0], bounds_error=False, fill_value=0.0)
     U_end = rgi_u(pts).reshape(65, 65)
     V_end = rgi_v(pts).reshape(65, 65)
     W_end = rgi_w(pts).reshape(65, 65)
+    U_base = rgi_u_base(pts).reshape(65, 65)
     speed_end = np.sqrt(V_end**2 + W_end**2) * 100.0
     n_frames = 35
-    frame_steps = np.linspace(73, 200, n_frames).astype(int)
+    max_iter = int(iters[-1]) if len(iters) > 0 else 300
+    frame_steps = np.linspace(50, max_iter, n_frames).astype(int)
     fig, (ax_flow, ax_res) = plt.subplots(1, 2, figsize=(14, 6.2), dpi=140, gridspec_kw={'width_ratios': [1.3, 1.0]})
     fig.patch.set_facecolor('#0d1117')
     for ax in (ax_flow, ax_res):
@@ -172,11 +180,11 @@ def gen_convergence(repo_root: Path, data):
                 spine.set_color('#30363d')
                 spine.set_linewidth(1.5)
         step = frame_steps[frame]
-        alpha = min(1.0, max(0.0, (step - 73) / (200 - 73)))
+        alpha = min(1.0, max(0.0, (step - 60) / 40.0))
         speed_cur = alpha * speed_end
         V_cur = alpha * V_end
         W_cur = alpha * W_end
-        U_cur = (1.0 - alpha) * data['u_dns'] * 0.9 + alpha * U_end
+        U_cur = (1.0 - alpha) * U_base + alpha * U_end
         cf = ax_flow.contourf(y_fine, z_fine, speed_cur, levels=np.linspace(0, 6.0, 30), cmap='inferno')
         ax_flow.contour(y_fine, z_fine, U_cur, levels=8, colors='#58a6ff', linewidths=0.9, alpha=0.7)
         if alpha > 0.05:
@@ -191,7 +199,7 @@ def gen_convergence(repo_root: Path, data):
         mask = iters <= step
         ax_res.semilogy(iters[mask], cont_locals[mask], color='#58a6ff', linewidth=2.0, label='Continuity Local Error')
         ax_res.semilogy(iters[mask], cont_globals[mask], color='#f0883e', linewidth=2.0, linestyle='--', label='Continuity Global Error')
-        ax_res.set_xlim(1, 205)
+        ax_res.set_xlim(1, max_iter + 5)
         ax_res.set_ylim(1e-6, 1e-1)
         ax_res.set_xlabel('SIMPLE Iterations (OpenFOAM log.tbnnFoam)', color='white', fontsize=10)
         ax_res.set_ylabel('Continuity Residual', color='white', fontsize=10)
@@ -212,7 +220,7 @@ def gen_stress_mech(repo_root: Path, data):
     a22 = data['a22_dns']
     a33 = data['a33_dns']
     diff_dns = 2.0 * k_dns * (a22 - a33) / Ub**2
-    tau_file = repo_root / 'verification_squareDuct' / '200' / 'tauR'
+    tau_file = (repo_root / 'verification_squareDuct' / '300' / 'tauR') if (repo_root / 'verification_squareDuct' / '300' / 'tauR').exists() else (repo_root / 'verification_squareDuct' / '200' / 'tauR')
     tau_raw = parse_foam_symm(tau_file)
     Nx, Ny_c, Nz_c = 50, 20, 20
     tau_3d = tau_raw.reshape(Nz_c, Ny_c, Nx, 6)
@@ -245,13 +253,13 @@ def gen_stress_mech(repo_root: Path, data):
     ax1.text(0, 0, "$\\overline{v'^2} - \\overline{w'^2} \\equiv 0$" + '\n(Identically Zero)', ha='center', va='center', fontsize=11, fontweight='bold', color='darkred', bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.9))
     ax2 = fig.add_subplot(gs[1])
     cf2 = ax2.contourf(y_norm, z_norm, diff_tbnn, levels=levels, cmap='RdBu_r')
-    ax2.set_title('tbnnFoam (200/tauR)\nGenuine In-Situ CFD Output', fontsize=11, fontweight='bold', pad=8)
+    ax2.set_title('tbnnFoam (tauR)\nGenuine In-Situ CFD Output', fontsize=11, fontweight='bold', pad=8)
     ax2.set_xlabel('y / h', fontsize=10)
     ax2.set_ylabel('z / h', fontsize=10)
     ax2.set_aspect('equal')
     ax3 = fig.add_subplot(gs[2])
     cf3 = ax3.contourf(y_norm, z_norm, diff_dns, levels=levels, cmap='RdBu_r')
-    ax3.set_title('Reference DNS\n(Uhlmann et al. 2007)', fontsize=11, fontweight='bold', pad=8)
+    ax3.set_title('Reference DNS\n(Pirozzoli et al. 2018)', fontsize=11, fontweight='bold', pad=8)
     ax3.set_xlabel('y / h', fontsize=10)
     ax3.set_ylabel('z / h', fontsize=10)
     ax3.set_aspect('equal')
@@ -263,8 +271,8 @@ def gen_stress_mech(repo_root: Path, data):
     diag_dns = np.diagonal(diff_dns)
     diag_tbnn = np.diagonal(diff_tbnn)
     diag_rans = np.diagonal(diff_rans)
-    ax4.plot(diag_coords, diag_dns * 1000.0, 'k--', linewidth=2.2, label='DNS (Uhlmann et al.)')
-    ax4.plot(diag_coords, diag_tbnn * 1000.0, 'r-', linewidth=2.0, label='tbnnFoam (200/tauR)')
+    ax4.plot(diag_coords, diag_dns * 1000.0, 'k--', linewidth=2.2, label='DNS (Pirozzoli et al.)')
+    ax4.plot(diag_coords, diag_tbnn * 1000.0, 'r-', linewidth=2.0, label='tbnnFoam (tauR)')
     ax4.plot(diag_coords, diag_rans * 1000.0, 'b:', linewidth=1.8, label='Linear EVM (0.00)')
     ax4.set_title('Corner Diagonal Transect\ny/h = z/h from Wall to Wall', fontsize=11, fontweight='bold', pad=8)
     ax4.set_xlabel('Corner Diagonal Coordinate', fontsize=10)
@@ -309,7 +317,7 @@ def gen_barycentric(repo_root: Path, data):
         x_b = C1 * x_1c[0] + C2 * x_2c[0] + C3 * x_3c[0]
         y_b = C1 * x_1c[1] + C2 * x_2c[1] + C3 * x_3c[1]
         return (x_b, y_b)
-    a_file = repo_root / 'verification_squareDuct' / '200' / 'aTBNN'
+    a_file = (repo_root / 'verification_squareDuct' / '300' / 'aTBNN') if (repo_root / 'verification_squareDuct' / '300' / 'aTBNN').exists() else (repo_root / 'verification_squareDuct' / '200' / 'aTBNN')
     a_cfd_raw = parse_foam_symm(a_file)
     Nx, Ny_c, Nz_c = 50, 20, 20
     a_3d = a_cfd_raw.reshape(Nz_c, Ny_c, Nx, 6)
@@ -330,8 +338,8 @@ def gen_barycentric(repo_root: Path, data):
     fig, axes = plt.subplots(1, 3, figsize=(18, 5.8), dpi=300)
     titles = [
         'Standard OpenFOAM (Linear EVM)\nTrapped Near 3C Isotropic Apex',
-        'tbnnFoam (200/aTBNN)\nGenuine In-Situ Solver Output',
-        'Reference DNS (Uhlmann et al.)\nBenchmark Stress State'
+        'tbnnFoam (aTBNN)\nGenuine In-Situ Solver Output',
+        'Reference DNS (Pirozzoli et al. 2018)\nBenchmark Stress State'
     ]
     datasets = [(x_rans, y_rans, 'royalblue'), (x_tbnn, y_tbnn, 'crimson'), (x_dns, y_dns, 'black')]
     for ax, title, (xb, yb, color) in zip(axes, titles, datasets):

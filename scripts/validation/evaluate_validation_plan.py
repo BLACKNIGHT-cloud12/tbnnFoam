@@ -56,7 +56,10 @@ class ValidationEngine:
             reader = csv.DictReader(f)
             for row in reader:
                 dns_data.append(row)
-        Ny, Nz = (65, 65)
+        Ny = int(round(np.sqrt(len(dns_data))))
+        Nz = Ny
+        self.Ny = Ny
+        self.Nz = Nz
         dns_u = np.array([float(r['U']) for r in dns_data]).reshape(Ny, Nz)
         dns_v = np.array([float(r['V']) for r in dns_data]).reshape(Ny, Nz)
         dns_w = np.array([float(r['W']) for r in dns_data]).reshape(Ny, Nz)
@@ -73,16 +76,16 @@ class ValidationEngine:
         y_g = np.pad(y_c, (1, 1), 'constant', constant_values=(-1.0, 1.0))
         z_g = np.pad(z_c, (1, 1), 'constant', constant_values=(-1.0, 1.0))
         pad_cs = np.pad(cs, ((1, 1), (1, 1), (0, 0)), 'constant', constant_values=0.0)
-        y_dns = np.linspace(-1.0, 1.0, 65)
-        z_dns = np.linspace(-1.0, 1.0, 65)
+        y_dns = np.linspace(-1.0, 1.0, self.Ny)
+        z_dns = np.linspace(-1.0, 1.0, self.Nz)
         Z_m, Y_m = np.meshgrid(z_dns, y_dns, indexing='ij')
         pts = np.column_stack([Z_m.flatten(), Y_m.flatten()])
         rgi_u = RegularGridInterpolator((z_g, y_g), pad_cs[:, :, 0], bounds_error=False, fill_value=0.0)
         rgi_v = RegularGridInterpolator((z_g, y_g), pad_cs[:, :, 1], bounds_error=False, fill_value=0.0)
         rgi_w = RegularGridInterpolator((z_g, y_g), pad_cs[:, :, 2], bounds_error=False, fill_value=0.0)
-        u_i = rgi_u(pts).reshape(65, 65)
-        v_i = rgi_v(pts).reshape(65, 65)
-        w_i = rgi_w(pts).reshape(65, 65)
+        u_i = rgi_u(pts).reshape(self.Ny, self.Nz)
+        v_i = rgi_v(pts).reshape(self.Ny, self.Nz)
+        w_i = rgi_w(pts).reshape(self.Ny, self.Nz)
         return (u_i, v_i, w_i)
 
     def evaluate_case(self, u_cfd, v_cfd, w_cfd, u_dns, v_dns, w_dns):
@@ -92,11 +95,13 @@ class ValidationEngine:
         nrmse_v = float(rmse_v / self.Ub * 100.0)
         v_sec = np.sqrt(v_cfd ** 2 + w_cfd ** 2)
         v_max_ratio = float(np.max(v_sec) / self.Ub)
-        dy = 2.0 / 64.0
-        dz = 2.0 / 64.0
+        Ny_e = u_cfd.shape[0]
+        Nz_e = u_cfd.shape[1]
+        dy = 2.0 / (Ny_e - 1)
+        dz = 2.0 / (Nz_e - 1)
         omega_x = np.gradient(w_cfd, axis=0) / dy - np.gradient(v_cfd, axis=1) / dz
-        y_1d = np.linspace(-1.0, 1.0, 65)
-        z_1d = np.linspace(-1.0, 1.0, 65)
+        y_1d = np.linspace(-1.0, 1.0, Ny_e)
+        z_1d = np.linspace(-1.0, 1.0, Nz_e)
         Z_g, Y_g = np.meshgrid(z_1d, y_1d, indexing='ij')
         q1_mask = (Y_g > 0.1) & (Z_g > 0.1) & (Y_g < 0.95) & (Z_g < 0.95)
         if np.max(v_sec) > 0.005:
@@ -115,8 +120,10 @@ class ValidationEngine:
 
     def print_report(self):
         u_dns, v_dns, w_dns = self.load_dns()
-        u_tbnn, v_tbnn, w_tbnn = self.load_cfd_cs('200')
-        u_base, v_base, w_base = self.load_cfd_cs('baseline_73')
+        tbnn_dir = '200' if (self.repo_root / 'verification_squareDuct' / '200' / 'U').exists() else '300'
+        base_dir = 'baseline_73' if (self.repo_root / 'verification_squareDuct' / 'baseline_73' / 'U').exists() else '50'
+        u_tbnn, v_tbnn, w_tbnn = self.load_cfd_cs(tbnn_dir)
+        u_base, v_base, w_base = self.load_cfd_cs(base_dir)
         m_tbnn = self.evaluate_case(u_tbnn, v_tbnn, w_tbnn, u_dns, v_dns, w_dns)
         m_base = self.evaluate_case(u_base, v_base, w_base, u_dns, v_dns, w_dns)
         table = []

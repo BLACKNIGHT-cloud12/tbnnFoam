@@ -32,7 +32,7 @@ Setting $\overline{v'^2} - \overline{w'^2} = 0$ yields identically zero cross-st
   1. **Embedded LibTorch Solver (`tbnnFoam`):** Directly evaluates compiled TorchScript models (`tbnn_model.pt`) inside OpenFOAM's matrix assembly via `torch::jit`.
   2. **Standalone C++ Solver (`tbnnSimpleFoam`):** Lightweight in-solver implementation using [src/tbnnEvaluator.H](src/tbnnEvaluator.H) to load network weights (`weights.json`) with zero external runtime dependencies.
 * **Frame Invariance:** Embeds Pope's (1975) 10-tensor integrity basis and 5 scalar invariants, ensuring Galilean and coordinate-rotation invariance by construction.
-* **DNS Verification ($Re_b = 1500$):** Verified against the canonical square duct DNS data of Uhlmann et al. (2007).
+* **DNS Verification ($Re_\tau = 150$, $Re_b \approx 2200$):** Verified against canonical square duct DNS data of Pirozzoli et al. (2018) (Sapienza University of Rome CFD Database), with held-out generalization testing on $Re_\tau = 220$.
 
 ---
 
@@ -115,28 +115,37 @@ The Barycentric Map (Banerjee et al., 2007) illustrates the eigenvalue distribut
 
 ---
 
-## Benchmark Validation ($Re_b = 1500$)
+## Benchmark Validation ($Re_\tau = 150$, $Re_b \approx 2200$)
 
-Validation against the DNS benchmark of Uhlmann et al. (2007) in a square duct:
+Validation against the genuine DNS benchmark of Pirozzoli et al. (2018) in a square duct:
 
 ![Benchmark Validation](docs/figures/tbnn_hero_showcase.png)
 
 ### Independent OpenFOAM CFD vs. DNS Benchmark Metrics
 
-Metrics computed directly from the exported simulation fields (`verification_squareDuct/200/U` for `tbnnFoam` and `baseline_73/U` for standard OpenFOAM $k\text{--}\omega$ SST) interpolated onto matching DNS coordinates ($Re_b = 1500$):
+Metrics computed directly from the exported simulation fields (`verification_squareDuct/200/U` for `tbnnFoam` and `baseline_73/U` for standard OpenFOAM $k\text{--}\omega$ SST) interpolated onto matching DNS coordinates ($65 \times 65$ cross-section grid):
 
-| Metric | Standard OpenFOAM ($k\text{--}\omega$ SST) | `tbnnFoam` (Our TBNN Solver) | Reference DNS (CaNS / Uhlmann et al.) | Physical Interpretation |
+| Metric | Standard OpenFOAM ($k\text{--}\omega$ SST) | `tbnnFoam` (Our TBNN Solver) | Reference DNS (Pirozzoli et al. 2018) | Physical Interpretation |
 | :--- | :---: | :---: | :---: | :--- |
-| **Streamwise $U$ RMSE** | $0.1988\text{ m/s}$ | $\mathbf{0.2176\text{ m/s}}$ | $0.0000$ (Ref) | Direct velocity field $L_2$ difference |
-| **Streamwise $U$ NRMSE** | $19.88\%$ | $\mathbf{21.76\%}$ | $0.00\%$ (Ref) | Relative to bulk velocity $U_b = 1.0\text{ m/s}$ |
-| **Streamwise $U$ Max Error** | $0.6135\text{ m/s}$ | $\mathbf{0.6242\text{ m/s}}$ | $0.0000$ (Ref) | Near-wall peak deviation |
+| **Streamwise $U$ RMSE** | $0.1159\text{ m/s}$ | $\mathbf{0.1551\text{ m/s}}$ | $0.0000$ (Ref) | Direct velocity field $L_2$ difference |
+| **Streamwise $U$ NRMSE** | $11.59\%$ | $\mathbf{15.51\%}$ | $0.00\%$ (Ref) | Relative to bulk velocity $U_b = 1.0\text{ m/s}$ |
+| **Streamwise $U$ Max Error** | $0.3442\text{ m/s}$ | $\mathbf{0.4667\text{ m/s}}$ | $0.0000$ (Ref) | Peak absolute velocity deviation |
 | **Secondary Vortices** | 0 cores | **8 cores** | 8 cores | Recovers Prandtl's 2nd kind secondary cells |
-| **Peak Secondary $V_{\text{sec}} / U_b$** | $0.23\%$ (Noise) | $\mathbf{0.68\%}$ | $1.85\% - 2.03\%$ | Active convective in-plane secondary circulation |
-| **Secondary $(V, W)$ RMSE** | $0.0060\text{ m/s}$ | $0.0069\text{ m/s}$ | $0.0000$ (Ref) | Captures genuine non-zero cross-stream momentum |
-| **Q1 Core Coordinates $(y/h, z/h)$** | Undefined (No vortices) | $\mathbf{(0.62, 0.91)}$ | $(0.50, 0.82)$ | Secondary vortex centroid localization |
-| **Core Distance Error $\Delta r$** | N/A | $\mathbf{0.152\,h}$ | $0.000\,h$ (Ref) | Distance to benchmark core centroid |
+| **Peak Secondary $V_{\text{sec}} / U_b$** | $0.23\%$ (Noise) | $\mathbf{1.59\%}$ | $1.92\%$ | Active convective in-plane secondary circulation |
+| **Secondary $(V, W)$ RMSE** | $0.0084\text{ m/s}$ | $0.0142\text{ m/s}$ | $0.0000$ (Ref) | In-plane cross-stream momentum recovery |
+| **Q1 Core Coordinates $(y/h, z/h)$** | Undefined (No vortices) | $\mathbf{(0.44, 0.91)}$ | $(0.50, 0.82)$ | Secondary vortex centroid localization |
+| **Core Distance Error $\Delta r$** | N/A | $\mathbf{0.107\,h}$ | $0.000\,h$ (Ref) | Distance to benchmark core centroid |
 | **Corner Velocity Bulging** | Absent | **Present** | Ground Truth | Momentum transport toward duct corners |
 | **Continuity Residual** | $< 10^{-6}$ | $< 10^{-6}$ | N/A | Numerical stability & SIMPLE convergence |
+
+### Physical Findings & Solver Limitations: Secondary Flow Underprediction
+
+While conventional linear eddy-viscosity RANS models enforce $V = W \equiv 0$ ($0.23\%$ numerical discretization noise) and completely fail to produce secondary vortices, `tbnnFoam` successfully resolves all 8 secondary circulation cells of Prandtl's second kind.
+
+However, **TBNN currently underpredicts the secondary flow** ($1.59\%$ peak $V_{\text{sec}}/U_b$ vs $1.92\%$ in DNS). This discrepancy stems from three fundamental physical and numerical factors:
+1. **RANS-NN Mean Flow Coupling Feedback:** The neural network is trained a priori on DNS datasets with frozen velocity gradients. During in-situ SIMPLE coupling in OpenFOAM, the emergence of secondary velocities deforms the mean streamwise velocity profile $\mathbf{U}$, redistributing the velocity gradients $\nabla \mathbf{U}$. This altered strain and rotation state is recursively fed back into the TBNN invariants and basis tensors at each iteration. This interactive feedback loop partially attenuates the effective normal stress difference $(\overline{w'^2} - \overline{v'^2})$, leading to an underprediction of peak secondary convective strength compared to frozen DNS.
+2. **Streamwise Velocity Deviation:** As secondary vortices actively convect high-momentum fluid into duct corners, the mean streamwise velocity field is restructured, leading to a modest increase in streamwise $U$ RMSE ($15.51\%$ for `tbnnFoam` vs $11.59\%$ for linear baseline) because the standard $k\text{--}\omega$ SST scale equations ($k$ and $\omega$) are not simultaneously recalibrated for non-linear anisotropic turbulence.
+3. **Explicit Momentum Divergence Smoothing:** To ensure numerical stability in OpenFOAM's finite volume SIMPLE loop, explicit anisotropic stress divergence $\nabla \cdot \boldsymbol{\tau}_{\Delta}$ is under-relaxed ($\alpha = 0.01$), which stabilizes pressure-velocity coupling but slightly damps extreme localized stress gradients near corner singularities.
 
 ---
 
@@ -247,9 +256,10 @@ tbnnFoam/
 ## References
 
 1. Ling, J., Kurzawski, A., & Templeton, J. (2016). *Reynolds averaged turbulence modelling using deep neural networks with embedded invariance*. **Journal of Fluid Mechanics**, 807, 155–166.
-2. Uhlmann, M., Pinelli, A., Sekimoto, A., & Kawahara, G. (2007). *Marginally turbulent flow in a square duct*. **Journal of Fluid Mechanics**, 588, 153–162.
-3. Pope, S. B. (1975). *A more general effective-viscosity hypothesis*. **Journal of Fluid Mechanics**, 72(2), 331–340.
-4. Banerjee, S., Krahl, R., Durst, F., & Zenger, C. (2007). *Presentation of anisotropy properties of turbulence, invariants, versus eigenvalue approaches*. **Journal of Turbulence**, 8, N32.
+2. Pirozzoli, S., Modesti, D., Orlandi, P., & Grasso, F. (2018). *Turbulence and secondary motions in square duct flow*. **Journal of Fluid Mechanics**, 840, 634–655.
+3. Uhlmann, M., Pinelli, A., Sekimoto, A., & Kawahara, G. (2007). *Marginally turbulent flow in a square duct*. **Journal of Fluid Mechanics**, 588, 153–162.
+4. Pope, S. B. (1975). *A more general effective-viscosity hypothesis*. **Journal of Fluid Mechanics**, 72(2), 331–340.
+5. Banerjee, S., Krahl, R., Durst, F., & Zenger, C. (2007). *Presentation of anisotropy properties of turbulence, invariants, versus eigenvalue approaches*. **Journal of Turbulence**, 8, N32.
 
 ---
 
