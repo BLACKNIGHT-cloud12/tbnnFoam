@@ -112,12 +112,15 @@ I validated the solver on a square duct flow against the benchmark Direct Numeri
 
 To ensure that vortex core comparisons are objective and reproducible rather than relying on visual inspection or static annotations, the repository implements an independent algorithmic vortex detector in [`scripts/validation/vortex_detector.py`](scripts/validation/vortex_detector.py):
 
-1. **Axial Vorticity Computation:** The cross-stream velocity field $(V, W)$ extracted from OpenFOAM is differentiated via second-order central differences:
+1. **Discretization & Vorticity Sign Convention:** The cross-stream velocity field $(V, W)$ extracted from OpenFOAM is differentiated via second-order central differences:
    $$\omega_x(y, z) = \frac{\partial W}{\partial y} - \frac{\partial V}{\partial z}$$
-2. **Boundary Layer Wall-Margin Mask:** An interior mask $|y/h| \le 0.92, |z/h| \le 0.92$ is applied to prevent high near-wall shear gradients from registering as secondary flow vortices.
-3. **Connected-Component Region Labeling:** Connected regions satisfying $|\omega_x| / (U_b / h) \ge 0.04$ are segmented using 8-connectivity component labeling (`scipy.ndimage.label`), separating positive ($\omega_x > 0$, ACW) and negative ($\omega_x < 0$, CW) vorticity cells.
-4. **Grid-Dependent Core Localization:** The detected core coordinate $(y_{\text{core}}, z_{\text{core}})$ is the physical coordinate of the maximum $|\omega_x|$ within each identified connected component.
-5. **Euclidean Localization Distance Error:**
+   Here, $\omega_x > 0$ denotes positive circulation (**anti-clockwise / ACW**), and $\omega_x < 0$ denotes negative circulation (**clockwise / CW**).
+2. **Boundary Layer Wall-Margin Mask:** An interior mask $|y/h| \le 0.92, |z/h| \le 0.92$ is applied to prevent attached wall shear layers ($\partial U/\partial n$) from registering as secondary flow vortices.
+3. **Filtering Fragmented Vorticity from Physical Cores:** To distinguish the 8 primary physical secondary cells from weak numerical artifacts or fragmented sub-structures, the detector enforces three filtering criteria:
+   * **Strength Thresholding:** Cells must satisfy $|\omega_x| / (U_b / h) \ge 0.04$, discarding low-level numerical background noise.
+   * **Minimum Cluster Area:** Connected components (identified via 8-connectivity labeling with `scipy.ndimage.label`) must contain at least 4 contiguous cells (`min_area = 4`), eliminating single-cell numerical spikes.
+   * **Non-Maximum Suppression (Distance Separation):** A separation radius `min_separation = 0.20 h` is enforced between candidate cores of the same sign, merging fragmented sub-peaks into the dominant local vortex core.
+4. **Vortex Center Extraction & Matching Rule:** The detected core coordinate $(y_{\text{core}}, z_{\text{core}})$ is the location of the maximum $|\omega_x|$ within each retained component. In Quadrant 1 ($y > 0, z > 0$), which contains one counter-rotating vortex pair, the detected ACW core closest to the canonical DNS reference $(0.50, 0.82)$ in Euclidean distance is matched for quantitative tracking:
    $$\Delta r = \sqrt{(y_{\text{CFD}} - 0.50)^2 + (z_{\text{CFD}} - 0.82)^2} \quad [h]$$
 
 Reproduce the detection and metrics directly on the raw CFD outputs:
@@ -128,10 +131,12 @@ python scripts/validation/evaluate_validation_plan.py
 
 ### Quantitative Comparison & Error Definitions
 
-Metrics are evaluated on the matching $65 \times 65$ cross-sectional grid at $x/h = 7.0$, comparing `tbnnFoam` (`verification_squareDuct/300/U`) against converged baseline $k\text{--}\omega$ SST (`verification_squareDuct/baseline_sst/111/U`) and reference DNS:
+Metrics are evaluated on the full $65 \times 65 = 4{,}225$ uniform grid spanning the entire duct cross-section $(y/h, z/h) \in [-1, 1] \times [-1, 1]$ (sampled at the developing station $x/h = 7.0$, or $x/D_h = 3.5$), comparing `tbnnFoam` (`verification_squareDuct/300/U`) against converged baseline $k\text{--}\omega$ SST (`verification_squareDuct/baseline_sst/111/U`) and reference DNS:
 
-$$\mathrm{RMSE}_U = \sqrt{\frac{1}{N}\sum_{i=1}^N (U_{\text{CFD}, i} - U_{\text{DNS}, i})^2}, \quad \mathrm{NRMSE}_U = \frac{\mathrm{RMSE}_U}{U_b} \times 100\%$$
-$$\mathrm{RMSE}_{\text{sec}} = \sqrt{\frac{1}{N}\sum_{i=1}^N \left[(V_{\text{CFD}, i} - V_{\text{DNS}, i})^2 + (W_{\text{CFD}, i} - W_{\text{DNS}, i})^2\right]}$$
+* **Streamwise Velocity Normalization:** Normalized by the bulk mean velocity $U_{\text{ref}} = U_b = 1.00\text{ m/s}$:
+  $$\mathrm{RMSE}_U = \sqrt{\frac{1}{N}\sum_{i=1}^N (U_{\text{CFD}, i} - U_{\text{DNS}, i})^2} = 0.0934\text{ m/s}, \quad \mathrm{NRMSE}_U = \frac{\mathrm{RMSE}_U}{U_b} \times 100\% = 9.34\%$$
+* **Secondary Velocity RMSE:** Evaluated over all cross-stream velocity components:
+  $$\mathrm{RMSE}_{\text{sec}} = \sqrt{\frac{1}{N}\sum_{i=1}^N \left[(V_{\text{CFD}, i} - V_{\text{DNS}, i})^2 + (W_{\text{CFD}, i} - W_{\text{DNS}, i})^2\right]} = 0.0261\text{ m/s}$$
 
 | Metric | Standard OpenFOAM ($k\text{--}\omega$ SST) | `tbnnFoam` | Reference DNS (Pirozzoli et al. 2018) | Notes |
 | :--- | :---: | :---: | :---: | :--- |
@@ -139,7 +144,7 @@ $$\mathrm{RMSE}_{\text{sec}} = \sqrt{\frac{1}{N}\sum_{i=1}^N \left[(V_{\text{CFD
 | **Peak Secondary Speed ($V_{\text{sec}} / U_b$)** | 0.45% (Noise) | **6.38%** | 2.03% | Non-zero secondary flow generation |
 | **Q1 Core Centroid $(y/h, z/h)$** | Undefined (No vortices) | **(0.91, 0.78)** | (0.50, 0.82) | Dynamically detected ACW core coordinates |
 | **Core Distance Error** | N/A | **0.408 h** | 0.000 h (Ref) | Distance to benchmark core centroid |
-| **Streamwise $U$ RMSE** | 0.0616 m/s (6.16%) | **0.0934 m/s (9.34%)** | 0.0000 m/s (Ref) | Centerline profile difference (see discussion below) |
+| **Streamwise $U$ RMSE** | 0.0616 m/s (6.16%) | **0.0934 m/s (9.34%)** | 0.0000 m/s (Ref) | Full cross-section NRMSE ($U_{\text{ref}} = 1.00\text{ m/s}$) |
 | **Secondary $(V, W)$ RMSE** | 0.0087 m/s | **0.0261 m/s** | 0.0000 m/s (Ref) | In-plane cross-stream velocity recovery |
 | **Continuity Residual** | $< 10^{-6}$ | **$< 10^{-6}$** | N/A | Both meet numerical steady-state convergence |
 
@@ -161,9 +166,14 @@ The physical validation rests on coupling the anisotropic stress divergence $\na
    Because secondary flow is triggered locally by near-wall corner normal stress differences, the 8 secondary vortex cells establish quickly ($x/h \ge 6$). However, the centerline streamwise core requires a longer development length ($U_{\text{center}} \approx 1.25\text{ m/s}$ in our CFD case vs $1.33\text{ m/s}$ in the periodic DNS). Standard linear $k\text{--}\omega$ SST exhibits slightly lower streamwise error ($6.16\%$) simply because it lacks cross-stream convective momentum transport to the corners, yet it fails entirely on the secondary flow physics ($0$ vortex cores).
 2. **Neural Network Model-Form Uncertainty:**
    The $9.3\%$ streamwise RMSE is not attributable solely to boundary conditions. The neural network closure is an empirical approximation trained on frozen DNS gradients. In live CFD coupling, the emerging secondary flow deforms the mean velocity field $\mathbf{U}$, modifying the velocity gradients fed back into the network at each SIMPLE iteration. This interactive feedback, combined with the finite expressivity of the MLP, introduces genuine model-form discrepancy.
-3. **Modelled $\omega$ Surrogate in the DNS Training Data:**
+3. **Modelled $\omega$ Surrogate & Turbulent Timescale Sensitivity:**
    Direct numerical simulation yields exact mean velocity gradients $\nabla \mathbf{U}$ and true Reynolds stress tensors $\boldsymbol{\tau}^R$, but DNS inherently lacks the specific dissipation rate $\omega$ because $\omega$ is a semi-empirical RANS modeling construct rather than a physical Navier-Stokes field.
-   In the training dataset, $\omega$ was estimated using an empirical SST surrogate relation ($\omega \approx k^{1/2} / (C_\mu^{1/4} \ell)$). In live OpenFOAM CFD execution, $\omega$ is dynamically governed by the coupled transport equation. Any discrepancy between the empirical surrogate and the transport-equation $\omega$ shifts the turbulent timescale $\tau = \min(1/\omega, 5.0\text{ s})$ and the non-dimensional Cayley-Hamilton invariants, introducing an unavoidable modeling assumption.
+   In the training dataset, $\omega$ was estimated using an empirical SST surrogate relation ($\omega \approx k^{1/2} / (C_\mu^{1/4} \ell)$ with $C_\mu = 0.09, \ell = \min(\kappa d_w, 0.07 D_h)$). In live OpenFOAM CFD execution, $\omega$ is governed dynamically by its transport equation.
+   
+   **Influence on Timescale $\tau$:** The turbulent timescale $\tau = \min(1/\omega, 5.0\text{ s})$ directly scales the dimensionless strain $\mathbf{s} = \tau \mathbf{S}$ and rotation $\mathbf{w} = \tau \mathbf{W}$. Consequently:
+   * The scalar invariants scale non-linearly with $\tau$: $I_1, I_2 \propto \tau^2$, $I_3 \propto \tau^3$, $I_4 \propto \tau^4$, and $I_5 \propto \tau^5$.
+   * Pope's basis tensors scale as $\mathbf{T}^{(1)} \propto \tau$, $\mathbf{T}^{(2..4)} \propto \tau^2$, $\mathbf{T}^{(5..8)} \propto \tau^3$, and $\mathbf{T}^{(9..10)} \propto \tau^4$.
+   * As a result, an underestimation of $\omega$ (overestimating $\tau$) strongly amplifies the higher-order tensor bases and accelerates secondary flow intensity, whereas overestimating $\omega$ damps the perturbation stress $\boldsymbol{\tau}_\Delta$ back toward linear RANS. Capping $\tau \le 5.0\text{ s}$ serves as an essential regularizer preventing singular invariant growth near the duct center where $\omega \to 0$.
 
 ---
 
