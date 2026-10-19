@@ -75,13 +75,29 @@ def run_mesh_sensitivity_study(repo_root: Path):
     u_coarse_raw = parse_foam_vec(coarse_u_file)
     u_fine_raw = parse_foam_vec(fine_u_file)
 
-    Nx_c, Ny_c, Nz_c = 50, 20, 20
+    c_coarse_file = case_dir / '0' / 'C'
+    if c_coarse_file.exists():
+        c_c_raw = parse_foam_vec(c_coarse_file)
+        x_c_u = np.unique(np.round(c_c_raw[:, 0], 6))
+        y_c_u = np.unique(np.round(c_c_raw[:, 1], 6))
+        z_c_u = np.unique(np.round(c_c_raw[:, 2], 6))
+        Nx_c, Ny_c, Nz_c = len(x_c_u), len(y_c_u), len(z_c_u)
+    else:
+        Nx_c, Ny_c, Nz_c = 50, 20, 20
     u_c_3d = u_coarse_raw.reshape(Nz_c, Ny_c, Nx_c, 3)
-    u_c_mid = np.mean(u_c_3d[:, :, 20:40, :], axis=2)
+    u_c_mid = np.mean(u_c_3d[:, :, int(0.4 * Nx_c):int(0.8 * Nx_c), :], axis=2)
 
-    Nx_f, Ny_f, Nz_f = 50, 40, 40
+    c_fine_file = case_dir / 'fine_mesh' / '0' / 'C'
+    if c_fine_file.exists():
+        c_f_raw = parse_foam_vec(c_fine_file)
+        x_f_u = np.unique(np.round(c_f_raw[:, 0], 6))
+        y_f_u = np.unique(np.round(c_f_raw[:, 1], 6))
+        z_f_u = np.unique(np.round(c_f_raw[:, 2], 6))
+        Nx_f, Ny_f, Nz_f = len(x_f_u), len(y_f_u), len(z_f_u)
+    else:
+        Nx_f, Ny_f, Nz_f = 50, 40, 40
     u_f_3d = u_fine_raw.reshape(Nz_f, Ny_f, Nx_f, 3)
-    u_f_mid = np.mean(u_f_3d[:, :, 20:40, :], axis=2)
+    u_f_mid = np.mean(u_f_3d[:, :, int(0.4 * Nx_f):int(0.8 * Nx_f), :], axis=2)
 
     V_c = u_c_mid[:, :, 1]
     W_c = u_c_mid[:, :, 2]
@@ -102,11 +118,9 @@ def run_mesh_sensitivity_study(repo_root: Path):
     dz_f = 2.0 / Nz_f
     omega_x_f = (np.gradient(W_f / Ub, axis=1) / dy_f) - (np.gradient(V_f / Ub, axis=0) / dz_f)
 
-    c_coarse_file = case_dir / '0' / 'C'
+    h_duct = 0.05
     if c_coarse_file.exists():
-        c_c_raw = parse_foam_vec(c_coarse_file)
         c_c_3d = c_c_raw.reshape(Nz_c, Ny_c, Nx_c, 3)
-        h_duct = 0.05
         y_c_coords = c_c_3d[0, :, 0, 1] / h_duct
         z_c_coords = c_c_3d[:, 0, 0, 2] / h_duct
     else:
@@ -114,11 +128,8 @@ def run_mesh_sensitivity_study(repo_root: Path):
         z_c_coords = np.linspace(-0.95, 0.95, Nz_c)
     cores_c = detect_vortex_cores(omega_x_c, y_c_coords, z_c_coords, min_separation=0.2, min_strength=0.04, min_area=4, wall_margin=0.08)
 
-    c_fine_file = case_dir / 'fine_mesh' / '0' / 'C'
     if c_fine_file.exists():
-        c_f_raw = parse_foam_vec(c_fine_file)
         c_f_3d = c_f_raw.reshape(Nz_f, Ny_f, Nx_f, 3)
-        h_duct = 0.05
         y_f_coords = c_f_3d[0, :, 0, 1] / h_duct
         z_f_coords = c_f_3d[:, 0, 0, 2] / h_duct
     else:

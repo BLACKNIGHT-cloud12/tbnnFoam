@@ -81,19 +81,23 @@ class ValidationEngine:
     def load_cfd_cs(self, time_dir: str):
         u_file = self.repo_root / 'verification_squareDuct' / time_dir / 'U'
         u_vec = parse_foam_vec(u_file)
-        Nx, Ny, Nz = 50, 20, 20
-        u_3d = u_vec.reshape(Nz, Ny, Nx, 3)
-        cs = np.mean(u_3d[:, :, 20:40, :], axis=2)
         c_file = self.repo_root / 'verification_squareDuct' / '0' / 'C'
         if c_file.exists():
             c_raw = parse_foam_vec(c_file)
+            x_u = np.unique(np.round(c_raw[:, 0], 6))
+            y_u = np.unique(np.round(c_raw[:, 1], 6))
+            z_u = np.unique(np.round(c_raw[:, 2], 6))
+            Nx, Ny, Nz = len(x_u), len(y_u), len(z_u)
             c_3d = c_raw.reshape(Nz, Ny, Nx, 3)
             h = 0.05
             y_c = c_3d[0, :, 0, 1] / h
             z_c = c_3d[:, 0, 0, 2] / h
         else:
+            Nx, Ny, Nz = 50, 20, 20
             y_c = np.linspace(-0.95, 0.95, Ny)
             z_c = np.linspace(-0.95, 0.95, Nz)
+        u_3d = u_vec.reshape(Nz, Ny, Nx, 3)
+        cs = np.mean(u_3d[:, :, int(0.4 * Nx):int(0.8 * Nx), :], axis=2)
         y_g = np.pad(y_c, (1, 1), 'constant', constant_values=(-1.0, 1.0))
         z_g = np.pad(z_c, (1, 1), 'constant', constant_values=(-1.0, 1.0))
         pad_cs = np.pad(cs, ((1, 1), (1, 1), (0, 0)), 'constant', constant_values=0.0)

@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from scipy.spatial import cKDTree
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -9,8 +10,19 @@ import matplotlib.pyplot as plt
 def parse_foam_vec(file_path: Path):
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
-    chunk = content[content.find('internalField'):]
-    data_str = chunk[chunk.find('(') + 1:chunk.rfind(')')].strip()
+    idx = content.find('internalField')
+    if idx == -1:
+        return np.array([])
+    chunk = content[idx:]
+    open_paren = chunk.find('(')
+    if open_paren == -1:
+        return np.array([])
+    close_paren = chunk.find('\n)\n;', open_paren)
+    if close_paren == -1:
+        close_paren = chunk.find('\n);', open_paren)
+    if close_paren == -1:
+        close_paren = chunk.rfind(')')
+    data_str = chunk[open_paren + 1:close_paren].strip()
     vectors = []
     for line in data_str.split('\n'):
         parts = line.strip().strip('()').split()
@@ -86,12 +98,23 @@ def analyze_timescale_and_invariants(repo_root: Path):
     omega_cfd = parse_foam_scalar(omega_file)
     tau_cfd = np.minimum(5.0, 1.0 / np.maximum(omega_cfd, 1e-4))
 
-    Nx_c, Ny_c, Nz_c = 50, 20, 20
-    u_3d = u_cfd.reshape(Nz_c, Ny_c, Nx_c, 3)
-    dx = 1.0 / Nx_c
-    dy = 0.1 / Ny_c
-    dz = 0.1 / Nz_c
+    c_file = case_dir / '0' / 'C'
+    if c_file.exists():
+        c_raw = parse_foam_vec(c_file)
+        x_u = np.unique(np.round(c_raw[:, 0], 6))
+        y_u = np.unique(np.round(c_raw[:, 1], 6))
+        z_u = np.unique(np.round(c_raw[:, 2], 6))
+        Nx_c, Ny_c, Nz_c = len(x_u), len(y_u), len(z_u)
+        dx = float(x_u[1] - x_u[0])
+        dy = float(y_u[1] - y_u[0])
+        dz = float(z_u[1] - z_u[0])
+    else:
+        Nx_c, Ny_c, Nz_c = 50, 20, 20
+        dx = 1.0 / Nx_c
+        dy = 0.1 / Ny_c
+        dz = 0.1 / Nz_c
 
+    u_3d = u_cfd.reshape(Nz_c, Ny_c, Nx_c, 3)
     grad_U_cfd = np.zeros((Nz_c, Ny_c, Nx_c, 3, 3))
     for c in range(3):
         grad_U_cfd[:, :, :, c, 0] = np.gradient(u_3d[:, :, :, c], axis=2) / dx
@@ -115,6 +138,20 @@ def analyze_timescale_and_invariants(repo_root: Path):
             'cfd_max': c_max,
             'coverage_percent': pct
         }
+
+    mu_dns = np.mean(inv_dns, axis=0)
+    std_dns = np.std(inv_dns, axis=0) + 1e-12
+    z_dns = (inv_dns - mu_dns) / std_dns
+    z_cfd = (inv_cfd - mu_dns) / std_dns
+    tree = cKDTree(z_dns)
+    d_cfd, _ = tree.query(z_cfd, k=1)
+    joint_diagnostic = {
+        'knn_dist_median': float(np.median(d_cfd)),
+        'knn_dist_mean': float(np.mean(d_cfd)),
+        'knn_dist_95pct': float(np.percentile(d_cfd, 95)),
+        'knn_dist_max': float(np.max(d_cfd))
+    }
+    coverage['joint_diagnostic'] = joint_diagnostic
 
     basis_comparison = {}
     for n in range(10):
@@ -143,12 +180,14 @@ def analyze_timescale_and_invariants(repo_root: Path):
 
     ax2 = axes[0, 1]
     ax2.scatter(inv_dns[:, 0], inv_dns[:, 1], color='#1f77b4', alpha=0.25, s=12, label='DNS Training Points')
-    ax2.scatter(inv_cfd[:, 0], inv_cfd[:, 1], color='#d62728', alpha=0.45, s=8, label='CFD Operating Points (All Cells)')
+    sc = ax2.scatter(inv_cfd[:, 0], inv_cfd[:, 1], c=d_cfd, cmap='plasma', alpha=0.55, s=10, label='CFD Operating Cells')
+    cb = fig.colorbar(sc, ax=ax2, pad=0.02)
+    cb.set_label('Standardized 5D kNN Distance', fontsize=9, fontweight='bold')
     ax2.set_xlabel(r'$I_1 = \mathrm{tr}(\mathbf{s}^2)$', fontsize=11, fontweight='bold')
     ax2.set_ylabel(r'$I_2 = \mathrm{tr}(\mathbf{w}^2)$', fontsize=11, fontweight='bold')
-    ax2.set_title(r'Invariant Phase Space $(I_1, I_2)$ & Operating Envelope', fontsize=12, fontweight='bold')
+    ax2.set_title(r'Invariant Phase Space $(I_1, I_2)$ & Joint Distribution Shift', fontsize=12, fontweight='bold')
     ax2.grid(True, linestyle='--', alpha=0.4)
-    ax2.legend(frameon=True, fontsize=10)
+    ax2.legend(frameon=True, fontsize=9, loc='lower left')
 
     ax3 = axes[1, 0]
     inv_labels = [r'$I_1$', r'$I_2$', r'$I_3$', r'$I_4$', r'$I_5$']
@@ -192,11 +231,13 @@ def analyze_timescale_and_invariants(repo_root: Path):
     print('================================================================================')
     print('         TIME-SCALE & INVARIANT DISTRIBUTION SHIFT ANALYSIS (DNS VS SST)        ')
     print('================================================================================')
-    print('| Invariant | DNS Training Range | CFD Operating Range | In-Distribution Coverage |')
+    print('| Invariant | DNS Training Range | CFD Operating Range | Marginal Range Coverage |')
     print('| :--- | :---: | :---: | :---: |')
     for i in range(5):
         c = coverage[f'I_{i+1}']
         print(f"| I_{i+1} | [{c['dns_min']:+.3e}, {c['dns_max']:+.3e}] | [{c['cfd_min']:+.3e}, {c['cfd_max']:+.3e}] | **{c['coverage_percent']:.1f}%** |")
+    print('--------------------------------------------------------------------------------')
+    print(f"| **Joint 5D Feature Distance (kNN)** | Median: {joint_diagnostic['knn_dist_median']:.2f} std | Mean: {joint_diagnostic['knn_dist_mean']:.2f} std | 95th Pct: {joint_diagnostic['knn_dist_95pct']:.2f} std |")
     print('================================================================================')
     print(f'[+] Generated diagnostic distribution figure: {fig_path}')
 

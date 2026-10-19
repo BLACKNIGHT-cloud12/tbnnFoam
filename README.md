@@ -163,7 +163,7 @@ Generating non-zero normal stress differences $(\overline{w'^2} - \overline{v'^2
 
 The physical validation rests on coupling the anisotropic stress divergence $\nabla \cdot \boldsymbol{\tau}_\Delta$ into OpenFOAM's momentum predictor and demonstrating that:
 1. The coupled pressure-velocity loop spontaneously generates, sustains, and organizes into the canonical **8-vortex secondary flow pattern** in the correct quadrant orientations without numerical divergence.
-2. Under cross-stream grid refinement, peak secondary circulation converges from $7.99\%$ toward the DNS benchmark of $2.03\%$, and core localization error drops from $0.586\,h$ down to $0.474\,h$.
+2. Under cross-stream grid refinement, peak secondary circulation trends from $7.99\%$ toward the DNS benchmark of $2.03\%$, and core localization error drops from $0.586\,h$ down to $0.474\,h$.
 3. Standard linear $k\text{--}\omega$ SST with Boussinesq closure completely fails this test, yielding identically zero vortex generation ($0$ cores detected).
 
 ### Understanding Model Discrepancies and Limitations:
@@ -200,31 +200,45 @@ Here, we conduct an independent **2-level cross-sectional grid resolution sensit
 | **Refined Grid (M2)** | 80,000 | 2.62% | (0.825, 0.475) | 0.474 h | 8 cores | 0.0857 m/s |
 | **Reference DNS Target** | N/A | **2.03%** | **(0.500, 0.820)** | **0.000 h (Ref)** | **8 cores** | **0.0000 m/s** |
 
-* **Secondary Circulation Convergence:** Reducing cross-stream discretization error reduces peak secondary speed from $7.99\%$ to $2.62\%$, converging sharply toward the DNS benchmark reference value ($2.03\%$).
+* **Secondary Circulation Discretization Sensitivity:** Increasing cross-stream resolution reduces peak secondary speed from $7.99\%$ to $2.62\%$, demonstrating a clear trend toward the DNS benchmark reference value ($2.03\%$).
 * **Core Localization Improvement:** The detected Q1 anti-clockwise core centroid error decreases from $0.586\,h$ down to $0.474\,h$.
 * **Streamwise Error Reduction:** Streamwise velocity RMSE against DNS decreases from $0.0934\text{ m/s}$ down to $0.0857\text{ m/s}$ (-8.2%).
 * **Topological Stability:** Both meshes cleanly identify all **8 distinct vortex cores** using connected-component labeling ([`scripts/validation/vortex_detector.py`](scripts/validation/vortex_detector.py)), confirming topological stability under refinement.
 
 ---
 
-## Operating Envelope: Zero Out-of-Distribution Drift
+## Operating Envelope: 1D Marginal Invariant Bounding & Joint Distribution Shift Diagnostic
 
-A known failure mode in ML turbulence models is out-of-distribution drift, where near-wall strain rates cause invariants to drift far outside the training support, leading to solver divergence.
+A known failure mode in ML turbulence modeling is out-of-distribution (OOD) drift, where high strain rates near corners or walls cause invariants to drift far outside the training support, leading to solver divergence.
 
-To verify that the model operates strictly in interpolation mode, [`scripts/validation/evaluate_timescale_distribution.py`](scripts/validation/evaluate_timescale_distribution.py) evaluated all 5 Cayley-Hamilton invariants and tensor basis norms across all 20,000 cells in the 3D CFD mesh against the DNS training envelope:
+To quantitatively evaluate whether the model operates in interpolation mode, [`scripts/validation/evaluate_timescale_distribution.py`](scripts/validation/evaluate_timescale_distribution.py) assesses both **1D marginal range coverage** and a **joint 5D feature-space nearest-neighbor diagnostic** across all 20,000 cells in the 3D CFD mesh against the DNS training distribution:
 
-![Operating Envelope](docs/figures/timescale_and_invariant_distribution.png)
+![Operating Envelope & Distribution Diagnostic](docs/figures/timescale_and_invariant_distribution.png)
 
-| Feature / Invariant | DNS Training Envelope | CFD Range (All 20k Cells) | Coverage |
+### 1D Marginal Invariant Coverage (Extrapolation Protection)
+
+| Feature / Invariant | DNS Training Envelope | CFD Range (All 20k Cells) | Marginal Coverage |
 | :--- | :---: | :---: | :---: |
-| **$I_1 = \mathrm{tr}(\mathbf{s}^2)$** | $[0.000, 0.933]$ | $[1.665 \times 10^{-4}, 0.0686]$ | **100.0% In-Bounds** |
-| **$I_2 = \mathrm{tr}(\mathbf{w}^2)$** | $[-0.932, 0.000]$ | $[-0.0682, -1.218 \times 10^{-8}]$ | **100.0% In-Bounds** |
-| **$I_3 = \mathrm{tr}(\mathbf{s}^3)$** | $[-0.0349, 0.00426]$ | $[-9.645 \times 10^{-4}, 1.166 \times 10^{-3}]$ | **100.0% In-Bounds** |
-| **$I_4 = \mathrm{tr}(\mathbf{w}^2\mathbf{s})$** | $[-0.00142, 0.0116]$ | $[-3.909 \times 10^{-4}, 3.180 \times 10^{-4}]$ | **100.0% In-Bounds** |
-| **$I_5 = \mathrm{tr}(\mathbf{w}^2\mathbf{s}^2)$** | $[-0.435, 0.000]$ | $[-2.338 \times 10^{-3}, -9.433 \times 10^{-12}]$ | **100.0% In-Bounds** |
+| **$I_1 = \mathrm{tr}(\mathbf{s}^2)$** | $[0.000, 0.933]$ | $[2.927 \times 10^{-4}, 0.0690]$ | **100.0% In-Bounds** |
+| **$I_2 = \mathrm{tr}(\mathbf{w}^2)$** | $[-0.932, 0.000]$ | $[-0.0682, -1.118 \times 10^{-10}]$ | **100.0% In-Bounds** |
+| **$I_3 = \mathrm{tr}(\mathbf{s}^3)$** | $[-0.0349, 0.00426]$ | $[-4.853 \times 10^{-3}, 4.505 \times 10^{-3}]$ | **99.0% In-Bounds** |
+| **$I_4 = \mathrm{tr}(\mathbf{w}^2\mathbf{s})$** | $[-0.00142, 0.0116]$ | $[-1.453 \times 10^{-3}, 1.546 \times 10^{-3}]$ | **99.8% In-Bounds** |
+| **$I_5 = \mathrm{tr}(\mathbf{w}^2\mathbf{s}^2)$** | $[-0.435, 0.000]$ | $[-2.350 \times 10^{-3}, -4.317 \times 10^{-14}]$ | **100.0% In-Bounds** |
 | **Basis Norms $\|\mathbf{T}^{(n)}\|_F$** | $[0.0, 1.318]$ | $[0.0, 0.243]$ | **100.0% Bounded** |
 
-**Zero Extrapolation:** Exactly 100.0% of all cells in the simulation operate strictly inside the DNS training support. The neural network never extrapolates outside its trained manifold during the run.
+### Joint 5D Distribution Shift Diagnostic (Standardized $k$-NN Distances)
+
+While 1D marginal bounds confirm that no single invariant experiences catastrophic runaway (averaging $99.8\%$ overall marginal bounding), **1D marginal bounding does not guarantee joint manifold containment**. Because the CFD simulation is spatially developing ($\partial U/\partial x \ne 0$) with interactive velocity updates, whereas the DNS benchmark is a fully developed periodic box, live CFD cells inevitably experience modest joint distribution shift.
+
+We quantify this shift via standardized Euclidean nearest-neighbor distance in the 5D invariant space:
+$$d_{\text{kNN}}(\mathbf{x}_{\text{CFD}}) = \min_{j} \left\| \frac{\mathbf{x}_{\text{CFD}} - \boldsymbol{\mu}_{\text{DNS}}}{\boldsymbol{\sigma}_{\text{DNS}}} - \frac{\mathbf{x}_{\text{DNS}, j} - \boldsymbol{\mu}_{\text{DNS}}}{\boldsymbol{\sigma}_{\text{DNS}}} \right\|_2$$
+
+* **Median Standardized Distance:** $0.21\,\sigma$
+* **Mean Standardized Distance:** $0.33\,\sigma$
+* **95th Percentile:** $1.17\,\sigma$
+* **Maximum Distance:** $1.43\,\sigma$
+
+This establishes that live CFD operating points remain closely clustered around observed training states (median gap $< 0.25$ standard deviations), preventing unphysical tensor extrapolations while transparently characterizing the joint distribution shift inherent in live Navier-Stokes coupling.
 
 ---
 
