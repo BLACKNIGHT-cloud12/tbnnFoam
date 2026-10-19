@@ -1,10 +1,14 @@
 import json
 import math
 import csv
+import sys
 from pathlib import Path
 from typing import Dict, Tuple, Any
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+from scripts.validation.vortex_detector import detect_vortex_cores
 
 def parse_foam_vec(file_path: Path):
     with open(file_path, 'r', encoding='utf-8') as f:
@@ -103,30 +107,24 @@ class ValidationEngine:
         y_1d = np.linspace(-1.0, 1.0, Ny_e)
         z_1d = np.linspace(-1.0, 1.0, Nz_e)
         Z_g, Y_g = np.meshgrid(z_1d, y_1d, indexing='ij')
-        q1_mask = (Y_g > 0.1) & (Z_g > 0.1) & (Y_g < 0.95) & (Z_g < 0.95)
-        q2_mask = (Y_g < -0.1) & (Z_g > 0.1) & (Y_g > -0.95) & (Z_g < 0.95)
-        q3_mask = (Y_g < -0.1) & (Z_g < -0.1) & (Y_g > -0.95) & (Z_g > -0.95)
-        q4_mask = (Y_g > 0.1) & (Z_g < -0.1) & (Y_g < 0.95) & (Z_g > -0.95)
-        vort_thresh = 0.05 * (self.Ub / self.h)
-        vortex_count = 0
-        for qm in [q1_mask, q2_mask, q3_mask, q4_mask]:
-            v_sub = omega_x[qm]
-            if len(v_sub) > 0:
-                if np.max(v_sub) > vort_thresh:
-                    vortex_count += 1
-                if np.min(v_sub) < -vort_thresh:
-                    vortex_count += 1
+        cores = detect_vortex_cores(omega_x, y_1d, z_1d, min_separation=0.2, min_strength=0.03, min_area=3, wall_margin=0.08)
+        vortex_count = len(cores)
         if vortex_count > 0:
-            abs_vort = np.abs(omega_x) * q1_mask
-            max_idx = np.unravel_index(np.argmax(abs_vort), omega_x.shape)
-            core_y = float(Y_g[max_idx])
-            core_z = float(Z_g[max_idx])
-            delta_r = float(math.sqrt((core_y - self.dns_core_y) ** 2 + (core_z - self.dns_core_z) ** 2))
+            q1_cores = [c for c in cores if c['y'] > 0 and c['z'] > 0]
+            if len(q1_cores) > 0:
+                best_q1 = max(q1_cores, key=lambda c: abs(c['strength']))
+                core_y = best_q1['y']
+                core_z = best_q1['z']
+                delta_r = float(math.sqrt((core_y - self.dns_core_y) ** 2 + (core_z - self.dns_core_z) ** 2))
+            else:
+                core_y = float('nan')
+                core_z = float('nan')
+                delta_r = float('nan')
         else:
             core_y = float('nan')
             core_z = float('nan')
             delta_r = float('nan')
-        return {'rmse_u': rmse_u, 'nrmse_u': nrmse_u, 'rmse_v': rmse_v, 'nrmse_v': nrmse_v, 'v_max_ratio': v_max_ratio, 'vortex_count': vortex_count, 'core_y': core_y, 'core_z': core_z, 'delta_r': delta_r}
+        return {'rmse_u': rmse_u, 'nrmse_u': nrmse_u, 'rmse_v': rmse_v, 'nrmse_v': nrmse_v, 'v_max_ratio': v_max_ratio, 'vortex_count': vortex_count, 'core_y': core_y, 'core_z': core_z, 'delta_r': delta_r, 'cores': cores}
 
     def print_report(self):
         u_dns, v_dns, w_dns = self.load_dns()
