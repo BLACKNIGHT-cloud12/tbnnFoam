@@ -1,5 +1,6 @@
 # OpenFOAM intermediate build files
-Make/linux*
+**/Make/linux*
+test_evaluator_parity
 verification_squareDuct/constant/polyMesh
 verification_squareDuct/50
 verification_squareDuct/100

@@ -191,7 +191,7 @@ public:
         tensor T[10]
     )
     {
-        const scalar tau = 1.0 / max(omegaVal, 1e-4);
+        const scalar tau = min(5.0, 1.0 / max(omegaVal, 1e-4));
         const symmTensor S_symm = symm(gradU);
         const tensor W_skew = skew(gradU);
 

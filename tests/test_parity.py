@@ -107,6 +107,80 @@ def test_json_weights_parity():
     assert 'inv_mean' in data and len(data['inv_mean']) == 5
     assert 'inv_std' in data and len(data['inv_std']) == 5
 
+def test_standalone_cpp_numerical_parity():
+    import json
+    import subprocess
+    import shutil
+    import platform
+    repo_root = Path(__file__).resolve().parent.parent
+    weights_json = repo_root / 'export_weights' / 'weights.json'
+    if not weights_json.exists():
+        pytest.skip("weights.json not found")
+    with open(weights_json, 'r') as f:
+        weights = json.load(f)
+    W0 = np.array(weights['0.weight'], dtype=np.float64)
+    b0 = np.array(weights['0.bias'], dtype=np.float64)
+    W1 = np.array(weights['2.weight'], dtype=np.float64)
+    b1 = np.array(weights['2.bias'], dtype=np.float64)
+    W2 = np.array(weights['4.weight'], dtype=np.float64)
+    b2 = np.array(weights['4.bias'], dtype=np.float64)
+    W3 = np.array(weights['6.weight'], dtype=np.float64)
+    b3 = np.array(weights['6.bias'], dtype=np.float64)
+    mean = np.array(weights['inv_mean'], dtype=np.float64)
+    std = np.array(weights['inv_std'], dtype=np.float64)
+    test_cases = [
+        (np.array([[0.0, 10.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]), 20.0),
+        (np.array([[0.5, 1.2, -0.3], [-0.8, -0.2, 0.4], [0.1, -0.5, -0.3]]), 15.0),
+        (np.array([[2.0, 25.0, -5.0], [5.0, -1.0, 8.0], [-3.0, -2.0, -1.0]]), 5.0)
+    ]
+    py_results = []
+    for gradU, omega in test_cases:
+        inv_py, T_py = comp_inv_and_bases(gradU[None, ...], np.array([omega]))
+        inv_py = inv_py[0]
+        T_py = T_py[0]
+        x0 = (inv_py - mean) / (std + 1e-6)
+        h0 = np.maximum(0.0, W0 @ x0 + b0)
+        h1 = np.maximum(0.0, W1 @ h0 + b1)
+        h2 = np.maximum(0.0, W2 @ h1 + b2)
+        g_py = W3 @ h2 + b3
+        a_py_raw = np.sum(g_py[:, None, None] * T_py, axis=0)
+        a_py_symm = 0.5 * (a_py_raw + a_py_raw.T)
+        a_py = project_realizable(a_py_symm)
+        py_results.append({
+            'invariants': inv_py,
+            'basis': T_py,
+            'g': g_py,
+            'a': a_py
+        })
+    binary_path = repo_root / 'tests' / 'cpp_parity' / 'test_evaluator_parity'
+    cpp_data = None
+    if platform.system() == 'Windows':
+        if shutil.which('wsl'):
+            posix_root = str(repo_root).replace('\\', '/').replace('C:', '/mnt/c').replace('c:', '/mnt/c')
+            cmd = f"source /usr/lib/openfoam/openfoam2606/etc/bashrc 2>/dev/null && cd {posix_root} && ./tests/cpp_parity/test_evaluator_parity export_weights/weights.json"
+            res = subprocess.run(['wsl', 'bash', '-c', cmd], capture_output=True, text=True)
+            if res.returncode == 0 and '{' in res.stdout:
+                json_start = res.stdout.find('{', res.stdout.find('tbnnEvaluator:'))
+                if json_start != -1:
+                    json_end = res.stdout.rfind('}') + 1
+                    cpp_data = json.loads(res.stdout[json_start:json_end])
+    elif platform.system() == 'Linux':
+        if binary_path.exists():
+            res = subprocess.run([str(binary_path), str(weights_json)], capture_output=True, text=True)
+            if res.returncode == 0 and '{' in res.stdout:
+                json_start = res.stdout.find('{', res.stdout.find('tbnnEvaluator:'))
+                if json_start != -1:
+                    json_end = res.stdout.rfind('}') + 1
+                    cpp_data = json.loads(res.stdout[json_start:json_end])
+    if cpp_data is None:
+        pytest.skip("C++ parity binary or OpenFOAM environment not available")
+    for idx, case in enumerate(cpp_data['cases']):
+        py_res = py_results[idx]
+        assert np.allclose(case['invariants'], py_res['invariants'], atol=1e-5)
+        assert np.allclose(case['basis'], py_res['basis'], atol=1e-5)
+        assert np.allclose(case['g'], py_res['g'], atol=1e-5)
+        assert np.allclose(case['a'], py_res['a'], atol=1e-5)
+
 if __name__ == '__main__':
     test_basis_trace_freedom()
     test_basis_symmetry()
@@ -115,4 +189,6 @@ if __name__ == '__main__':
     test_evaluator_parity()
     test_torchscript_parity()
     test_json_weights_parity()
+    test_standalone_cpp_numerical_parity()
     print('[+] All parity and cross-implementation verification tests passed!')
+

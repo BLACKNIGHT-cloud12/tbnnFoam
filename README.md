@@ -75,7 +75,9 @@ The repository provides two distinct inference paths tailored for production CFD
    * **Input Preprocessing:** Standardized invariants $\hat{\boldsymbol{\lambda}} = (\boldsymbol{\lambda} - \boldsymbol{\mu}_{\lambda}) / \boldsymbol{\sigma}_{\lambda}$ with time scale clipped to $\tau = \min(1/\omega, 5.0)\text{ s}$.
    * **Execution:** Header-only matrix-vector multiplication engine ([src/tbnnEvaluator.H](src/tbnnEvaluator.H)) parsing JSON weights ([export_weights/weights.json](export_weights/weights.json)) with zero external third-party dependencies.
 
-Both implementations enforce identical Pope (1975) 10-tensor basis contraction, time-scale limiters ($\tau \le 5.0$), and Cardano eigensolver Lumley realizability clipping. Parity across both architectures and PyTorch training is verified via [`tests/test_parity.py`](tests/test_parity.py).
+Both implementations enforce identical Pope (1975) 10-tensor basis contraction, time-scale limiters ($\tau \le 5.0$), and Cardano eigensolver Lumley realizability clipping. Parity across both architectures and execution engines is verified via [`tests/test_parity.py`](tests/test_parity.py):
+* **PyTorch vs. TorchScript:** Verifies bitwise tensor output parity between the root PyTorch network and the traced `torch::jit` model.
+* **Python vs. Standalone OpenFOAM C++ (`tbnnEvaluator.H`):** Compiles and executes the native C++ evaluation utility (`tests/cpp_parity/test_evaluator_parity`) against the reference Python pipeline on identical strain/rotation rates $(\nabla \mathbf{U}, \omega)$, confirming numerical parity across all 5 invariants, all 10 tensor bases, neural coefficients $\mathbf{g}$, and reconstructed realizable anisotropy tensors $\mathbf{a}$.
 
 ---
 

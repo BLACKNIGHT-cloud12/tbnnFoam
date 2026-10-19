@@ -45,17 +45,18 @@ tmp<fvVectorMatrix> tUEqn
   - fvm::laplacian(turbulence->nuEff(), U)
   + fvc::div(tauExtra)
  ==
-    fvModels.source(U)
+    fvOptions(U)
 );
 fvVectorMatrix& UEqn = tUEqn.ref();
 
 UEqn.relax();
 
-fvConstraints.constrain(UEqn);
+fvOptions.constrain(UEqn);
 
 if (simple.momentumPredictor())
 {
     solve(UEqn == -fvc::grad(p));
 
-    fvConstraints.constrain(U);
+    fvOptions.correct(U);
 }
+

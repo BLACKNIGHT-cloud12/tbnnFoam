@@ -43,5 +43,5 @@
 
     U = HbyA - rAtU()*fvc::grad(p);
     U.correctBoundaryConditions();
-    fvConstraints.constrain(U);
+    fvOptions.correct(U);
 }
