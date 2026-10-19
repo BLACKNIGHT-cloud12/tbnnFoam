@@ -101,9 +101,11 @@ In standard linear OpenFOAM, the simulation is locked at the top apex (3-compone
 
 I validated the solver on a square duct flow against the benchmark Direct Numerical Simulation (DNS) dataset of Pirozzoli et al. (2018) at bulk Reynolds number $Re_b \approx 4410$ ($Re_h \approx 2205$) and friction Reynolds number $Re_\tau = 150$:
 
-* **Duct Dimensions:** Cross-section $2h \times 2h$ with duct half-width $h = 0.05\text{ m}$ (duct width $D_h = 2h = 0.10\text{ m}$).
-* **Coordinate System:** Non-dimensional cross-stream coordinates $y/h \in [-1, 1]$ and $z/h \in [-1, 1]$, with origin $(0, 0)$ at duct centerline.
-* **Flow Parameters:** Bulk velocity $U_b = 1.0\text{ m/s}$, kinematic viscosity $\nu = 2.25 \times 10^{-5}\text{ m}^2/\text{s}$, giving $Re_b = 2 U_b h / \nu \approx 4440$ and $Re_h = U_b h / \nu \approx 2220$.
+* **Physical Scaling Reconciliation:** 
+  - **Canonical Dimensionless Domain:** Normalized coordinates $y/h \in [-1, 1]$ and $z/h \in [-1, 1]$ with origin $(0, 0)$ at duct centerline; normalized velocities $U/U_b, V/U_b, W/U_b$.
+  - **OpenFOAM CFD Scale:** Laboratory square duct ($2h \times 2h$) with half-width $h = 0.05\text{ m}$ ($D_h = 0.10\text{ m}$), length $L = 1.0\text{ m} = 20h$, $U_b = 1.0\text{ m/s}$, and kinematic viscosity $\nu = 2.25 \times 10^{-5}\text{ m}^2/\text{s}$ ($Re_b = U_b D_h / \nu \approx 4440$, $Re_h \approx 2220$).
+  - **Reference DNS Database Scale (Pirozzoli et al. 2018):** Unit hydraulic diameter $D_h = 1.0\text{ m}$ ($h = 0.5\text{ m}$), $U_b = 1.0\text{ m/s}$, and $\nu = 2.26757 \times 10^{-4}\text{ m}^2/\text{s}$ ($Re_b = 4410$, $Re_h = 2205$, $Re_\tau = 150.0$).
+  - Both map onto identical non-dimensional flow physics and are formally documented in [`data/benchmark_dns/benchmark_metadata.json`](data/benchmark_dns/benchmark_metadata.json).
 * **Canonical DNS Reference:** From column 13 (`omx/(ub/h)`) of Pirozzoli et al. (2018) on a $65 \times 65$ cross-section grid, the primary anti-clockwise (ACW) vortex core in Quadrant 1 ($y > 0, z > 0$) is located at **$(y/h, z/h) = (0.50, 0.82)$**.
 
 ![Benchmark Validation](docs/figures/tbnn_hero_showcase.png)
@@ -112,12 +114,12 @@ I validated the solver on a square duct flow against the benchmark Direct Numeri
 
 To ensure that vortex core comparisons are objective and reproducible rather than relying on visual inspection or static annotations, the repository implements an independent algorithmic vortex detector in [`scripts/validation/vortex_detector.py`](scripts/validation/vortex_detector.py):
 
-1. **Discretization & Vorticity Sign Convention:** The cross-stream velocity field $(V, W)$ extracted from OpenFOAM is differentiated via second-order central differences:
-   $$\omega_x(y, z) = \frac{\partial W}{\partial y} - \frac{\partial V}{\partial z}$$
-   Here, $\omega_x > 0$ denotes positive circulation (**anti-clockwise / ACW**), and $\omega_x < 0$ denotes negative circulation (**clockwise / CW**).
+1. **Discretization & Vorticity Sign Convention:** The non-dimensional axial vorticity field $\omega_x^*$ is computed via second-order central differences on normalized coordinates:
+   $$\omega_x^*(y/h, z/h) = \frac{\omega_x}{U_b / h} = \frac{\partial (W / U_b)}{\partial (y / h)} - \frac{\partial (V / U_b)}{\partial (z / h)}$$
+   Here, $\omega_x^* > 0$ denotes positive circulation (**anti-clockwise / ACW**), and $\omega_x^* < 0$ denotes negative circulation (**clockwise / CW**).
 2. **Boundary Layer Wall-Margin Mask:** An interior mask $|y/h| \le 0.92, |z/h| \le 0.92$ is applied to prevent attached wall shear layers ($\partial U/\partial n$) from registering as secondary flow vortices.
 3. **Filtering Fragmented Vorticity from Physical Cores:** To distinguish the 8 primary physical secondary cells from weak numerical artifacts or fragmented sub-structures, the detector enforces three filtering criteria:
-   * **Strength Thresholding:** Cells must satisfy $|\omega_x| / (U_b / h) \ge 0.04$, discarding low-level numerical background noise.
+   * **Strength Thresholding:** Cells must satisfy $|\omega_x^*| = |\omega_x| / (U_b / h) \ge 0.04$, discarding low-level numerical background noise.
    * **Minimum Cluster Area:** Connected components (identified via 8-connectivity labeling with `scipy.ndimage.label`) must contain at least 4 contiguous cells (`min_area = 4`), eliminating single-cell numerical spikes.
    * **Non-Maximum Suppression (Distance Separation):** A separation radius `min_separation = 0.20 h` is enforced between candidate cores of the same sign, merging fragmented sub-peaks into the dominant local vortex core.
 4. **Vortex Center Extraction & Matching Rule:** The detected core coordinate $(y_{\text{core}}, z_{\text{core}})$ is the location of the maximum $|\omega_x|$ within each retained component. In Quadrant 1 ($y > 0, z > 0$), which contains one counter-rotating vortex pair, the detected ACW core closest to the canonical DNS reference $(0.50, 0.82)$ in Euclidean distance is matched for quantitative tracking:
@@ -131,22 +133,26 @@ python scripts/validation/evaluate_validation_plan.py
 
 ### Quantitative Comparison & Error Definitions
 
-Metrics are evaluated on the full $65 \times 65 = 4{,}225$ uniform grid spanning the entire duct cross-section $(y/h, z/h) \in [-1, 1] \times [-1, 1]$ (sampled at the developing station $x/h = 7.0$, or $x/D_h = 3.5$), comparing `tbnnFoam` (`verification_squareDuct/300/U`) against converged baseline $k\text{--}\omega$ SST (`verification_squareDuct/baseline_sst/111/U`) and reference DNS:
+Metrics are evaluated on both the native CFD mesh cross-section and the full $65 \times 65 = 4{,}225$ uniform benchmark grid $(y/h, z/h) \in [-1, 1] \times [-1, 1]$ (sampled at the developing station $x/h = 7.0$, or $x/D_h = 3.5$), comparing `tbnnFoam` (`verification_squareDuct/300/U`) against converged baseline $k\text{--}\omega$ SST (`verification_squareDuct/baseline_sst/111/U`) and reference DNS:
 
 * **Streamwise Velocity Normalization:** Normalized by the bulk mean velocity $U_{\text{ref}} = U_b = 1.00\text{ m/s}$:
   $$\mathrm{RMSE}_U = \sqrt{\frac{1}{N}\sum_{i=1}^N (U_{\text{CFD}, i} - U_{\text{DNS}, i})^2} = 0.0934\text{ m/s}, \quad \mathrm{NRMSE}_U = \frac{\mathrm{RMSE}_U}{U_b} \times 100\% = 9.34\%$$
 * **Secondary Velocity RMSE:** Evaluated over all cross-stream velocity components:
   $$\mathrm{RMSE}_{\text{sec}} = \sqrt{\frac{1}{N}\sum_{i=1}^N \left[(V_{\text{CFD}, i} - V_{\text{DNS}, i})^2 + (W_{\text{CFD}, i} - W_{\text{DNS}, i})^2\right]} = 0.0261\text{ m/s}$$
 
-| Metric | Standard OpenFOAM ($k\text{--}\omega$ SST) | `tbnnFoam` | Reference DNS (Pirozzoli et al. 2018) | Notes |
+| Metric | Standard OpenFOAM ($k\text{--}\omega$ SST) | `tbnnFoam` (Native Mesh / DNS Grid) | Reference DNS (Pirozzoli et al. 2018) | Notes |
 | :--- | :---: | :---: | :---: | :--- |
 | **Secondary Vortex Cores** | 0 cores (Failed) | **8 cores (Detected)** | 8 cores (Canonical) | Recovers Prandtl's 8 corner vortex pairs |
-| **Peak Secondary Speed ($V_{\text{sec}} / U_b$)** | 0.45% (Noise) | **6.38%** | 2.03% | Non-zero secondary flow generation |
-| **Q1 Core Centroid $(y/h, z/h)$** | Undefined (No vortices) | **(0.91, 0.78)** | (0.50, 0.82) | Dynamically detected ACW core coordinates |
-| **Core Distance Error** | N/A | **0.408 h** | 0.000 h (Ref) | Distance to benchmark core centroid |
+| **Peak Secondary Speed ($V_{\text{sec}} / U_b$)** | 0.45% (Noise) | **7.99% (native) / 6.38% (DNS grid)** | 2.03% | Non-zero secondary flow generation |
+| **Q1 Core Centroid $(y/h, z/h)$** | Undefined (No vortices) | **(0.850, 0.350) / (0.91, 0.78)** | (0.50, 0.82) | Native discrete cell center vs. $65\times65$ interpolated peak |
+| **Core Distance Error** | N/A | **0.586 h (native) / 0.408 h (DNS grid)** | 0.000 h (Ref) | Distance to benchmark core centroid |
 | **Streamwise $U$ RMSE** | 0.0616 m/s (6.16%) | **0.0934 m/s (9.34%)** | 0.0000 m/s (Ref) | Full cross-section NRMSE ($U_{\text{ref}} = 1.00\text{ m/s}$) |
 | **Secondary $(V, W)$ RMSE** | 0.0087 m/s | **0.0261 m/s** | 0.0000 m/s (Ref) | In-plane cross-stream velocity recovery |
 | **Continuity Residual** | $< 10^{-6}$ | **$< 10^{-6}$** | N/A | Both meet numerical steady-state convergence |
+
+> [!NOTE]
+> **Reconciliation of Native Mesh vs. Interpolated Grid Metrics:**
+> On the native coarse CFD mesh ($20 \times 20$ cross-section), the discrete cell centers have spacing $\Delta y/h = \Delta z/h = 0.10$. Connected-component labeling identifies the discrete cell center $(0.850, 0.350)$ as the cell-centered peak, giving a core localization error of $0.586\,h$ and peak secondary velocity $7.99\%$. When the velocity field is bilinearly interpolated onto the $65 \times 65$ DNS grid ($\Delta y/h = \Delta z/h = 0.03125$), the resolved peak shifts to $(0.91, 0.78)$, yielding a distance error of $0.408\,h$ and peak secondary velocity $6.38\%$. Both evaluations are generated directly and reproducibly by `scripts/validation/evaluate_mesh_sensitivity.py` (native mesh) and `scripts/validation/evaluate_validation_plan.py` (interpolated DNS grid).
 
 ---
 

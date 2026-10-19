@@ -108,13 +108,13 @@ class ValidationEngine:
         Ny_e = u_cfd.shape[1]
         dz = 2.0 / (Nz_e - 1)
         dy = 2.0 / (Ny_e - 1)
-        omega_x = np.gradient(w_cfd, axis=1) / dy - np.gradient(v_cfd, axis=0) / dz
+        omega_x = (np.gradient(w_cfd / self.Ub, axis=1) / dy) - (np.gradient(v_cfd / self.Ub, axis=0) / dz)
         y_1d = np.linspace(-1.0, 1.0, Ny_e)
         z_1d = np.linspace(-1.0, 1.0, Nz_e)
         Z_g, Y_g = np.meshgrid(z_1d, y_1d, indexing='ij')
         assert Z_g.shape == (Nz_e, Ny_e)
         assert Y_g.shape == (Nz_e, Ny_e)
-        cores = detect_vortex_cores(omega_x, y_1d, z_1d, min_separation=0.2, min_strength=0.03, min_area=3, wall_margin=0.08)
+        cores = detect_vortex_cores(omega_x, y_1d, z_1d, min_separation=0.2, min_strength=0.04, min_area=4, wall_margin=0.08)
         vortex_count = len(cores)
         if vortex_count > 0:
             q1_cores = [c for c in cores if c['y'] > 0 and c['z'] > 0 and c['type'] == 'acw']

@@ -14,21 +14,58 @@
     "friction_reynolds_number_Re_tau": "Re_tau = u_tau * h / nu",
     "naming_convention_note": "Canonical dataset filenames square_duct_dns_Reb{Re_b}_Retau{Re_tau}.csv explicitly specify both bulk Reynolds number Re_b and friction Reynolds number Re_tau to eliminate ambiguity between bulk (Re_b) and half-width (Re_h) definitions. The legacy labels Re1500 and Re2200 reflected earlier arithmetic miscalculations in the initial repo draft."
   },
+  "physical_scaling_conventions": {
+    "canonical_dimensionless_space": {
+      "description": "Authoritative dimensionless representation used across all comparisons, scripts, and validation metrics",
+      "normalized_cross_stream_coordinates": "y/h in [-1.0, 1.0], z/h in [-1.0, 1.0]",
+      "normalized_velocities": "U/U_b, V/U_b, W/U_b",
+      "normalized_vorticity": "omega_x / (U_b / h) = d(W/U_b)/d(y/h) - d(V/U_b)/d(z/h)",
+      "target_bulk_reynolds_number_Re_b": 4410
+    },
+    "dns_reference_physical_scale": {
+      "description": "Direct numerical simulation database scaling (Pirozzoli et al. 2018)",
+      "duct_half_width_h_m": 0.5,
+      "hydraulic_diameter_Dh_m": 1.0,
+      "bulk_velocity_Ub_m_s": 1.0,
+      "kinematic_viscosity_nu_m2_s": 0.000226757,
+      "bulk_reynolds_number_Re_b": 4410,
+      "half_width_reynolds_number_Re_h": 2205,
+      "friction_velocity_u_tau_m_s": 0.0675,
+      "friction_reynolds_number_Re_tau": 150.0
+    },
+    "openfoam_cfd_physical_scale": {
+      "description": "Dimensional laboratory duct scale simulated in OpenFOAM (verification_squareDuct case)",
+      "duct_half_width_h_m": 0.05,
+      "hydraulic_diameter_Dh_m": 0.10,
+      "duct_length_L_m": 1.0,
+      "bulk_velocity_Ub_m_s": 1.0,
+      "kinematic_viscosity_nu_m2_s": 0.0000225,
+      "bulk_reynolds_number_Re_b": 4444,
+      "half_width_reynolds_number_Re_h": 2222
+    }
+  },
   "flow_parameters": {
     "bulk_reynolds_number_Re_b": 4410,
     "half_width_reynolds_number_Re_h": 2205,
     "friction_reynolds_number_Re_tau": 150.0,
-    "duct_half_width_h_m": 0.5,
-    "hydraulic_diameter_Dh_m": 1.0,
+    "duct_half_width_h_m": 0.05,
+    "dns_half_width_h_m": 0.5,
+    "hydraulic_diameter_Dh_m": 0.10,
+    "dns_hydraulic_diameter_Dh_m": 1.0,
     "bulk_velocity_Ub_m_s": 1.0,
-    "kinematic_viscosity_nu_m2_s": 0.000226757,
+    "kinematic_viscosity_nu_m2_s": 0.0000225,
+    "dns_kinematic_viscosity_nu_m2_s": 0.000226757,
     "friction_velocity_u_tau_m_s": 0.0675
   },
   "geometry_and_domain": {
     "cross_section": "2h x 2h square",
-    "y_range": [-0.5, 0.5],
-    "z_range": [-0.5, 0.5],
-    "streamwise_length_Lx": "4 * pi * h",
+    "canonical_normalized_y_range": [-1.0, 1.0],
+    "canonical_normalized_z_range": [-1.0, 1.0],
+    "dns_physical_y_range_m": [-0.5, 0.5],
+    "dns_physical_z_range_m": [-0.5, 0.5],
+    "cfd_physical_y_range_m": [-0.05, 0.05],
+    "cfd_physical_z_range_m": [-0.05, 0.05],
+    "streamwise_length_Lx": "4 * pi * h (DNS periodic) / 20 * h (CFD developing)",
     "symmetry": "8-fold octant symmetry"
   },
   "reference_vortex_cores_quadrant1": {

@@ -1,7 +1,9 @@
 import numpy as np
 from scipy import ndimage
 
-def detect_vortex_cores(omega_x, y_1d, z_1d, min_separation=0.2, min_strength=0.04, min_area=4, wall_margin=0.08):
+def detect_vortex_cores(omega_x, y_1d, z_1d, min_separation=0.2, min_strength=0.04, min_area=4, wall_margin=0.08, Ub=None, h=None):
+    if Ub is not None and h is not None:
+        omega_x = omega_x / (Ub / h)
     Ny = len(y_1d)
     Nz = len(z_1d)
     Z_g, Y_g = np.meshgrid(z_1d, y_1d, indexing='ij')

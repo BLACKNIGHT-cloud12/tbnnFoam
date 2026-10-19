@@ -83,21 +83,21 @@ def run_mesh_sensitivity_study(repo_root: Path):
     vmax_c = float(np.max(V_sec_c) / Ub)
     vmax_f = float(np.max(V_sec_f) / Ub)
 
-    dy_c = 0.1 / Ny_c
-    dz_c = 0.1 / Nz_c
-    omega_x_c = (np.gradient(W_c, axis=1) / dy_c) - (np.gradient(V_c, axis=0) / dz_c)
+    dy_c = 2.0 / Ny_c
+    dz_c = 2.0 / Nz_c
+    omega_x_c = (np.gradient(W_c / Ub, axis=1) / dy_c) - (np.gradient(V_c / Ub, axis=0) / dz_c)
 
-    dy_f = 0.1 / Ny_f
-    dz_f = 0.1 / Nz_f
-    omega_x_f = (np.gradient(W_f, axis=1) / dy_f) - (np.gradient(V_f, axis=0) / dz_f)
+    dy_f = 2.0 / Ny_f
+    dz_f = 2.0 / Nz_f
+    omega_x_f = (np.gradient(W_f / Ub, axis=1) / dy_f) - (np.gradient(V_f / Ub, axis=0) / dz_f)
 
     y_c_coords = np.linspace(-0.95, 0.95, Ny_c)
     z_c_coords = np.linspace(-0.95, 0.95, Nz_c)
-    cores_c = detect_vortex_cores(omega_x_c, y_c_coords, z_c_coords)
+    cores_c = detect_vortex_cores(omega_x_c, y_c_coords, z_c_coords, min_separation=0.2, min_strength=0.04, min_area=4, wall_margin=0.08)
 
     y_f_coords = np.linspace(-0.975, 0.975, Ny_f)
     z_f_coords = np.linspace(-0.975, 0.975, Nz_f)
-    cores_f = detect_vortex_cores(omega_x_f, y_f_coords, z_f_coords)
+    cores_f = detect_vortex_cores(omega_x_f, y_f_coords, z_f_coords, min_separation=0.2, min_strength=0.04, min_area=4, wall_margin=0.08)
 
     acw_q1_cores_c = [c for c in cores_c if c['y'] > 0.0 and c['z'] > 0.0 and c['type'] == 'acw']
     if not acw_q1_cores_c:
