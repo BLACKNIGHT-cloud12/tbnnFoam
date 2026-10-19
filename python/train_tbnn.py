@@ -109,6 +109,33 @@ def train():
                 val_loss = criterion(a_val_pred, Y_a_val)
                 frob_err = torch.mean(torch.norm(a_val_pred - Y_a_val, dim=(1, 2))).item()
             print(f'Epoch [{epoch:4d}/{epochs}] | Train Loss: {loss.item():.6e} | Val Loss: {val_loss.item():.6e} | Val Frob: {frob_err:.6e}')
+    held_csv = Path('data/benchmark_dns/square_duct_dns_Re2200.csv')
+    if held_csv.exists():
+        df_held = pd.read_csv(held_csv)
+        N_h = len(df_held)
+        grad_U_h = np.zeros((N_h, 3, 3))
+        for i in range(3):
+            for j in range(3):
+                grad_U_h[:, i, j] = df_held[f'grad_U_{i}{j}'].values
+        omega_h = df_held['omega'].values
+        a_true_h = np.zeros((N_h, 3, 3))
+        a_true_h[:, 0, 0] = df_held['a_11'].values
+        a_true_h[:, 1, 1] = df_held['a_22'].values
+        a_true_h[:, 2, 2] = df_held['a_33'].values
+        a_true_h[:, 0, 1] = a_true_h[:, 1, 0] = df_held['a_12'].values
+        a_true_h[:, 0, 2] = a_true_h[:, 2, 0] = df_held['a_13'].values
+        a_true_h[:, 1, 2] = a_true_h[:, 2, 1] = df_held['a_23'].values
+        inv_h, bases_h = comp_inv_and_bases(grad_U_h, omega_h)
+        inv_h_norm = (inv_h - inv_mean) / inv_std
+        X_inv_h = torch.tensor(inv_h_norm, dtype=torch.float32).to(device)
+        X_basis_h = torch.tensor(bases_h, dtype=torch.float32).to(device)
+        Y_a_h = torch.tensor(a_true_h, dtype=torch.float32).to(device)
+        model.eval()
+        with torch.no_grad():
+            a_held_pred, _ = model(X_inv_h, X_basis_h)
+            held_loss = criterion(a_held_pred, Y_a_h)
+            held_frob = torch.mean(torch.norm(a_held_pred - Y_a_h, dim=(1, 2))).item()
+        print(f'Held-Out Generalization (Re=2200): Loss = {held_loss.item():.6e} | Frob = {held_frob:.6e}')
     print('Training complete!')
     export_dir = Path('export_weights')
     export_dir.mkdir(parents=True, exist_ok=True)

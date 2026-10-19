@@ -33,6 +33,7 @@ divSchemes
     div(phi,U)      bounded Gauss upwind;
     div(phi,k)      bounded Gauss upwind;
     div(phi,epsilon) bounded Gauss upwind;
+    div(phi,omega)  bounded Gauss upwind;
     div((nuEff*dev2(T(grad(U))))) Gauss linear;
     div(tauDelta)   Gauss linear;
 }
@@ -50,6 +51,11 @@ interpolationSchemes
 snGradSchemes
 {
     default         corrected;
+}
+
+wallDist
+{
+    method          meshWave;
 }
 
 // ************************************************************************* //

@@ -25,7 +25,7 @@ solvers
         smoother        GaussSeidel;
     }
 
-    "(U|k|epsilon)"
+    "(U|k|epsilon|omega)"
     {
         solver          smoothSolver;
         smoother        GaussSeidel;
@@ -41,9 +41,9 @@ SIMPLE
     consistent               no;
     residualControl
     {
-        p               1e-4;
-        U               1e-4;
-        "(k|epsilon)"   1e-4;
+        p                       1e-4;
+        U                       1e-4;
+        "(k|epsilon|omega)"     1e-4;
     }
 }
 
@@ -58,6 +58,7 @@ relaxationFactors
         U               0.5;
         k               0.5;
         epsilon         0.5;
+        omega           0.5;
     }
 }
 

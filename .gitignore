@@ -1,8 +1,11 @@
 # OpenFOAM intermediate build files
 Make/linux*
 verification_squareDuct/constant/polyMesh
-verification_squareDuct/[1-9]*
-verification_squareDuct/0.*
+verification_squareDuct/50
+verification_squareDuct/100
+verification_squareDuct/150
+!verification_squareDuct/200/
+!verification_squareDuct/baseline_73/
 *.o
 *.so
 

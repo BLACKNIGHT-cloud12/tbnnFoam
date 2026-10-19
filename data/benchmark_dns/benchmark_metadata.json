@@ -34,5 +34,18 @@
     "y_core_over_h": 0.50,
     "z_core_over_h": 0.82,
     "peak_secondary_velocity_ratio_Vmax_over_Ub": 0.0185
+  },
+  "held_out_benchmark": {
+    "case_name": "Square Duct DNS at Re_b = 2200 (Re_tau = 220)",
+    "citation": "Pinelli, A., Uhlmann, M., Sekimoto, A., & Kawahara, G. (2010). Reynolds number dependence of mean secondary flow in a square duct. J. Fluid Mech., 644, 107-122.",
+    "dataset_file": "square_duct_dns_Re2200.csv",
+    "bulk_reynolds_number_Re_b": 2200,
+    "friction_reynolds_number_Re_tau": 220.0,
+    "duct_half_width_h_m": 0.5,
+    "hydraulic_diameter_Dh_m": 1.0,
+    "bulk_velocity_Ub_m_s": 1.0,
+    "kinematic_viscosity_nu_m2_s": 0.0004545,
+    "friction_velocity_u_tau_m_s": 0.057,
+    "peak_secondary_velocity_ratio_Vmax_over_Ub": 0.0215
   }
 }

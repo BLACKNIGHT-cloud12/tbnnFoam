@@ -145,7 +145,39 @@ def train():
                 val_loss = criterion(val_pred, Y_a_val_d)
             print(f'Epoch [{epoch:3d}/400] - Train Loss: {loss.item():.6e} | Val Loss: {val_loss.item():.6e}')
     model.eval()
+    held_out_file = Path('data/benchmark_dns/square_duct_dns_Re2200.csv')
+    if held_out_file.exists():
+        held_data = []
+        with open(held_out_file, 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                held_data.append(row)
+        N_h = len(held_data)
+        grad_U_h = np.zeros((N_h, 3, 3))
+        omega_h = np.zeros(N_h)
+        a_true_h = np.zeros((N_h, 3, 3))
+        for idx, row in enumerate(held_data):
+            for i in range(3):
+                for j in range(3):
+                    grad_U_h[idx, i, j] = float(row[f'grad_U_{i}{j}'])
+            omega_h[idx] = float(row['omega'])
+            a_true_h[idx, 0, 0] = float(row['a_11'])
+            a_true_h[idx, 1, 1] = float(row['a_22'])
+            a_true_h[idx, 2, 2] = float(row['a_33'])
+            a_true_h[idx, 0, 1] = a_true_h[idx, 1, 0] = float(row['a_12'])
+            a_true_h[idx, 0, 2] = a_true_h[idx, 2, 0] = float(row['a_13'])
+            a_true_h[idx, 1, 2] = a_true_h[idx, 2, 1] = float(row['a_23'])
+        inv_h, T_h = comp_inv_and_bases(grad_U_h, omega_h)
+        X_inv_h = torch.tensor(inv_h, dtype=torch.float32).to(device)
+        X_basis_h = torch.tensor(T_h, dtype=torch.float32).to(device)
+        Y_a_h = torch.tensor(a_true_h, dtype=torch.float32).to(device)
+        with torch.no_grad():
+            held_pred = model(X_inv_h, X_basis_h)
+            held_loss = criterion(held_pred, Y_a_h)
+            held_frob = torch.mean(torch.norm(held_pred - Y_a_h, dim=(1, 2))).item()
+        print(f'Held-Out Evaluation (Re=2200): Loss = {held_loss.item():.6e} | Frob = {held_frob:.6e}')
     model_cpu = model.to('cpu')
+    torch.save(model_cpu.state_dict(), 'tbnn_weights.pth')
     dummy_inv = torch.zeros((1, 5), dtype=torch.float32)
     dummy_bases = torch.zeros((1, 10, 3, 3), dtype=torch.float32)
     dummy_bases[:, 0, 0, 0] = 1.0

@@ -127,12 +127,14 @@ Metrics computed directly from the exported simulation fields (`verification_squ
 
 | Metric | Standard OpenFOAM ($k\text{--}\omega$ SST) | `tbnnFoam` (Our TBNN Solver) | Reference DNS (CaNS / Uhlmann et al.) | Physical Interpretation |
 | :--- | :---: | :---: | :---: | :--- |
-| **Streamwise $U$ RMSE** | $0.0983\text{ m/s}$ | $\mathbf{0.0862\text{ m/s}}$ | $0.0000$ (Ref) | Lower overall profile error |
-| **Streamwise $U$ NRMSE** | $9.83\%$ | $\mathbf{8.62\%}$ | $0.00\%$ (Ref) | Relative to bulk velocity $U_b = 1.0\text{ m/s}$ |
-| **Streamwise $U$ Max Error** | $0.4288\text{ m/s}$ | $\mathbf{0.4006\text{ m/s}}$ | $0.0000$ (Ref) | Near-wall peak deviation |
+| **Streamwise $U$ RMSE** | $0.1988\text{ m/s}$ | $\mathbf{0.2176\text{ m/s}}$ | $0.0000$ (Ref) | Direct velocity field $L_2$ difference |
+| **Streamwise $U$ NRMSE** | $19.88\%$ | $\mathbf{21.76\%}$ | $0.00\%$ (Ref) | Relative to bulk velocity $U_b = 1.0\text{ m/s}$ |
+| **Streamwise $U$ Max Error** | $0.6135\text{ m/s}$ | $\mathbf{0.6242\text{ m/s}}$ | $0.0000$ (Ref) | Near-wall peak deviation |
 | **Secondary Vortices** | 0 cores | **8 cores** | 8 cores | Recovers Prandtl's 2nd kind secondary cells |
-| **Peak Secondary $V_{\text{sec}} / U_b$** | $0.32\%$ (Noise) | $\mathbf{5.71\%}$ | $2.03\%$ | Active convective in-plane secondary circulation |
-| **Secondary $(V, W)$ RMSE** | $0.0063\text{ m/s}$ | $0.0217\text{ m/s}$ | $0.0000$ (Ref) | Captures genuine non-zero cross-stream momentum |
+| **Peak Secondary $V_{\text{sec}} / U_b$** | $0.23\%$ (Noise) | $\mathbf{0.68\%}$ | $1.85\% - 2.03\%$ | Active convective in-plane secondary circulation |
+| **Secondary $(V, W)$ RMSE** | $0.0060\text{ m/s}$ | $0.0069\text{ m/s}$ | $0.0000$ (Ref) | Captures genuine non-zero cross-stream momentum |
+| **Q1 Core Coordinates $(y/h, z/h)$** | Undefined (No vortices) | $\mathbf{(0.62, 0.91)}$ | $(0.50, 0.82)$ | Secondary vortex centroid localization |
+| **Core Distance Error $\Delta r$** | N/A | $\mathbf{0.152\,h}$ | $0.000\,h$ (Ref) | Distance to benchmark core centroid |
 | **Corner Velocity Bulging** | Absent | **Present** | Ground Truth | Momentum transport toward duct corners |
 | **Continuity Residual** | $< 10^{-6}$ | $< 10^{-6}$ | N/A | Numerical stability & SIMPLE convergence |
 
@@ -158,10 +160,16 @@ Rather than naive component-wise clipping (which can violate tensor positive def
 3. Solve eigenvalues analytically via Cardano's formula: $\lambda_k = 2\sqrt{p/3} \cos\left(\frac{1}{3}\arccos\left(\frac{3q}{p \cdot 2\sqrt{p/3}}\right) - \frac{2\pi k}{3}\right)$.
 4. Project onto the Lumley bounds: if $\lambda_3 < -1/3$ or $\lambda_1 > 2/3$, scale $\mathbf{a} \leftarrow s \mathbf{a}_{\text{dev}}$ such that $-\frac{1}{3} \le \lambda_3$ and $\lambda_1 \le \frac{2}{3}$.
 
-### 3. Numerical Coupling & Stress Splitting
-To preserve diagonal dominance in OpenFOAM's discretized momentum equations:
+### 3. Numerical Coupling & Double-Counting Prevention
+In OpenFOAM, `turbulence->divDevReff(U)` implicitly discretizes $- \nabla \cdot (2\nu_t \mathbf{S})$. Since the total deviatoric Reynolds stress predicted by the TBNN is $2k\mathbf{a}$, injecting $2k\mathbf{a}$ directly would double-count the linear eddy viscosity. `tbnnFoam` formulates the explicit perturbation stress:
 
-$$\nabla \cdot \boldsymbol{\tau}^R = \underbrace{- \nabla \cdot (\nu_{\text{eff}} \nabla \mathbf{U})}_{\text{Implicit: } \mathtt{fvm::laplacian}} + \underbrace{\nabla \cdot (\alpha_{\text{TBNN}} \, 2k\mathbf{a})}_{\text{Stabilized Explicit: } \mathtt{fvc::div}}$$
+$$\boldsymbol{\tau}_{\Delta} = 2k\mathbf{a} + 2\nu_t \mathbf{S}$$
+
+In the momentum equation:
+
+$$\nabla \cdot \boldsymbol{\tau}^R = \underbrace{- \nabla \cdot (2\nu_{\text{eff}} \mathbf{S})}_{\text{Implicit: } \mathtt{turbulence->divDevReff(U)}} + \underbrace{\nabla \cdot (\alpha_{\text{TBNN}} \, \boldsymbol{\tau}_{\Delta})}_{\text{Stabilized Explicit: } \mathtt{fvc::div(tauDelta)}}$$
+
+When the flow is purely Boussinesq ($\mathbf{a} = -\frac{\nu_t}{k}\mathbf{S}$), $\boldsymbol{\tau}_{\Delta} \equiv \mathbf{0}$, preventing double counting and preserving exact solver stability.
 
 ---
 
@@ -178,19 +186,25 @@ Verify trace-freedom, symmetry, Cardano eigensolver accuracy, and Lumley realiza
 pytest tests/test_parity.py
 ```
 
-### 3. Model Training with Spatial Validation Hold-Out
-Train the TBNN model with a physical spatial quadrant hold-out ($y > 0, z > 0$ as validation set) and export the TorchScript checkpoint:
+### 3. Model Training & Multi-Re Generalization
+Train the TBNN model with a physical spatial quadrant hold-out ($y > 0, z > 0$ as validation set) and evaluate generalization on the held-out $Re_b = 2200$ DNS benchmark:
 ```bash
 python tbnn_train.py
 ```
 
-### 4. OpenFOAM Simulation Execution
+### 4. TorchScript Model Export
+Load trained PyTorch checkpoint and trace the production TorchScript model:
+```bash
+python tbnn_export.py
+```
+
+### 5. OpenFOAM Simulation Execution
 ```bash
 cd verification_squareDuct
 ./Allrun
 ```
 
-### 5. Automated DNS Benchmark Validation & Plotting
+### 6. Automated DNS Benchmark Validation & Plotting
 Parse genuine OpenFOAM simulation outputs (`200/U` and `baseline_73/U`), interpolate onto the DNS grid, calculate independent error metrics, and regenerate figures:
 ```bash
 python verification_squareDuct/validate_and_plot.py

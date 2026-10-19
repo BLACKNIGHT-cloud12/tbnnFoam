@@ -44,9 +44,9 @@ int main(int argc, char *argv[])
         turbulence->correct();
         volScalarField k = max(turbulence->k(), dimensionedScalar("kFloor", dimArea/sqr(dimTime), 1e-8));
         volScalarField nut = max(turbulence->nut(), dimensionedScalar("nutFloor", dimArea/dimTime, 1e-8));
-        volScalarField epsilon = max(turbulence->epsilon(), dimensionedScalar("epsFloor", dimArea/pow3(dimTime), 1e-8));
+        volScalarField omega = max(turbulence->omega(), dimensionedScalar("omegaFloor", dimless/dimTime, 1e-4));
 
-        volScalarField tau = min(k / epsilon, dimensionedScalar("tauMax", dimTime, 5.0));
+        volScalarField tau = min(1.0 / omega, dimensionedScalar("tauMax", dimTime, 5.0));
 
         volTensorField gradU(fvc::grad(U));
         volSymmTensorField S(symm(gradU));
@@ -65,6 +65,7 @@ int main(int argc, char *argv[])
             scalar tVal = tau[cellI];
             symmTensor sMat = tVal * S[cellI];
             tensor wMat = tVal * Omega[cellI];
+            tensor wTensor = wMat;
 
             tensor sTensor(sMat.xx(), sMat.xy(), sMat.xz(),
                            sMat.xy(), sMat.yy(), sMat.yz(),
@@ -140,12 +141,12 @@ int main(int argc, char *argv[])
             scalar scale = 1.0;
             if (pVal > 1e-14)
             {
-                scalar mVal = 2.0 * sqrt(pVal / 3.0);
+                scalar mVal = 2.0 * std::sqrt(pVal / 3.0);
                 scalar arg = std::clamp(3.0 * qVal / (pVal * mVal), -1.0, 1.0);
-                scalar theta = (1.0 / 3.0) * acos(arg);
-                scalar l1 = mVal * cos(theta);
-                scalar l2 = mVal * cos(theta - 2.0 * M_PI / 3.0);
-                scalar l3 = mVal * cos(theta + 2.0 * M_PI / 3.0);
+                scalar theta = (1.0 / 3.0) * std::acos(arg);
+                scalar l1 = mVal * std::cos(theta);
+                scalar l2 = mVal * std::cos(theta - 2.0 * M_PI / 3.0);
+                scalar l3 = mVal * std::cos(theta + 2.0 * M_PI / 3.0);
 
                 scalar lMax = max(l1, max(l2, l3));
                 scalar lMin = min(l1, min(l2, l3));
@@ -166,7 +167,9 @@ int main(int argc, char *argv[])
             scalar kVal = k[cellI];
             tauR[cellI] = 2.0 * kVal * (aVal + (1.0/3.0)*symmTensor::I);
 
-            symmTensor tauDiff = 2.0 * kVal * aVal;
+            scalar nutVal = nut[cellI];
+            symmTensor SVal = S[cellI];
+            symmTensor tauDiff = 2.0 * kVal * aVal + 2.0 * nutVal * SVal;
             tauDelta[cellI] = 0.99 * tauDelta[cellI] + 0.01 * alphaTBNN * tauDiff;
         }
 

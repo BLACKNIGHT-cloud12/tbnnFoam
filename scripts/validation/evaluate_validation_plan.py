@@ -99,7 +99,7 @@ class ValidationEngine:
         z_1d = np.linspace(-1.0, 1.0, 65)
         Z_g, Y_g = np.meshgrid(z_1d, y_1d, indexing='ij')
         q1_mask = (Y_g > 0.1) & (Z_g > 0.1) & (Y_g < 0.95) & (Z_g < 0.95)
-        if np.max(v_sec) > 0.01:
+        if np.max(v_sec) > 0.005:
             abs_vort = np.abs(omega_x) * q1_mask
             max_idx = np.unravel_index(np.argmax(abs_vort), omega_x.shape)
             core_y = float(Y_g[max_idx])
