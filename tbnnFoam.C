@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
             scalar nutVal = nut[cellI];
             symmTensor SVal = S[cellI];
             symmTensor tauDiff = 2.0 * kVal * aVal + 2.0 * nutVal * SVal;
-            tauDelta[cellI] = 0.99 * tauDelta[cellI] + 0.01 * alphaTBNN * tauDiff;
+            tauDelta[cellI] = 0.96 * tauDelta[cellI] + 0.04 * alphaTBNN * tauDiff;
         }
 
         forAll(tauDelta.boundaryField(), patchI)

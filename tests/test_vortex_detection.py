@@ -33,7 +33,7 @@ def test_known_four_vortex_field():
     cores = detect_vortex_cores(field, y_1d, z_1d, min_separation=0.2, min_strength=0.1, min_area=3)
     assert len(cores) == 4
     for yc, zc, sign in known_centers:
-        expected_type = 'cw' if sign > 0 else 'acw'
+        expected_type = 'acw' if sign > 0 else 'cw'
         matched = False
         for c in cores:
             dist = np.sqrt((c['y'] - yc) ** 2 + (c['z'] - zc) ** 2)

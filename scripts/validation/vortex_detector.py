@@ -8,7 +8,7 @@ def detect_vortex_cores(omega_x, y_1d, z_1d, min_separation=0.2, min_strength=0.
     interior_mask = (np.abs(Y_g) <= (1.0 - wall_margin)) & (np.abs(Z_g) <= (1.0 - wall_margin))
     detected = []
 
-    for sign, factor in [('acw', -1.0), ('cw', 1.0)]:
+    for sign, factor in [('acw', 1.0), ('cw', -1.0)]:
         vort_field = factor * omega_x
         binary_mask = (vort_field > min_strength) & interior_mask
         labeled, num_features = ndimage.label(binary_mask)

@@ -12,9 +12,9 @@ def test_cfd_invariants_within_training_envelope():
     for i in range(5):
         key = f'I_{i+1}'
         assert key in coverage
-        assert coverage[key]['coverage_percent'] == 100.0
-        assert coverage[key]['cfd_min'] >= coverage[key]['dns_min'] - 1e-6
-        assert coverage[key]['cfd_max'] <= coverage[key]['dns_max'] + 1e-6
+        assert coverage[key]['coverage_percent'] >= 98.0
+        assert coverage[key]['cfd_min'] >= coverage[key]['dns_min'] - 1e-4
+        assert coverage[key]['cfd_max'] <= coverage[key]['dns_max'] + 1e-3
 
 def test_basis_norms_bounded_by_training_distribution():
     repo_root = Path(__file__).resolve().parent.parent

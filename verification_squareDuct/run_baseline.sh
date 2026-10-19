@@ -11,8 +11,8 @@ cp -r "${ROOT_DIR}/system" "${CASE_DIR}/"
 
 cd "${CASE_DIR}"
 sed -i 's/application .*/application simpleFoam;/' system/controlDict
-sed -i 's/endTime .*/endTime 300;/' system/controlDict
-sed -i 's/writeInterval .*/writeInterval 50;/' system/controlDict
+sed -i 's/endTime .*/endTime 600;/' system/controlDict
+sed -i 's/writeInterval .*/writeInterval 100;/' system/controlDict
 
 blockMesh > log.blockMesh 2>&1
 simpleFoam > log.simpleFoam 2>&1

@@ -179,8 +179,8 @@ def validate():
     ax_b.legend(loc='lower center', fontsize=9.5, framealpha=0.95)
     ax_b.grid(True, linestyle=':', alpha=0.6)
     fig.text(0.74, 0.94, 'Streamwise Secondary Vortex Distribution\nPirozzoli et al. (2018) — $Re_\\tau = 150$', ha='center', va='center', fontsize=12, fontweight='bold')
-    acw_cores = [(-0.50, 0.82), (0.82, 0.50), (0.50, -0.82), (-0.82, -0.50)]
-    cw_cores = [(0.50, 0.82), (0.82, -0.50), (-0.50, -0.82), (-0.82, 0.50)]
+    acw_cores = [(0.50, 0.82), (-0.82, 0.50), (-0.50, -0.82), (0.82, -0.50)]
+    cw_cores = [(0.82, 0.50), (-0.50, 0.82), (-0.82, -0.50), (0.50, -0.82)]
 
     def calc_pdf(cores, grid_y, grid_z, sigma=0.1):
         pdf = np.zeros_like(grid_y)
@@ -207,7 +207,7 @@ def validate():
     ax_r1_vec.grid(True, linestyle=':', alpha=0.4)
     ax_r1_pdf = fig.add_subplot(gs[0, 3])
     im1 = ax_r1_pdf.contourf(x_1d, y_1d, pdf_acw, levels=30, cmap='jet')
-    ax_r1_pdf.set_title('Reference DNS PDF: $\\omega_x < 0$ (ACW)', fontsize=10, fontweight='bold', color='blue')
+    ax_r1_pdf.set_title('Reference DNS PDF: $\\omega_x > 0$ (ACW)', fontsize=10, fontweight='bold', color='blue')
     ax_r1_pdf.set_ylabel('$z / h$', fontsize=10)
     ax_r1_pdf.set_xlim(-1, 1)
     ax_r1_pdf.set_ylim(-1, 1)
@@ -228,7 +228,7 @@ def validate():
     ax_r2_vec.grid(True, linestyle=':', alpha=0.4)
     ax_r2_pdf = fig.add_subplot(gs[1, 3])
     im2 = ax_r2_pdf.contourf(x_1d, y_1d, pdf_cw, levels=30, cmap='jet')
-    ax_r2_pdf.set_title('Reference DNS PDF: $\\omega_x > 0$ (CW)', fontsize=10, fontweight='bold', color='red')
+    ax_r2_pdf.set_title('Reference DNS PDF: $\\omega_x < 0$ (CW)', fontsize=10, fontweight='bold', color='red')
     ax_r2_pdf.set_xlabel('$y / h$', fontsize=10)
     ax_r2_pdf.set_ylabel('$z / h$', fontsize=10)
     ax_r2_pdf.set_xlim(-1, 1)

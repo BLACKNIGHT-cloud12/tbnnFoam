@@ -11,7 +11,7 @@ FoamFile
     format      ascii;
     arch        "LSB;label=32;scalar=64";
     class       dictionary;
-    location    "300/uniform/functionObjects";
+    location    "287/uniform/functionObjects";
     object      functionObjectProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

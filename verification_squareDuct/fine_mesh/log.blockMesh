@@ -9,9 +9,9 @@ Build  : _481094f-20260618 OPENFOAM=2606 version=2606
 Arch   : "LSB;label=32;scalar=64"
 Exec   : blockMesh
 Date   : Oct 19 2026
-Time   : 12:34:56
+Time   : 15:44:17
 Host   : Soumiklaptop
-PID    : 1042
+PID    : 1037
 I/O    : uncollated
 Case   : /mnt/c/Users/soumi/tbnnFoam/verification_squareDuct/fine_mesh
 nProcs : 1
