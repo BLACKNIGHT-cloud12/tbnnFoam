@@ -131,7 +131,7 @@ class ValidationEngine:
     def print_report(self):
         u_dns, v_dns, w_dns = self.load_dns()
         tbnn_dir = '300' if (self.repo_root / 'verification_squareDuct' / '300' / 'U').exists() else '200'
-        base_dir = 'baseline_73' if (self.repo_root / 'verification_squareDuct' / 'baseline_73' / 'U').exists() else '50'
+        base_dir = 'baseline_sst/111' if (self.repo_root / 'verification_squareDuct' / 'baseline_sst' / '111' / 'U').exists() else 'baseline_73'
         u_tbnn, v_tbnn, w_tbnn = self.load_cfd_cs(tbnn_dir)
         u_base, v_base, w_base = self.load_cfd_cs(base_dir)
         m_tbnn = self.evaluate_case(u_tbnn, v_tbnn, w_tbnn, u_dns, v_dns, w_dns)

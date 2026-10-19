@@ -82,7 +82,7 @@ def validate():
     V_dns_2d = dns_v.reshape(Ny, Nz)
     W_dns_2d = dns_w.reshape(Ny, Nz)
     tbnn_file = (case_dir / '300' / 'U') if (case_dir / '300' / 'U').exists() else (case_dir / '200' / 'U')
-    base_file = (case_dir / 'baseline_73' / 'U') if (case_dir / 'baseline_73' / 'U').exists() else (case_dir / '50' / 'U')
+    base_file = (case_dir / 'baseline_sst' / '111' / 'U') if (case_dir / 'baseline_sst' / '111' / 'U').exists() else (case_dir / 'baseline_73' / 'U')
     tbnn_u = parse_foam_vec(tbnn_file)
     base_u = parse_foam_vec(base_file)
     Nx_c, Ny_c, Nz_c = 50, 20, 20

@@ -130,9 +130,8 @@ def gen_convergence(repo_root: Path, data):
     print('--> [1/4] Generating Asset 1: Solver Convergence Diagnostics (t = 1 -> 200)...')
     out_path = repo_root / 'docs' / 'figures' / 'animation_4_solver_convergence.gif'
     log_path = repo_root / 'verification_squareDuct' / 'log.tbnnFoam'
-    iters, cont_locals, cont_globals = parse_log_residuals(log_path)
     u_file = (repo_root / 'verification_squareDuct' / '300' / 'U') if (repo_root / 'verification_squareDuct' / '300' / 'U').exists() else (repo_root / 'verification_squareDuct' / '200' / 'U')
-    base_file = (repo_root / 'verification_squareDuct' / 'baseline_73' / 'U') if (repo_root / 'verification_squareDuct' / 'baseline_73' / 'U').exists() else (repo_root / 'verification_squareDuct' / '50' / 'U')
+    base_file = (repo_root / 'verification_squareDuct' / 'baseline_sst' / '111' / 'U') if (repo_root / 'verification_squareDuct' / 'baseline_sst' / '111' / 'U').exists() else (repo_root / 'verification_squareDuct' / 'baseline_73' / 'U')
     tbnn_u = parse_foam_vec(u_file)
     base_u = parse_foam_vec(base_file)
     Nx, Ny_c, Nz_c = 50, 20, 20

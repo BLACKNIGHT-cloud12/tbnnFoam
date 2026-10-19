@@ -7,7 +7,7 @@ verification_squareDuct/150
 verification_squareDuct/250
 !verification_squareDuct/200/
 !verification_squareDuct/300/
-!verification_squareDuct/baseline_73/
+!verification_squareDuct/baseline_sst/
 *.o
 *.so
 
