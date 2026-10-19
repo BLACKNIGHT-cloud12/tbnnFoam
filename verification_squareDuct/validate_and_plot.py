@@ -57,7 +57,9 @@ def draw_circle_arrow(ax, center, radius, direction='anticlockwise', color='blue
 
 def validate():
     case_dir = Path(__file__).resolve().parent
-    dns_file = case_dir.parent / 'data' / 'benchmark_dns' / 'square_duct_dns_Re1500.csv'
+    dns_file = case_dir.parent / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
+    if not dns_file.exists():
+        dns_file = case_dir.parent / 'data' / 'benchmark_dns' / 'square_duct_dns_Re1500.csv'
     meta_file = case_dir.parent / 'data' / 'benchmark_dns' / 'benchmark_metadata.json'
     with open(meta_file, 'r') as f:
         meta = json.load(f)

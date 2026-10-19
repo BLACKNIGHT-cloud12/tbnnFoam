@@ -84,14 +84,16 @@ def comp_inv_and_bases(grad_U, omega):
     return (inv, T)
 
 def train():
-    csv_file = Path('data/benchmark_dns/square_duct_dns_Re1500.csv')
+    csv_file = Path('data/benchmark_dns/square_duct_dns_Reb4410_Retau150.csv')
+    if not csv_file.exists():
+        csv_file = Path('data/benchmark_dns/square_duct_dns_Re1500.csv')
     data = []
     with open(csv_file, 'r') as f:
         reader = csv.DictReader(f)
         for row in reader:
             data.append(row)
     N = len(data)
-    print(f'Loaded {N} points from {csv_file}')
+    print(f'Training DNS Benchmark: Re_b = 4410 | Re_h = 2205 | Re_tau = 150 (Loaded {N} points from {csv_file})')
     grad_U = np.zeros((N, 3, 3))
     omega = np.zeros(N)
     a_true = np.zeros((N, 3, 3))
@@ -145,7 +147,9 @@ def train():
                 val_loss = criterion(val_pred, Y_a_val_d)
             print(f'Epoch [{epoch:3d}/400] - Train Loss: {loss.item():.6e} | Val Loss: {val_loss.item():.6e}')
     model.eval()
-    held_out_file = Path('data/benchmark_dns/square_duct_dns_Re2200.csv')
+    held_out_file = Path('data/benchmark_dns/square_duct_dns_Reb7000_Retau220.csv')
+    if not held_out_file.exists():
+        held_out_file = Path('data/benchmark_dns/square_duct_dns_Re2200.csv')
     if held_out_file.exists():
         held_data = []
         with open(held_out_file, 'r') as f:
@@ -175,7 +179,7 @@ def train():
             held_pred = model(X_inv_h, X_basis_h)
             held_loss = criterion(held_pred, Y_a_h)
             held_frob = torch.mean(torch.norm(held_pred - Y_a_h, dim=(1, 2))).item()
-        print(f'Held-Out Evaluation (Re=2200): Loss = {held_loss.item():.6e} | Frob = {held_frob:.6e}')
+        print(f'Held-Out Generalization (Re_b = 7000 | Re_h = 3500 | Re_tau = 220): Loss = {held_loss.item():.6e} | Frob = {held_frob:.6e}')
     model_cpu = model.to('cpu')
     torch.save(model_cpu.state_dict(), 'tbnn_weights.pth')
     dummy_inv = torch.zeros((1, 5), dtype=torch.float32)

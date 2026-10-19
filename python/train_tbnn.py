@@ -53,9 +53,9 @@ class TBNN(nn.Module):
 def train():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Training on device: {device}')
-    csv_path = Path('data/benchmark_dns/square_duct_dns_Re1500.csv')
+    csv_path = Path('data/benchmark_dns/square_duct_dns_Reb4410_Retau150.csv')
     if not csv_path.exists():
-        alt_paths = [Path('../data/benchmark_dns/square_duct_dns_Re1500.csv'), Path('square_duct_dns_Re1500.csv')]
+        alt_paths = [Path('data/benchmark_dns/square_duct_dns_Re1500.csv'), Path('../data/benchmark_dns/square_duct_dns_Reb4410_Retau150.csv'), Path('../data/benchmark_dns/square_duct_dns_Re1500.csv'), Path('square_duct_dns_Reb4410_Retau150.csv')]
         for p in alt_paths:
             if p.exists():
                 csv_path = p
@@ -63,7 +63,7 @@ def train():
     if not csv_path.exists():
         raise FileNotFoundError(f'Cannot find dataset at {csv_path}. Please check file location.')
     df = pd.read_csv(csv_path)
-    print(f'Loaded {len(df)} points from {csv_path}')
+    print(f'Training DNS Benchmark: Re_b = 4410 | Re_h = 2205 | Re_tau = 150 (Loaded {len(df)} points from {csv_path})')
     N = len(df)
     grad_U = np.zeros((N, 3, 3))
     for i in range(3):
@@ -109,7 +109,18 @@ def train():
                 val_loss = criterion(a_val_pred, Y_a_val)
                 frob_err = torch.mean(torch.norm(a_val_pred - Y_a_val, dim=(1, 2))).item()
             print(f'Epoch [{epoch:4d}/{epochs}] | Train Loss: {loss.item():.6e} | Val Loss: {val_loss.item():.6e} | Val Frob: {frob_err:.6e}')
-    held_csv = Path('data/benchmark_dns/square_duct_dns_Re2200.csv')
+    held_csv = Path('data/benchmark_dns/square_duct_dns_Reb7000_Retau220.csv')
+    if not held_csv.exists():
+        alt_held = [
+            Path('data/benchmark_dns/square_duct_dns_Re2200.csv'),
+            Path('../data/benchmark_dns/square_duct_dns_Reb7000_Retau220.csv'),
+            Path('../data/benchmark_dns/square_duct_dns_Re2200.csv'),
+            Path('square_duct_dns_Reb7000_Retau220.csv')
+        ]
+        for p in alt_held:
+            if p.exists():
+                held_csv = p
+                break
     if held_csv.exists():
         df_held = pd.read_csv(held_csv)
         N_h = len(df_held)
@@ -135,7 +146,7 @@ def train():
             a_held_pred, _ = model(X_inv_h, X_basis_h)
             held_loss = criterion(a_held_pred, Y_a_h)
             held_frob = torch.mean(torch.norm(a_held_pred - Y_a_h, dim=(1, 2))).item()
-        print(f'Held-Out Generalization (Re=2200): Loss = {held_loss.item():.6e} | Frob = {held_frob:.6e}')
+        print(f'Held-Out Generalization (Re_b = 7000 | Re_h = 3500 | Re_tau = 220): Loss = {held_loss.item():.6e} | Frob = {held_frob:.6e}')
     print('Training complete!')
     export_dir = Path('export_weights')
     export_dir.mkdir(parents=True, exist_ok=True)

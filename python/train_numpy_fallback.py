@@ -42,7 +42,9 @@ def comp_inv_and_bases(grad_U, omega):
     return (invariants, T)
 
 def train_np():
-    csv_path = Path('data/benchmark_dns/square_duct_dns_Re1500.csv')
+    csv_path = Path('data/benchmark_dns/square_duct_dns_Reb4410_Retau150.csv')
+    if not csv_path.exists():
+        csv_path = Path('data/benchmark_dns/square_duct_dns_Re1500.csv')
     df = pd.read_csv(csv_path)
     N = len(df)
     grad_U = np.zeros((N, 3, 3))

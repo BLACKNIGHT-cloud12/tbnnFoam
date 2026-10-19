@@ -4,7 +4,15 @@
     "citation": "Pirozzoli, S., Modesti, D., Orlandi, P., & Grasso, F. (2018). Turbulence and secondary motions in square duct flow. Journal of Fluid Mechanics, 840, 634-655.",
     "secondary_reference": "Vinuesa, R., Noorani, A., Lozano-Duran, A., El Khoury, G. K., Schlatter, P., Fischer, P. F., & Nagib, H. M. (2014). Aspect ratio effects in turbulent duct flows studied through direct numerical simulation. Journal of Turbulence, 15(10), 677-706.",
     "database_repository": "Sapienza University CFD Group DNS Database (http://newton.dma.uniroma1.it/square_duct/)",
-    "raw_source_file": "plotyz_Retau150.dat"
+    "raw_source_file": "plotyz_Retau150.dat",
+    "dataset_file": "square_duct_dns_Reb4410_Retau150.csv",
+    "legacy_dataset_file": "square_duct_dns_Re1500.csv"
+  },
+  "reynolds_number_definitions": {
+    "bulk_reynolds_number_Re_b": "Re_b = U_b * D_h / nu = U_b * (2*h) / nu",
+    "half_width_reynolds_number_Re_h": "Re_h = U_b * h / nu = 0.5 * Re_b",
+    "friction_reynolds_number_Re_tau": "Re_tau = u_tau * h / nu",
+    "naming_convention_note": "Canonical dataset filenames square_duct_dns_Reb{Re_b}_Retau{Re_tau}.csv explicitly specify both bulk Reynolds number Re_b and friction Reynolds number Re_tau to eliminate ambiguity between bulk (Re_b) and half-width (Re_h) definitions. The legacy labels Re1500 and Re2200 reflected earlier arithmetic miscalculations in the initial repo draft."
   },
   "flow_parameters": {
     "bulk_reynolds_number_Re_b": 4410,
@@ -34,7 +42,8 @@
     "citation": "Pirozzoli, S., Modesti, D., Orlandi, P., & Grasso, F. (2018). Turbulence and secondary motions in square duct flow. Journal of Fluid Mechanics, 840, 634-655.",
     "database_repository": "Sapienza University CFD Group DNS Database (http://newton.dma.uniroma1.it/square_duct/)",
     "raw_source_file": "plotyz_Retau220.dat",
-    "dataset_file": "square_duct_dns_Re2200.csv",
+    "dataset_file": "square_duct_dns_Reb7000_Retau220.csv",
+    "legacy_dataset_file": "square_duct_dns_Re2200.csv",
     "bulk_reynolds_number_Re_b": 7000,
     "half_width_reynolds_number_Re_h": 3500,
     "friction_reynolds_number_Re_tau": 220.0,

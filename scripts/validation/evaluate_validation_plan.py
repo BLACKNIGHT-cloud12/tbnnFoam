@@ -54,7 +54,9 @@ class ValidationEngine:
         self.dns_vmax_ratio = ref_core['peak_secondary_velocity_ratio_Vmax_over_Ub']
 
     def load_dns(self):
-        dns_file = self.repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Re1500.csv'
+        dns_file = self.repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
+        if not dns_file.exists():
+            dns_file = self.repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Re1500.csv'
         dns_data = []
         with open(dns_file, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)

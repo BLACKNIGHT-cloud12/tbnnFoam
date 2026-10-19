@@ -213,7 +213,7 @@ pytest tests/test_parity.py
 ```
 
 ### 3. Model Training & Multi-Re Generalization
-Train the TBNN model with a physical spatial quadrant hold-out ($y > 0, z > 0$ as validation set) and evaluate generalization on the held-out $Re_b = 7000$ ($Re_h = 3500$, $Re_\tau = 220$) DNS benchmark:
+Train the TBNN model on the primary DNS benchmark (`square_duct_dns_Reb4410_Retau150.csv`, $Re_b = 4410, Re_h = 2205, Re_\tau = 150$) with a physical spatial quadrant hold-out ($y > 0, z > 0$ as validation set) and evaluate generalization on the held-out $Re_b = 7000$ ($Re_h = 3500$, $Re_\tau = 220$) DNS benchmark (`square_duct_dns_Reb7000_Retau220.csv`):
 ```bash
 python tbnn_train.py
 ```
@@ -254,7 +254,7 @@ tbnnFoam/
 ├── export_weights/
 │   └── weights.json               # Trained model weights & normalization parameters
 ├── data/
-│   └── benchmark_dns/             # Reference square duct DNS dataset (Re_b=4410, Re_tau=150)
+│   └── benchmark_dns/             # DNS benchmarks: square_duct_dns_Reb4410_Retau150.csv & square_duct_dns_Reb7000_Retau220.csv
 ├── docs/figures/                  # Validation figures and animations
 ├── scripts/
 │   ├── generate_all_showcase_assets.py  # Validation figure generation

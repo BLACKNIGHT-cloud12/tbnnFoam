@@ -3,7 +3,7 @@ import pandas as pd
 from pathlib import Path
 from scipy.interpolate import RegularGridInterpolator
 
-def process_dat_file(dat_path, out_csv_path, h=0.5, Ub=1.0, nu=0.0006666667, target_grid=65):
+def process_dat_file(dat_path, out_csv_path, h=0.5, Ub=1.0, nu=0.000226757, target_grid=65):
     with open(dat_path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
     data_lines = []
@@ -139,5 +139,6 @@ def process_dat_file(dat_path, out_csv_path, h=0.5, Ub=1.0, nu=0.0006666667, tar
 if __name__ == '__main__':
     raw_dir = Path('data/benchmark_dns/raw_dns')
     out_dir = Path('data/benchmark_dns')
-    process_dat_file(raw_dir / 'plotyz_Retau150.dat', out_dir / 'square_duct_dns_Re1500.csv', h=0.5, Ub=1.0, nu=0.000226757, target_grid=65)
-    process_dat_file(raw_dir / 'plotyz_Retau220.dat', out_dir / 'square_duct_dns_Re2200.csv', h=0.5, Ub=1.0, nu=0.000142857, target_grid=65)
+    process_dat_file(raw_dir / 'plotyz_Retau150.dat', out_dir / 'square_duct_dns_Reb4410_Retau150.csv', h=0.5, Ub=1.0, nu=0.000226757, target_grid=65)
+    process_dat_file(raw_dir / 'plotyz_Retau220.dat', out_dir / 'square_duct_dns_Reb7000_Retau220.csv', h=0.5, Ub=1.0, nu=0.000142857, target_grid=65)
+

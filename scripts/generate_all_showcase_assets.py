@@ -86,7 +86,9 @@ def parse_log_residuals(log_path: Path):
     return (np.array(iters), np.array(cont_locals), np.array(cont_globals))
 
 def load_dns_data(repo_root: Path):
-    dns_file = repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Re1500.csv'
+    dns_file = repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
+    if not dns_file.exists():
+        dns_file = repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Re1500.csv'
     meta_file = repo_root / 'data' / 'benchmark_dns' / 'benchmark_metadata.json'
     with open(meta_file, 'r', encoding='utf-8') as f:
         meta = json.load(f)
