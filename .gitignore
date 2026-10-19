@@ -1,0 +1,21 @@
+# OpenFOAM intermediate build files
+Make/linux*
+verification_squareDuct/constant/polyMesh
+verification_squareDuct/[1-9]*
+verification_squareDuct/0.*
+*.o
+*.so
+
+# Python cache & OS files
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+
+# Local docs & templates (untracked on remote)
+docs/VALIDATION_PLAN.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+.github/
+docs/index.html
+scripts/build_clean_studio.py

@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use tbnnFoam in your scientific research or engineering simulations, please cite it as below."
+authors:
+  - family-names: "Ghosh"
+    given-names: "Soumik"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+title: "tbnnFoam: OpenFOAM C++ In-Solver Tensor Basis Neural Network RANS Closure"
+version: 1.0.0
+date-released: 2026-10-19
+url: "https://github.com/BLACKNIGHT-cloud12/tbnnFoam"
+repository-code: "https://github.com/BLACKNIGHT-cloud12/tbnnFoam"
+keywords:
+  - "OpenFOAM"
+  - "CFD"
+  - "Turbulence Modeling"
+  - "Tensor Basis Neural Network"
+  - "TBNN"
+  - "LibTorch"
+  - "Scientific Machine Learning"
+  - "SciML"
+  - "RANS"
+license: MIT
