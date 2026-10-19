@@ -163,7 +163,7 @@ def validate():
     ax_a.set_aspect('equal')
     ax_a.grid(True, linestyle=':', alpha=0.5)
     ax_b = fig.add_subplot(gs[:, 1])
-    ax_b.plot(diag_coord, u_diag_dns, 'k--', linewidth=2.2, label='Reference DNS (Gavrilakis / CaNS)')
+    ax_b.plot(diag_coord, u_diag_dns, 'k--', linewidth=2.2, label='Reference DNS (Pirozzoli et al. 2018)')
     ax_b.plot(diag_coord, u_diag_tbnn, 'r-', linewidth=2.0, label='tbnnFoam (Our TBNN Solver)')
     ax_b.plot(diag_coord, u_diag_base, 'b:', linewidth=1.8, label='Standard OpenFOAM ($k-\\omega$ SST)')
     ax_b.set_title('(b) Streamwise Velocity Profile $u / u_\\tau$' + '\n' + 'Corner Diagonal $y/(2h) = z/(2h)$', fontsize=12, fontweight='bold')
@@ -173,7 +173,7 @@ def validate():
     ax_b.set_ylim(0, 27)
     ax_b.legend(loc='lower center', fontsize=9.5, framealpha=0.95)
     ax_b.grid(True, linestyle=':', alpha=0.6)
-    fig.text(0.74, 0.94, 'PDF of position of streamwise-vortex center\nUhlmann, Pinelli, Sekimoto & K. (2007, 2008) — $Re_b = 1500$', ha='center', va='center', fontsize=12, fontweight='bold')
+    fig.text(0.74, 0.94, 'Streamwise Secondary Vortex Distribution\nPirozzoli et al. (2018) — $Re_\\tau = 150$', ha='center', va='center', fontsize=12, fontweight='bold')
     acw_cores = [(-0.5, 0.82), (0.82, 0.5), (0.5, -0.82), (-0.82, -0.5)]
     cw_cores = [(0.5, 0.82), (0.82, -0.5), (-0.5, -0.82), (-0.82, 0.5)]
 
