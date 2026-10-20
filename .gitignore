@@ -28,3 +28,4 @@ CODE_OF_CONDUCT.md
 docs/index.html
 scripts/build_clean_studio.py
 docs/report/
+docs/latex/*.zip
