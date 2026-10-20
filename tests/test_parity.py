@@ -98,7 +98,7 @@ def test_json_weights_parity():
         data = json.load(f)
     assert '0.weight' in data and len(data['0.weight'][0]) == 5
     H = len(data['0.weight'])
-    assert H in [30, 64]
+    assert H == 64, f"Expected 64 hidden neurons matching 5->64->64->64->10 architecture, got {H}"
     assert '0.bias' in data and len(data['0.bias']) == H
     assert '2.weight' in data and len(data['2.weight']) == H and len(data['2.weight'][0]) == H
     assert '2.bias' in data and len(data['2.bias']) == H

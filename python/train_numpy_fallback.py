@@ -70,7 +70,7 @@ def train_np():
         M = T_flat[i]
         g_targets[i] = np.linalg.pinv(M.T) @ a_flat[i]
     from sklearn.neural_network import MLPRegressor
-    mlp = MLPRegressor(hidden_layer_sizes=(30, 30, 30), activation='relu', solver='adam', max_iter=500, random_state=42)
+    mlp = MLPRegressor(hidden_layer_sizes=(64, 64, 64), activation='relu', solver='adam', max_iter=500, random_state=42)
     mlp.fit(X, g_targets)
     print(f'Fitted MLP score: {mlp.score(X, g_targets):.4f}')
     export_dir = Path('export_weights')
