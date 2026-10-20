@@ -75,11 +75,11 @@ where $\boldsymbol{\tau}^R = \overline{\mathbf{u}' \otimes \mathbf{u}'}$ is the 
 
 In straight ducts of uniform cross-section with axial direction $x$ and cross-stream plane $(y, z)$, secondary flow of the second kind is driven directly by axial vorticity generation:
 \begin{equation}
-U \frac{\partial \omega_x}{\partial x} + V \frac{\partial \omega_x}{\partial y} + W \frac{\partial \omega_x}{\partial z} = \nu \nabla^2 \omega_x + \frac{\partial^2}{\partial y \partial z}(\overline{w'^2} - \overline{v'^2}) + \left(\frac{\partial^2}{\partial z^2} - \frac{\partial^2}{\partial y^2}\right)\overline{v'w'}
+U \frac{\partial \omega_x}{\partial x} + V \frac{\partial \omega_x}{\partial y} + W \frac{\partial \omega_x}{\partial z} = \nu \nabla^2 \omega_x + \frac{\partial^2}{\partial y \partial z}(\overline{{w'}^2} - \overline{{v'}^2}) + \left(\frac{\partial^2}{\partial z^2} - \frac{\partial^2}{\partial y^2}\right)\overline{v'w'}
 \label{eq:vorticity_transport}
 \end{equation}
 
-Because linear eddy viscosity closures enforce isotropic normal stresses in pure shear flows ($\overline{v'^2} = \overline{w'^2} = \frac{2}{3}k$), the driving source term $\frac{\partial^2}{\partial y \partial z}(\overline{w'^2} - \overline{v'^2})$ vanishes identically. Consequently, conventional linear RANS models (such as standard $k\text{--}\varepsilon$ and $k\text{--}\omega$ SST) predict identically zero secondary circulation in straight ducts.
+Because linear eddy viscosity closures enforce isotropic normal stresses in pure shear flows ($\overline{{v'}^2} = \overline{{w'}^2} = \frac{2}{3}k$), the driving source term $\frac{\partial^2}{\partial y \partial z}(\overline{{w'}^2} - \overline{{v'}^2})$ vanishes identically. Consequently, conventional linear RANS models (such as standard $k\text{--}\varepsilon$ and $k\text{--}\omega$ SST) predict identically zero secondary circulation in straight ducts.
 
 \subsection{Non-Linear Tensor Closures and Machine Learning}
 To overcome this fundamental limitation, classical algebraic non-linear stress models (e.g., Speziale \cite{speziale1991analytical}; Craft et al. \cite{craft1996development}; Wallin \& Johansson \cite{wallin2000explicit}) incorporated higher-order tensor polynomial expansions. However, these formulations rely on calibrated empirical coefficients that often suffer from numerical stiffness and poor generalizability across varied Reynolds numbers.
@@ -241,7 +241,7 @@ Because $\mathbf{a}$ is real and symmetric, all three eigenvalues are real, corr
 
 Realizability requires that the principal turbulent stresses satisfy non-negativity:
 \begin{equation}
-\overline{u'_\alpha^2} \ge 0 \iff a_{\alpha\alpha} \ge -\frac{1}{3}
+\overline{(u'_\alpha)^2} \ge 0 \iff a_{\alpha\alpha} \ge -\frac{1}{3}
 \end{equation}
 
 If the minimum eigenvalue violates $\lambda_{\min} < -\frac{1}{3}$, the anisotropy tensor is scaled radially toward the isotropic origin:
@@ -387,7 +387,7 @@ By symmetry, the companion Q1 vortex across the corner bisector is centered at $
 \subsection{Representational Capability vs. Physical Realization}
 In machine learning for fluid dynamics, it is essential to distinguish between \textbf{mathematical representational capability} and \textbf{coupled physical realization}:
 \begin{itemize}
-    \item Generating non-zero normal stress differences ($\overline{w'^2} - \overline{v'^2} \ne 0$) is an intrinsic mathematical feature of non-linear tensor expansions. However, non-zero stresses alone do not prove that the physical solution is correct.
+    \item Generating non-zero normal stress differences ($\overline{{w'}^2} - \overline{{v'}^2} \ne 0$) is an intrinsic mathematical feature of non-linear tensor expansions. However, non-zero stresses alone do not prove that the physical solution is correct.
     \item True physical validation requires coupling the non-linear divergence into OpenFOAM's live SIMPLE loop and demonstrating that:
     \begin{enumerate}
         \item The solver converges stably without numerical divergence.
@@ -409,12 +409,12 @@ Figure~\ref{fig:hero_showcase} presents the secondary flow streamline patterns a
 In standard linear OpenFOAM, secondary circulation is completely absent (zero vortex cores detected; residual velocity $< 0.45\%$, representing numerical roundoff noise). In contrast, \texttt{tbnnFoam} successfully generates all eight counter-rotating secondary flow cells with correct symmetry and orientations.
 
 \subsection{Reynolds Stress Mechanism \& Anisotropy States}
-Figure~\ref{fig:reynolds_stress} displays the non-dimensional normal stress difference field $(\overline{w'^2} - \overline{v'^2})/U_b^2$:
+Figure~\ref{fig:reynolds_stress} displays the non-dimensional normal stress difference field $(\overline{{w'}^2} - \overline{{v'}^2})/U_b^2$:
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/reynolds_stress_mechanism.png}
-\caption{Normal stress differences $(\overline{w'^2} - \overline{v'^2})/U_b^2$ across duct cross-section. Standard linear RANS yields identically zero normal stress differences, while \texttt{tbnnFoam} captures the alternating quadrant lobes driving secondary flow.}
+\caption{Normal stress differences $(\overline{{w'}^2} - \overline{{v'}^2})/U_b^2$ across duct cross-section. Standard linear RANS yields identically zero normal stress differences, while \texttt{tbnnFoam} captures the alternating quadrant lobes driving secondary flow.}
 \label{fig:reynolds_stress}
 \end{figure}
 
@@ -635,7 +635,7 @@ In this study, we presented \texttt{tbnnFoam}, an open-source, in-situ coupled C
 
 \subsection{Summary of Findings}
 \begin{enumerate}
-    \item \textbf{Physical Anisotropy Recovery:} Live in-situ coupling successfully captures the non-linear normal stress differences $(\overline{w'^2} - \overline{v'^2})$ that drive secondary motions of Prandtl's second kind, recovering all eight canonical secondary flow cells where conventional linear $k\text{--}\omega$ SST fails entirely.
+    \item \textbf{Physical Anisotropy Recovery:} Live in-situ coupling successfully captures the non-linear normal stress differences $(\overline{{w'}^2} - \overline{{v'}^2})$ that drive secondary motions of Prandtl's second kind, recovering all eight canonical secondary flow cells where conventional linear $k\text{--}\omega$ SST fails entirely.
     \item \textbf{Dual Inference Parity:} Numerical equivalence between PyTorch, TorchScript C++, and a native zero-dependency C++ evaluator is demonstrated to $< 10^{-6}$ precision, with analytical Cardano cubic projection guaranteeing unconditional physical realizability.
     \item \textbf{Discretization Sensitivity:} Increasing cross-stream resolution from $20 \times 20$ to $40 \times 40$ trends peak secondary circulation from $7.99\%$ to $2.62\%$ (approaching the $2.03\%$ DNS benchmark) and reduces Q1 core localization error from $0.586\,h$ to $0.474\,h$ while preserving topological stability.
     \item \textbf{Honest Evaluation of Discrepancies:} Streamwise velocity RMSE ($9.34\%$) and secondary velocity overprediction are transparently characterized as a combination of inlet development length effects and neural network model-form discrepancy. Furthermore, joint 5D $k$-NN distance diagnostics reveal modest distribution shift ($0.21\,\sigma$ median) despite $100\%$ marginal range coverage.
