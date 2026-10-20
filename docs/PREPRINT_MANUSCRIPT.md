@@ -11,9 +11,11 @@
 
 Linear eddy viscosity models based on the Boussinesq hypothesis remain the workhorse of industrial Computational Fluid Dynamics (CFD). However, they fundamentally fail to predict turbulence-driven secondary flows of Prandtl's second kind due to their enforced alignment between the Reynolds stress anisotropy tensor and the mean strain rate tensor. Data-driven turbulence closures utilizing Tensor Basis Neural Networks (TBNN; Ling et al., *J. Fluid Mech.*, 2016) provide a mathematically rigorous, frame-invariant methodology to represent Reynolds stress anisotropy by projecting onto Pope's ten symmetric integrity basis tensors. 
 
-In this work, we present an in-situ coupled CFD solver, `tbnnFoam`, implemented within OpenFOAM 2606. The solver features a dual-runtime inference architecture: an embedded LibTorch C++ engine and a zero-dependency standalone C++ matrix evaluator incorporating an analytical Cardano cubic eigensolver that enforces physical realizability on the Lumley triangle in $\mathcal{O}(1)$ operations. Cross-engine numerical parity is verified to machine precision ($< 10^{-6}$ maximum absolute error across all basis coefficients).
+In this work, we present an in-situ coupled CFD solver, `tbnnFoam`, implemented within OpenFOAM 2606. The solver features a dual-runtime inference architecture: an embedded LibTorch C++ engine and a zero-dependency standalone C++ matrix evaluator incorporating an analytical Cardano cubic eigensolver that enforces physical realizability on the Lumley triangle in $\mathcal{O}(1)$ operations. Cross-engine numerical parity across PyTorch, TorchScript, and the standalone C++ matrix evaluator is verified within an absolute tolerance of $10^{-5}$ across synthetic test cases spanning shear, rotational, and complex 3D strain states, with the standalone C++ comparison executed when the OpenFOAM environment and compiled test binary are present.
 
-We validate the coupled solver on developing turbulent flow in a square duct at bulk Reynolds number $Re_b \approx 4410$ ($Re_\tau = 150$) against high-fidelity Direct Numerical Simulation (DNS; Pirozzoli et al., *J. Fluid Mech.*, 2018). An independent algorithmic vortex detector employing connected-component labeling on non-dimensional axial vorticity ($\omega_x^* = \omega_x / (U_b / h)$) confirms that `tbnnFoam` spontaneously generates and sustains the canonical eight-cell secondary recirculation pattern in the correct quadrant orientations, whereas standard linear $k\text{--}\omega$ SST completely fails (detecting zero vortex cores).
+We validate the coupled solver on developing turbulent flow in a square duct at bulk Reynolds number $Re_b \approx 4410$ ($Re_\tau = 150$) against high-fidelity Direct Numerical Simulation (DNS; Pirozzoli et al., *J. Fluid Mech.*, 2018). An independent algorithmic vortex detector employing connected-component labeling on non-dimensional axial vorticity ($\omega_x^* = \omega_x / (U_b / h)$) confirms that `tbnnFoam` structurally recovers the secondary-flow mechanism by identifying all eight counter-rotating secondary recirculation cells where standard linear $k\text{--}\omega$ SST completely fails (detecting zero vortex cores). 
+
+Crucially, this constitutes a **partial validation**: while secondary circulation topology is successfully recovered, vortex core localization exhibits notable offset ($0.586\,h$ error on the coarse mesh and $0.474\,h$ on the refined mesh against the canonical DNS reference $(0.50, 0.82)$), and peak secondary speed exhibits strong discretization sensitivity, decreasing from $7.99\%$ to $2.62\%$ (relative to DNS $2.03\%$). We emphasize that structural recovery does not establish accurate pointwise vortex localization or full quantitative agreement with periodic DNS.
 
 Critically, we avoid overstating predictive performance and conduct an honest, in-depth evaluation of model limitations and physical discrepancies:
 1. **Velocity Discrepancy:** The streamwise velocity Normalized Root-Mean-Square Error ($\mathrm{NRMSE}_U$) is $9.34\%$ ($0.0934\text{ m/s}$ relative to bulk velocity $U_b = 1.0\text{ m/s}$). We show that this discrepancy arises from a combined influence of entrance-length spatial boundary layer development in the CFD domain ($L = 10h$) compared to the streamwise-periodic DNS box, alongside genuine neural network model-form uncertainty under live pressure-velocity coupling.
@@ -128,7 +130,7 @@ The architecture specifications are summarized in Table 2:
 | **Hidden Layers** | 3 layers $\times$ 64 neurons | Balanced capacity without overfitting |
 | **Activation Function** | Exponential Linear Unit (ELU) | Continuous $C^1$ differentiability, avoids dead neurons |
 | **Output Dimension** | 10 coefficients ($g^{(1)} \dots g^{(10)}$) | Expansion weights for Pope bases $\mathbf{T}^{(1 \dots 10)}$ |
-| **Total Parameters** | 9,790 parameters (weights + biases) | High-throughput evaluation ($< 2\text{ ms}$ per iteration) |
+| **Total Parameters** | 9,354 trainable parameters | Exact layer count:  + 4160 + 4160 + 650 = 9,354$ |
 | **Training Loss** | Root-Mean-Square Error on $\mathbf{a}$ | $\mathcal{L} = \frac{1}{N}\sum_{i=1}^N \|\mathbf{a}_{\text{pred}, i} - \mathbf{a}_{\text{DNS}, i}\|_F^2$ |
 
 *Table 2: Neural network topology and hyperparameters.*
@@ -139,7 +141,7 @@ Training was conducted on frozen velocity gradients and Reynolds stress fields f
 *Figure 1: Tensor Basis Neural Network architecture embedding Pope's integrity tensor basis with closed-form Cardano cubic realizability limiter.*
 
 ```
-[Input: 5 Invariants] --> [Dense 64 + ELU] --> [Dense 64 + ELU] --> [Dense 64 + ELU] --> [Dense 10: g^(1..10)]
+[Input: 5 Invariants] --> [Dense 64 + ReLU] --> [Dense 64 + ReLU] --> [Dense 64 + ReLU] --> [Dense 10: g^(1..10)]
                                                                                                |
                                                                    [Pope Bases T^(1..10)] ----(+)
                                                                                                |
@@ -177,16 +179,23 @@ $$\mathbf{a}_{\text{realizable}} = f_{\text{lim}} \, \mathbf{a}, \quad f_{\text{
 This analytical projection guarantees positive semi-definiteness on the Lumley triangle in $\mathcal{O}(1)$ operations per cell, ensuring unconditional numerical stability without matrix iterative overhead.
 
 ### 3.4 Cross-Engine Numerical Parity Verification
-Numerical consistency between the TorchScript engine, the JSON-based native C++ evaluator, and the reference Python implementation is verified continuously via automated tests ([`tests/test_parity.py`](file:///c:/Users/soumi/tbnnFoam/tests/test_parity.py)). Table 3 reports the evaluation metrics across 1,000 synthetic test points spanning the invariant domain:
+Numerical consistency between the TorchScript engine, the JSON-based native C++ evaluator, and the reference Python implementation is verified via the automated regression test suite ([`tests/test_parity.py`](file:///c:/Users/soumi/tbnnFoam/tests/test_parity.py)). Rather than asserting unrecorded precision across undefined distributions, the test suite executes explicit parity checks with defined numerical tolerances:
 
-| Test Metric | Python PyTorch vs. TorchScript | Python PyTorch vs. C++ Native | Status |
-| :--- | :---: | :---: | :---: |
-| **Max Absolute Error on $g^{(n)}$** | $< 1.2 \times 10^{-7}$ | $< 2.4 \times 10^{-7}$ | **Passed** ($< 10^{-6}$ target) |
-| **Max Relative Error on $g^{(n)}$** | $< 3.1 \times 10^{-6}$ | $< 4.5 \times 10^{-6}$ | **Passed** |
-| **Frobenius Norm Error on $\mathbf{a}$** | $< 8.5 \times 10^{-8}$ | $< 1.1 \times 10^{-7}$ | **Passed** |
-| **Realizability Violation Rate** | $0.00\%$ | $0.00\%$ | **Guaranteed** |
+1. **PyTorch vs. TorchScript (`test_torchscript_parity`):** Evaluates 10 randomized invariant states ($\lambda_i \in [-5, 5]$) and Pope tensor bases against both the Python `TensorBasisNeuralNetwork` model and the serialized TorchScript binary (`tbnn_model.pt`). Parity between the Python and TorchScript tensor outputs $\mathbf{a}$ is verified within an absolute tolerance of $\mathrm{atol} = 10^{-5}$ (`torch.allclose(out_py, out_ts, atol=1e-5)`).
+2. **PyTorch vs. Standalone Native C++ (`test_standalone_cpp_numerical_parity`):** Evaluates three canonical velocity gradient and turbulent timescale cases representing pure shear, general 3D shearing, and intense strained rotation against the standalone C++ binary `test_evaluator_parity` executed under OpenFOAM/WSL. When the compiled binary and OpenFOAM environment are present, the test verifies that invariants, tensor bases, network outputs $g^{(n)}$, and realizable anisotropy $\mathbf{a}$ match the Python reference implementation within an absolute tolerance of $\mathrm{atol} = 10^{-5}$ (`np.allclose(..., atol=1e-5)`). If the required binary or OpenFOAM environment is unavailable, the test is explicitly skipped with a recorded notification.
 
-*Table 3: Numerical parity verification between Python, TorchScript C++, and Native C++ engines.*
+Table 3 summarizes the verified parity specifications and testing conditions:
+
+| Comparison Component | Test Suite Function | Target Verified Tolerance | Test Condition / Environment | Test Status |
+| :--- | :--- | :---: | :--- | :---: |
+| **PyTorch vs. TorchScript** | `test_torchscript_parity` | $\mathrm{atol} \le 1.0 \times 10^{-5}$ | Evaluated on CPU via LibTorch runtime | **Passed (10/10 states)** |
+| **PyTorch vs. Native C++ ($g^{(n)}$)** | `test_standalone_cpp_numerical_parity` | $\mathrm{atol} \le 1.0 \times 10^{-5}$ | Executed via `test_evaluator_parity` under OpenFOAM | **Passed (3/3 cases)** |
+| **PyTorch vs. Native C++ ($\mathbf{a}$)** | `test_standalone_cpp_numerical_parity` | $\mathrm{atol} \le 1.0 \times 10^{-5}$ | Executed via `test_evaluator_parity` under OpenFOAM | **Passed (3/3 cases)** |
+| **Basis Trace Freedom** | `test_basis_trace_freedom` | $\mathrm{atol} \le 1.0 \times 10^{-12}$ | Analytical traceless verification across all 10 bases | **Passed ($\mathrm{tr}(\mathbf{T}) = 0$)** |
+| **Basis Symmetry** | `test_basis_symmetry` | $\mathrm{atol} \le 1.0 \times 10^{-12}$ | Analytical symmetry verification across all 10 bases | **Passed ($\mathbf{T} = \mathbf{T}^T$)** |
+| **Cardano Realizability Bounds** | `test_realizability_bounds` | $\lambda_{\min} \ge -1/3 - 10^{-12}$ | Random perturbation stress matrices ($N=50$) | **Guaranteed (0% violations)** |
+
+*Table 3: Numerical parity verification and physical consistency checks across Python, TorchScript C++, and Native C++ engines under stated test conditions.*
 
 ---
 
@@ -329,6 +338,14 @@ Table 4 presents the comprehensive validation metrics evaluated at developing st
 | **Continuity Residual** | $< 10^{-6}$ | **$< 10^{-6}$** | N/A | Numerical steady-state convergence |
 
 *Table 4: Comprehensive quantitative comparison between linear RANS, `tbnnFoam`, and reference DNS.*
+
+### 7.5 Assessment of Validation Scope: Structural Recovery vs. Quantitative DNS Fidelity
+A rigorous scientific appraisal requires distinguishing qualitative structural recovery from quantitative pointwise agreement:
+1. **Evidence for Structural Recovery:** The coupled `tbnnFoam` solver successfully activates the non-linear normal stress difference mechanism $(\overline{w'^2} - \overline{v'^2})$, generating the complete eight-cell secondary recirculation pattern across the four quadrants where standard linear Boussinesq closures predict identically zero secondary circulation.
+2. **Prominent Localization Discrepancy:** The detected Q1 vortex core center is located at $(0.850, 0.350)$ on the coarse mesh and $(0.825, 0.475)$ on the refined mesh, yielding substantial spatial localization errors of $0.586\,h$ and $0.474\,h$, respectively, relative to the canonical DNS reference at $(0.50, 0.82)$. Rather than forming along the diagonal bisector, the CFD vortex cores are shifted closer to the duct walls and corners.
+3. **Secondary Velocity Overprediction and Discretization Sensitivity:** The coarse-mesh peak secondary velocity is significantly overpredicted at $7.99\%$ (native discrete) and $6.38\%$ (interpolated grid) compared to the DNS benchmark of $2.03\%$. While 4x cross-stream refinement reduces this peak to $2.62\%$ (approaching DNS), this large delta demonstrates that secondary circulation magnitude is strongly coupled to cross-stream resolution and boundary-layer shear discretization.
+
+Consequently, we characterize the validation as **partial**: it confirms that the in-situ TBNN model successfully triggers Prandtl's secondary recirculation mechanism in OpenFOAM, but does not achieve precise vortex localization or complete quantitative fidelity with fully developed periodic DNS.
 
 ---
 
@@ -484,8 +501,8 @@ All raw DNS datasets, trained weights (`tbnn_model.pt`, `weights.json`), OpenFOA
 In this study, we presented `tbnnFoam`, an open-source, in-situ coupled CFD solver integrating Tensor Basis Neural Networks into OpenFOAM for turbulence modeling beyond the linear Boussinesq hypothesis.
 
 ### Summary of Findings:
-1. **Physical Anisotropy Recovery:** Live in-situ coupling successfully captures the non-linear normal stress differences $(\overline{w'^2} - \overline{v'^2})$ that drive secondary motions of Prandtl's second kind, recovering all eight canonical secondary flow cells where conventional linear $k\text{--}\omega$ SST fails entirely.
-2. **Dual Inference Parity:** Numerical equivalence between PyTorch, TorchScript C++, and a native zero-dependency C++ evaluator is demonstrated to $< 10^{-6}$ precision, with analytical Cardano cubic projection guaranteeing unconditional physical realizability.
+1. **Structural Anisotropy Recovery with Partial Validation:** Live in-situ coupling successfully captures the non-linear normal stress difference mechanism $(\overline{w'^2} - \overline{v'^2})$ that drives secondary motions of Prandtl's second kind, recovering all eight canonical secondary flow cells where conventional linear $k\text{--}\omega$ SST fails entirely. However, validation remains partial: core centroid localization is offset by $0.474\text{--}0.586\,h$ toward the walls/corners compared to DNS, and peak secondary velocities exhibit noticeable overprediction on coarse grids.
+2. **Dual Inference Parity:** Numerical equivalence between PyTorch, TorchScript C++, and the native zero-dependency C++ evaluator is verified to within an absolute tolerance of $10^{-5}$ across synthetic test cases, with analytical Cardano cubic projection guaranteeing unconditional physical realizability on the Lumley triangle in $\mathcal{O}(1)$ operations.
 3. **Discretization Sensitivity:** Increasing cross-stream resolution from $20 \times 20$ to $40 \times 40$ trends peak secondary circulation from $7.99\%$ to $2.62\%$ (approaching the $2.03\%$ DNS benchmark) and reduces Q1 core localization error from $0.586\,h$ to $0.474\,h$ while preserving topological stability.
 4. **Honest Evaluation of Discrepancies:** Streamwise velocity RMSE ($9.34\%$) and secondary velocity overprediction are transparently characterized as a combination of inlet development length effects and neural network model-form discrepancy. Furthermore, joint 5D $k$-NN distance diagnostics reveal modest distribution shift ($0.21\,\sigma$ median) despite $100\%$ marginal range coverage.
 
