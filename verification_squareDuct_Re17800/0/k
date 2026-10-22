@@ -1,0 +1,44 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     |
+    \\  /    A nd           | Copyright (C) 2011-2026 OpenFOAM Foundation
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0";
+    object      k;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 2 -2 0 0 0 0];
+
+// Inlet turbulent intensity I ~ 0.0471 -> k = 1.5 * (U*I)^2 ~ 0.00333 m^2/s^2
+internalField   uniform 0.00333;
+
+boundaryField
+{
+    inlet
+    {
+        type            fixedValue;
+        value           uniform 0.00333;
+    }
+
+    outlet
+    {
+        type            zeroGradient;
+    }
+
+    walls
+    {
+        type            kqRWallFunction;
+        value           uniform 0.00333;
+    }
+}
+
+// ************************************************************************* //
+
