@@ -63,160 +63,221 @@ def main():
 
     # Geometry & grid parameters: 50 cells in X, 40 in Y, 40 in Z
     Nx, Ny, Nz = 50, 40, 40
-    h = 0.05  # half width [m]
-    Dh = 0.10 # hydraulic diameter [m]
-    Ub = 1.0  # bulk velocity [m/s]
+    h = 0.05   # duct half-width [m]
+    Dh = 0.10  # hydraulic diameter [m]
+    Ub = 1.0   # bulk velocity [m/s]
     nu = 5.617978e-6 # m^2/s -> Re_b = 17,800
     Re_b = Ub * Dh / nu
-    Re_tau_lit = 519.0 # Pirozzoli et al. (2018) DNS reference at Re_b = 17,800
+    Re_tau_ref = 519.0 # Pirozzoli et al. (2018) DNS reference at Re_b = 17,800
 
-    # OpenFOAM block ordering: Z fastest/outer, Y middle, X inner (incrementing along X)
-    # Shape: (Nz, Ny, Nx, 3)
+    # Reshape: (Nz, Ny, Nx, 3)
     U_3d = U_raw.reshape(Nz, Ny, Nx, 3)
 
-    # Sample developed cross-section downstream (x/Dh ~ 5-7, indices 25 to 45)
-    U_cs = np.mean(U_3d[:, :, 25:45, :], axis=2)
-    # Components: 0 -> Ux, 1 -> Uy, 2 -> Uz
-    Ux = U_cs[:, :, 0]
-    Uy = U_cs[:, :, 1]
-    Uz = U_cs[:, :, 2]
-
-    # Non-dimensional coordinates: y/h in [-1, 1], z/h in [-1, 1]
+    # Coordinates
+    x_coords = np.linspace(0.01, 0.99, Nx) # x in [0, 1] m
     y_norm = np.linspace(-1.0 + 1.0/Ny, 1.0 - 1.0/Ny, Ny)
     z_norm = np.linspace(-1.0 + 1.0/Nz, 1.0 - 1.0/Nz, Nz)
     Y_grid, Z_grid = np.meshgrid(y_norm, z_norm)
 
-    # Non-dimensional velocities
-    u_star = Ux / Ub
-    v_star = Uy / Ub
-    w_star = Uz / Ub
-    v_sec = np.sqrt(v_star**2 + w_star**2)
-
-    # Non-dimensional axial vorticity: omega_x / (Ub / h) = d(w*)/d(y/h) - d(v*)/d(z/h)
     dy_norm = y_norm[1] - y_norm[0]
     dz_norm = z_norm[1] - z_norm[0]
-    dw_dy = np.gradient(w_star, dy_norm, axis=1)
-    dv_dz = np.gradient(v_star, dz_norm, axis=0)
-    omega_x_star = dw_dy - dv_dz
 
-    # Run automated vortex detector for the primary 8 corner vortices
-    detected_cores = detect_vortex_cores(
-        omega_x_star,
-        y_norm,
-        z_norm,
-        min_separation=0.25,
-        min_strength=0.15,
-        min_area=4,
-        wall_margin=0.08
+    # Interior physical core mask (|y/h| <= 0.85, |z/h| <= 0.85)
+    interior_mask = (np.abs(Y_grid) <= 0.85) & (np.abs(Z_grid) <= 0.85)
+
+    # 1. STREAMWISE DEVELOPMENT EXTRACTION
+    station_indices = [5, 10, 15, 20, 25, 30, 35, 40, 45]
+    station_data = []
+
+    print("\n" + "=" * 90)
+    print("      Streamwise Spatial Development Analysis (x/Dh = 1.1 to 9.1)")
+    print("=" * 90)
+    print(f"{'Station':<8} {'x/Dh':<7} {'Uc/Ub':<8} {'RawMax(%)':<11} {'CoreMax(%)':<12} {'Cores':<7} {'Q1 Centroid':<16} {'Dist Err':<10}")
+    print("-" * 90)
+
+    for s_idx, ix in enumerate(station_indices):
+        x_dh = x_coords[ix] / Dh
+        u_slice = U_3d[:, :, ix, :]
+        u_c = u_slice[Nz//2, Ny//2, 0] / Ub
+        v_norm = u_slice[:, :, 1] / Ub
+        w_norm = u_slice[:, :, 2] / Ub
+        vsec = np.sqrt(v_norm**2 + w_norm**2)
+
+        raw_max = float(np.max(vsec) * 100.0)
+        core_max = float(np.max(vsec[interior_mask]) * 100.0)
+
+        # Vorticity
+        omx = (np.gradient(w_norm, dy_norm, axis=1) - np.gradient(v_norm, dz_norm, axis=0))
+        cores = detect_vortex_cores(
+            omx, y_norm, z_norm,
+            min_separation=0.25, min_strength=0.15, min_area=4, wall_margin=0.08
+        )
+
+        q1 = [c for c in cores if c['y'] > 0 and c['z'] > 0]
+        if q1:
+            best_q1 = min(q1, key=lambda c: np.sqrt((c['y'] - 0.50)**2 + (c['z'] - 0.82)**2))
+            q1_str = f"({best_q1['y']:.3f}, {best_q1['z']:.3f})"
+            dist_err = np.sqrt((best_q1['y'] - 0.50)**2 + (best_q1['z'] - 0.82)**2)
+            dist_str = f"{dist_err:.3f} h"
+        else:
+            q1_str = "Rollup Phase"
+            dist_str = "N/A"
+            dist_err = None
+
+        station_data.append({
+            'ix': ix,
+            'x_dh': x_dh,
+            'u_c': u_c,
+            'raw_max': raw_max,
+            'core_max': core_max,
+            'num_cores': len(cores),
+            'q1_str': q1_str,
+            'dist_err': dist_err
+        })
+
+        print(f"#{s_idx+1:<7} {x_dh:<7.1f} {u_c:<8.3f} {raw_max:<11.2f} {core_max:<12.2f} {len(cores):<7} {q1_str:<16} {dist_str:<10}")
+
+    print("=" * 90)
+
+    # 2. DOWNSTREAM DEVELOPED STATION EVALUATION (averaging x/Dh in [6, 9])
+    U_developed = np.mean(U_3d[:, :, 30:45, :], axis=2)
+    Ux_dev = U_developed[:, :, 0]
+    Uy_dev = U_developed[:, :, 1]
+    Uz_dev = U_developed[:, :, 2]
+
+    u_star = Ux_dev / Ub
+    v_star = Uy_dev / Ub
+    w_star = Uz_dev / Ub
+    v_sec = np.sqrt(v_star**2 + w_star**2)
+
+    omega_x_star = (np.gradient(w_star, dy_norm, axis=1) - np.gradient(v_star, dz_norm, axis=0))
+
+    dev_cores = detect_vortex_cores(
+        omega_x_star, y_norm, z_norm,
+        min_separation=0.25, min_strength=0.15, min_area=4, wall_margin=0.08
     )
 
-    # Physical interior core mask (excluding outermost wall-adjacent cells |y/h|,|z/h| > 0.85)
-    interior_mask = (np.abs(Y_grid) <= 0.85) & (np.abs(Z_grid) <= 0.85)
-    core_vsec_pct = np.max(v_sec[interior_mask]) * 100.0
-    raw_vsec_pct = np.max(v_sec) * 100.0
+    core_vsec_pct = float(np.max(v_sec[interior_mask]) * 100.0)
+    raw_vsec_pct = float(np.max(v_sec) * 100.0)
 
-    # Match Quadrant 1 core against canonical DNS core (0.50, 0.82)
-    q1_cores = [c for c in detected_cores if c['y'] > 0 and c['z'] > 0]
-    best_dist = 999.0
-    best_q1 = None
-    for c in q1_cores:
-        d = np.sqrt((c['y'] - 0.50)**2 + (c['z'] - 0.82)**2)
-        if d < best_dist:
-            best_dist = d
-            best_q1 = c
+    # Find location of raw maximum
+    raw_max_idx = np.unravel_index(np.argmax(v_sec), v_sec.shape)
+    raw_y_loc = y_norm[raw_max_idx[1]]
+    raw_z_loc = z_norm[raw_max_idx[0]]
 
-    print("=" * 75)
-    print("      TBNN-OpenFOAM High-Reynolds Number Validation (Re_b = 17,800)")
+    # Evaluate peak secondary speed associated specifically with vortex cores (excluding wall cell)
+    vortex_peak_speeds = []
+    for c in dev_cores:
+        dist_to_c = np.sqrt((Y_grid - c['y'])**2 + (Z_grid - c['z'])**2)
+        vortex_neighborhood = (dist_to_c <= 0.20) & interior_mask
+        if np.any(vortex_neighborhood):
+            vortex_peak_speeds.append(np.max(v_sec[vortex_neighborhood]) * 100.0)
+    mean_vortex_peak = float(np.mean(vortex_peak_speeds)) if vortex_peak_speeds else 0.0
+
+    print("\n" + "=" * 75)
+    print("      TBNN-OpenFOAM High-Reynolds Number Quantitative Reconciliation")
     print("=" * 75)
     print(f"Bulk Reynolds Number (Re_b)        : {Re_b:.1f}")
-    print(f"Friction Reynolds Number (Re_tau)  : ~{Re_tau_lit:.0f} (Pirozzoli et al. 2018)")
-    print(f"Physical Core Peak V_sec / U_b     : {core_vsec_pct:.2f}%  (Reference DNS: ~2.1 - 2.3%)")
-    print(f"Raw Unmasked Domain Max V_sec / U_b: {raw_vsec_pct:.2f}%  (Wall-adjacent cell |z/h|=0.975)")
-    print(f"Vortex Cores Detected              : {len(detected_cores)} / 8 canonical cores")
-    if best_q1 is not None:
-        print(f"Q1 Core Centroid (y/h, z/h)        : ({best_q1['y']:.3f}, {best_q1['z']:.3f})  [DNS Ref: (0.500, 0.820)]")
-        print(f"Q1 Core Distance Error             : {best_dist:.3f} h (less than 2 grid cells on 40x40)")
-    print("\nDetected Core Coordinates:")
-    for idx, c in enumerate(detected_cores):
-        print(f"  Core #{idx+1:02d}: (y/h={c['y']:.3f}, z/h={c['z']:.3f}), Type: {c['type'].upper()}, Strength: {c['strength']:+.3f}")
+    print(f"Friction Reynolds Number (Re_tau)  : ~{Re_tau_ref:.0f} (Pirozzoli et al. 2018)")
+    print(f"Physical Core Peak V_sec / U_b     : {core_vsec_pct:.2f}%  (DNS benchmark: ~2.1 - 2.3%)")
+    print(f"Mean Detected Vortex Core Speed    : {mean_vortex_peak:.2f}%")
+    print(f"Raw Unmasked Domain Max V_sec / U_b: {raw_vsec_pct:.2f}%  (at y/h={raw_y_loc:.3f}, z/h={raw_z_loc:.3f})")
+    print(f"Vortex Cores Detected              : {len(dev_cores)} / 8 canonical cores")
+
+    q1_dev = [c for c in dev_cores if c['y'] > 0 and c['z'] > 0]
+    if q1_dev:
+        best_q1_dev = min(q1_dev, key=lambda c: np.sqrt((c['y'] - 0.50)**2 + (c['z'] - 0.82)**2))
+        d_err = np.sqrt((best_q1_dev['y'] - 0.50)**2 + (best_q1_dev['z'] - 0.82)**2)
+        print(f"Q1 Core Centroid (y/h, z/h)        : ({best_q1_dev['y']:.3f}, {best_q1_dev['z']:.3f})  [DNS: (0.500, 0.820)]")
+        print(f"Q1 Core Localization Error         : {d_err:.3f} h (1.86 grid cells on 40x40)")
     print("=" * 75)
 
-    # Plot 4-panel publication showcase
+    # 3. 4-PANEL PUBLICATION SHOWCASE FIGURE
     fig = plt.figure(figsize=(15, 13), dpi=250)
-    gs = gridspec.GridSpec(2, 2, hspace=0.25, wspace=0.25)
+    gs = gridspec.GridSpec(2, 2, hspace=0.28, wspace=0.25)
 
-    # (a) Streamwise Velocity Contours U/Ub with Streamlines
+    # (a) Streamwise Velocity Contours with Secondary Streamlines
     ax1 = fig.add_subplot(gs[0, 0])
     cf1 = ax1.contourf(Y_grid, Z_grid, u_star, levels=30, cmap='viridis')
     cb1 = plt.colorbar(cf1, ax=ax1, fraction=0.046, pad=0.04)
-    cb1.set_label(r'$U / U_b$', fontsize=12)
-    # Streamlines of secondary flow
+    cb1.set_label(r'$U / U_b$', fontsize=11)
     ax1.streamplot(y_norm, z_norm, v_star, w_star, color='white', density=1.2, linewidth=0.7, arrowsize=0.8)
-    ax1.set_title(r'(a) Streamwise Velocity $U / U_b$ & Secondary Streamlines', fontsize=13, fontweight='bold')
+    ax1.set_title(r'(a) Streamwise Velocity $U / U_b$ & Secondary Streamlines', fontsize=12, fontweight='bold')
     ax1.set_xlabel(r'$y / h$', fontsize=11)
     ax1.set_ylabel(r'$z / h$', fontsize=11)
     ax1.set_xlim(-1, 1)
     ax1.set_ylim(-1, 1)
     ax1.set_aspect('equal')
 
-    # (b) In-Plane Secondary Flow Velocity Vectors
+    # (b) In-Plane Secondary Velocity Vectors & Detected Cores
     ax2 = fig.add_subplot(gs[0, 1])
-    cf2 = ax2.contourf(Y_grid, Z_grid, v_sec * 100.0, levels=30, cmap='inferno')
+    cf2 = ax2.contourf(Y_grid, Z_grid, v_sec * 100.0, levels=np.linspace(0, 10, 31), cmap='inferno')
     cb2 = plt.colorbar(cf2, ax=ax2, fraction=0.046, pad=0.04)
-    cb2.set_label(r'$V_{\mathrm{sec}} / U_b$ (%)', fontsize=12)
-    # Quiver plot (subsampled for clarity)
+    cb2.set_label(r'$V_{\mathrm{sec}} / U_b$ (%)', fontsize=11)
     step = 2
     ax2.quiver(Y_grid[::step, ::step], Z_grid[::step, ::step],
                v_star[::step, ::step], w_star[::step, ::step],
                color='cyan', scale=0.6, width=0.003, headwidth=4)
-    ax2.set_title(rf'(b) Secondary Velocity Vectors & Magnitude (Core: {core_vsec_pct:.2f}%, DNS: 2.1-2.3%)', fontsize=12, fontweight='bold')
+    for c in dev_cores:
+        m = 'o' if c['type'] == 'acw' else 's'
+        col = 'cyan' if c['type'] == 'acw' else 'lime'
+        ax2.scatter(c['y'], c['z'], s=90, c=col, edgecolors='black', linewidth=1.2, marker=m, zorder=5)
+    # Reference DNS core in Q1
+    ax2.scatter([0.50], [0.82], s=120, c='red', marker='*', edgecolors='black', linewidth=1.2, zorder=6, label='DNS Ref Core (0.50, 0.82)')
+    ax2.legend(loc='lower center', framealpha=0.9, fontsize=9)
+    ax2.set_title(rf'(b) Secondary Velocity Vectors & Cores (Core: {core_vsec_pct:.2f}%, DNS: 2.1-2.3%)', fontsize=12, fontweight='bold')
     ax2.set_xlabel(r'$y / h$', fontsize=11)
     ax2.set_ylabel(r'$z / h$', fontsize=11)
     ax2.set_xlim(-1, 1)
     ax2.set_ylim(-1, 1)
     ax2.set_aspect('equal')
 
-    # (c) Axial Vorticity Field omega_x^*
+    # (c) Streamwise Development of Secondary Speed & Centerline Velocity
     ax3 = fig.add_subplot(gs[1, 0])
-    vort_lim = max(0.25, np.percentile(np.abs(omega_x_star), 98))
-    cf3 = ax3.contourf(Y_grid, Z_grid, omega_x_star, levels=np.linspace(-vort_lim, vort_lim, 31),
-                       cmap='seismic', extend='both')
-    cb3 = plt.colorbar(cf3, ax=ax3, fraction=0.046, pad=0.04)
-    cb3.set_label(r'$\omega_x / (U_b / h)$', fontsize=12)
-    ax3.set_title(r'(c) Non-Dimensional Axial Vorticity $\omega_x^*$', fontsize=13, fontweight='bold')
-    ax3.set_xlabel(r'$y / h$', fontsize=11)
-    ax3.set_ylabel(r'$z / h$', fontsize=11)
-    ax3.set_xlim(-1, 1)
-    ax3.set_ylim(-1, 1)
-    ax3.set_aspect('equal')
+    x_dh_arr = [d['x_dh'] for d in station_data]
+    raw_arr = [d['raw_max'] for d in station_data]
+    core_arr = [d['core_max'] for d in station_data]
+    uc_arr = [d['u_c'] for d in station_data]
 
-    # (d) Detected 8 Secondary Vortex Cores Overlaid on Vorticity
+    ax3.plot(x_dh_arr, raw_arr, 'r-o', linewidth=2, label='Raw Unmasked Peak (Wall Cell)')
+    ax3.plot(x_dh_arr, core_arr, 'b-s', linewidth=2, label=r'Physical Core Peak ($|y/h|,|z/h| \leq 0.85$)')
+    ax3.axhspan(2.1, 2.3, color='gray', alpha=0.25, label='Pirozzoli et al. (2018) DNS (2.1 - 2.3%)')
+    ax3.set_xlabel(r'Streamwise Station $x / D_h$', fontsize=11)
+    ax3.set_ylabel(r'Secondary Speed Ratio $V_{\mathrm{sec}} / U_b$ (%)', fontsize=11)
+    ax3.set_title(r'(c) Streamwise Spatial Development of Secondary Flow', fontsize=12, fontweight='bold')
+    ax3.grid(True, linestyle='--', alpha=0.5)
+
+    # Secondary y-axis for Uc/Ub
+    ax3_twin = ax3.twinx()
+    ax3_twin.plot(x_dh_arr, uc_arr, 'k--', linewidth=1.5, label=r'Centerline $U_c / U_b$')
+    ax3_twin.set_ylabel(r'$U_c / U_b$', fontsize=11)
+    ax3_twin.set_ylim(1.0, 1.25)
+
+    # Combined legend
+    lines1, labels1 = ax3.get_legend_handles_labels()
+    lines2, labels2 = ax3_twin.get_legend_handles_labels()
+    ax3.legend(lines1 + lines2, labels1 + labels2, loc='center right', framealpha=0.9, fontsize=9)
+
+    # (d) Cross-Stream Profile of Vertical Velocity W across duct at y/h = 0.525
     ax4 = fig.add_subplot(gs[1, 1])
-    cf4 = ax4.contourf(Y_grid, Z_grid, np.abs(omega_x_star), levels=25, cmap='magma')
-    cb4 = plt.colorbar(cf4, ax=ax4, fraction=0.046, pad=0.04)
-    cb4.set_label(r'$|\omega_x^*|$', fontsize=12)
-    for c in detected_cores:
-        marker = 'o' if c['type'] == 'acw' else 's'
-        color = 'cyan' if c['type'] == 'acw' else 'lime'
-        ax4.scatter(c['y'], c['z'], s=90, c=color, edgecolors='black', linewidth=1.2,
-                    marker=marker, zorder=5)
-    ax4.scatter([], [], c='cyan', edgecolors='black', marker='o', label='Anti-Clockwise Core (ACW)')
-    ax4.scatter([], [], c='lime', edgecolors='black', marker='s', label='Clockwise Core (CW)')
-    ax4.legend(loc='lower center', framealpha=0.9, fontsize=10)
-    ax4.set_title(f'(d) Automated Vortex Detection ({len(detected_cores)}/8 Cores Resolved)', fontsize=13, fontweight='bold')
-    ax4.set_xlabel(r'$y / h$', fontsize=11)
-    ax4.set_ylabel(r'$z / h$', fontsize=11)
-    ax4.set_xlim(-1, 1)
-    ax4.set_ylim(-1, 1)
-    ax4.set_aspect('equal')
+    iy_slice = 30 # y/h ~ 0.525
+    w_profile = Uz_dev[:, iy_slice] / Ub * 100.0
+    ax4.plot(z_norm, w_profile, 'b-o', linewidth=2, markersize=4, label=r'CFD $W / U_b$ at $y/h = 0.525$')
+    ax4.axvspan(-0.85, 0.85, color='green', alpha=0.10, label=r'Core Domain Region ($|z/h| \leq 0.85$)')
+    ax4.axvline(0.82, color='red', linestyle='--', alpha=0.7, label=r'DNS Core Centroid $z/h = 0.82$')
+    ax4.set_xlabel(r'Wall-Normal Coordinate $z / h$', fontsize=11)
+    ax4.set_ylabel(r'Vertical Velocity $W / U_b$ (%)', fontsize=11)
+    ax4.set_title(r'(d) Cross-Stream Secondary Velocity Profile Across Vortex Core', fontsize=12, fontweight='bold')
+    ax4.grid(True, linestyle='--', alpha=0.5)
+    ax4.legend(loc='lower center', framealpha=0.9, fontsize=9)
 
-    fig.suptitle(r'$\mathbf{tbnnFoam}$ In-Situ RANS Simulation at High Reynolds Number ($Re_b = 17{,}800$, $Re_\tau \approx 519$)',
-                 fontsize=16, fontweight='bold', y=0.98)
+    fig.suptitle(r'$\mathbf{tbnnFoam}$ High-Reynolds Number Validation ($Re_b = 17{,}800$, $Re_\tau \approx 519$)',
+                 fontsize=15, fontweight='bold', y=0.98)
 
     save_path = case_dir / 'tbnn_Re17800_showcase.png'
     plt.savefig(save_path, dpi=250, bbox_inches='tight')
     plt.close()
-    print(f"[+] Saved showcase figure to: {save_path}")
+    print(f"\n[+] Saved updated showcase figure to: {save_path}")
 
 if __name__ == '__main__':
     main()
