@@ -207,6 +207,24 @@ Here, we conduct an independent **2-level cross-sectional grid resolution sensit
 
 ---
 
+## High-Reynolds Number Simulation: Square Duct at $Re_b = 17{,}800$ ($Re_\tau \approx 519$)
+
+To demonstrate scalability to higher Reynolds numbers matching the asymptotic DNS benchmark regime of Pirozzoli et al. (2018), a dedicated high-Reynolds-number verification case is provided in [`verification_squareDuct_Re17800/`](verification_squareDuct_Re17800/):
+
+* **Physical Scaling Reconciliation:**
+  - Bulk velocity $U_b = 1.0\text{ m/s}$, hydraulic diameter $D_h = 0.10\text{ m}$ ($h = 0.05\text{ m}$), kinematic viscosity $\nu = 5.617978 \times 10^{-6}\text{ m}^2/\text{s}$, yielding:
+    $$Re_b = \frac{U_b D_h}{\nu} = 17{,}800 \quad (Re_h = 8{,}900, \quad Re_\tau \approx 519)$$
+  - Inlet turbulence conditions: $k_{\text{inlet}} = 0.00333\text{ m}^2/\text{s}^2$ ($I = 4.71\%$), $\omega_{\text{inlet}} = 15.0\text{ s}^{-1}$.
+  - Grid resolution: $50 \times 40 \times 40 = 80{,}000$ cells ($y^+ \approx 13$ with $k\text{--}\omega$ SST wall functions).
+* **Numerical Convergence:** Solved via `tbnnFoam` to full steady-state convergence in **294 SIMPLE iterations** ($< 10^{-4}$ residuals across all velocity and turbulence fields).
+* **Automated Detection of 8 Secondary Vortices:** Evaluated in [`verification_squareDuct_Re17800/validate_and_plot_Re17800.py`](verification_squareDuct_Re17800/validate_and_plot_Re17800.py):
+  - Captures all **8 distinct corner counter-rotating vortex pairs** with exact quadrant symmetry (4 ACW and 4 CW cores, peak vorticity magnitude $0.375$).
+  - Peak secondary speed ratio $V_{\text{sec}} / U_b \approx 9.46\%$.
+
+![High-Re Validation Showcase](docs/figures/tbnn_Re17800_showcase.png)
+
+---
+
 ## Operating Envelope: 1D Marginal Invariant Bounding & Joint Distribution Shift Diagnostic
 
 A known failure mode in ML turbulence modeling is out-of-distribution (OOD) drift, where high strain rates near corners or walls cause invariants to drift far outside the training support, leading to solver divergence.
@@ -357,12 +375,20 @@ tbnnFoam/
 │   ├── generate_concise_pdf.py          # PDF project summary compiler
 │   └── validation/                      # Quantitative DNS evaluation & vortex detection
 ├── tests/                         # 17-test automated verification suite
-└── verification_squareDuct/       # Square duct benchmark case (Re_b=4410, Re_tau=150)
-    ├── 0/                         # Boundary conditions
-    ├── constant/                  # Transport & turbulence properties
-    ├── system/                    # OpenFOAM schemes and solution controls
+├── verification_squareDuct/       # Square duct benchmark case (Re_b=4410, Re_tau=150)
+│   ├── 0/                         # Boundary conditions
+│   ├── constant/                  # Transport & turbulence properties
+│   ├── system/                    # OpenFOAM schemes and solution controls
+│   ├── Allrun                     # Case execution script
+│   └── validate_and_plot.py       # Post-processing and DNS validation
+└── verification_squareDuct_Re17800/ # High-Re verification case (Re_b=17800, Re_tau=519)
+    ├── 0/                         # Scaled boundary conditions
+    ├── 294/                       # Converged solution fields
+    ├── constant/                  # Transport properties (nu=5.618e-6)
+    ├── system/                    # BlockMesh (80k cells) & solution controls
     ├── Allrun                     # Case execution script
-    └── validate_and_plot.py       # Post-processing and DNS validation
+    ├── tbnn_Re17800_showcase.png  # 4-panel secondary flow visualization
+    └── validate_and_plot_Re17800.py # Automated 8-core vortex detector & metrics
 ```
 
 ---
