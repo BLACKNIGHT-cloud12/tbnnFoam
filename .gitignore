@@ -13,7 +13,6 @@ verification_squareDuct_Re17800/100
 verification_squareDuct_Re17800/150
 verification_squareDuct_Re17800/200
 verification_squareDuct_Re17800/250
-verification_squareDuct_Re17800/log.*
 !verification_squareDuct/200/
 !verification_squareDuct/300/
 !verification_squareDuct/baseline_sst/
