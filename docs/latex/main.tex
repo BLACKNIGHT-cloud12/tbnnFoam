@@ -519,6 +519,47 @@ Parameter / Metric & Coarse Mesh (M1) & Refined Mesh (M2) & Relative Delta & DNS
     \item \textbf{Topological Stability:} Both meshes cleanly identify all eight distinct vortex cores, verifying topological stability under discretization refinement.
 \end{enumerate}
 
+\subsection{High-Reynolds-Number Case Study: $Re_b = 17{,}800$ ($Re_\tau \approx 519$)}
+To evaluate scalability to asymptotic Reynolds numbers matching the benchmark DNS regime of Pirozzoli et al. \cite{pirozzoli2018turbulence}, an independent high-Reynolds-number verification case was conducted in a $50 \times 40 \times 40$ mesh ($80{,}000$ cells) with fluid kinematic viscosity $\nu = 5.617978 \times 10^{-6}\text{ m}^2/\text{s}$, bulk velocity $U_b = 1.0\text{ m/s}$, and hydraulic diameter $D_h = 0.10\text{ m}$ ($h = 0.05\text{ m}$), yielding:
+\begin{equation}
+Re_b = \frac{U_b D_h}{\nu} = 17{,}800 \quad (Re_h = 8{,}900, \quad Re_\tau \approx 519)
+\end{equation}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Streamwise spatial development of secondary flow and vortex core localization at $Re_b = 17{,}800$.}
+\label{tab:re17800_development}
+\begin{tabular}{c c c c c c c}
+\toprule
+Station & $x/D_h$ & $U_c/U_b$ & Raw Max $V_{\text{sec}}/U_b$ & Interior Max ($|y|,|z| \le 0.85h$) & Cores & Q1 Distance to DNS \\
+\midrule
+\#1 & 1.1 & 1.019 & 9.63\% & 1.91\% & 0 (Rollup) & N/A \\
+\#2 & 2.1 & 1.037 & 10.43\% & 2.80\% & 0 (Rollup) & N/A \\
+\#3 & 3.1 & 1.054 & 10.43\% & 2.39\% & 0 (Rollup) & N/A \\
+\#4 & 4.1 & 1.069 & 10.20\% & 1.95\% & 0 (Rollup) & N/A \\
+\#5 & 5.1 & 1.083 & 9.92\% & 1.87\% & 0 (Rollup) & N/A \\
+\#6 & 6.1 & 1.096 & 9.69\% & 1.84\% & 8 cores & $0.137\,h$ \\
+\#7 & 7.1 & 1.108 & 9.55\% & 1.78\% & 8 cores & $0.093\,h$ \\
+\#8 & 8.1 & 1.121 & 9.34\% & 1.70\% & 8 cores & $0.093\,h$ \\
+\#9 & 9.1 & 1.132 & 9.39\% & 1.67\% & 8 cores & $\mathbf{0.060\,h}$ (1.2 cells) \\
+\midrule
+\textbf{DNS Ref} & $\infty$ & $1.33$ & $2.03\% - 2.30\%$ & $\mathbf{2.03\% - 2.30\%}$ & 8 cores & $\mathbf{0.000\,h}$ (Ref) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The simulation converged stably in 294 SIMPLE iterations with all residuals strictly $< 10^{-4}$. Across the downstream developing region with organized vortices ($x/D_h \ge 6.1$), the secondary speed evaluated at the eight detected vortex core centroids settles at $1.71\%$ (with interior-masked station maxima between $1.67\%$ and $1.84\%$). Compared to the cited asymptotic DNS lower bound ($2.03\%$), the station interior maxima are $9.4\% - 17.7\%$ below ($15.8\%$ below for the $1.71\%$ centroid mean), reflecting the incompletely developed spatial duct ($U_c/U_b = 1.132$ at $x/D_h = 9.1$ vs. asymptotic $U_c/U_b \approx 1.33$ in periodic DNS).
+
+The downstream-averaged section ($x/D_h \in [6.1, 9.1]$) yields an averaged-section centroid of $(0.575, 0.875)$ ($\Delta r = 0.093\,h$), while station $9.1$ resolves the core at $(0.525, 0.875)$ ($\Delta r = 0.060\,h$, $\approx 1.2$ discrete grid cells). The raw unmasked domain maximum ($9.40\%$) occurs strictly in the single outermost boundary-layer cell center ($|z/h| = 0.975$); this is framed as a proposed numerical/wall-treatment mechanism where steep velocity gradients interact with explicit anisotropic stress divergence under wall functions, while the physical vortex core circulation throughout the interior cross-section remains smooth at $\sim 1.71\%$.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/tbnn_Re17800_showcase.png}
+\caption{High-Reynolds-number validation at $Re_b = 17{,}800$ ($Re_\tau \approx 519$): (a) Streamwise velocity contours and secondary streamlines; (b) In-plane secondary flow velocity vectors and detected eight vortex cores; (c) Streamwise spatial development of secondary speed and centerline velocity; (d) Cross-stream vertical velocity profile across vortex core line $y/h = 0.525$.}
+\label{fig:re17800_showcase}
+\end{figure}
+
 \subsection{Mesh Reconstruction \& Cell Ordering Verification}
 To eliminate verification limitations associated with hardcoded mesh dimensions and assumed cell ordering, \texttt{tbnnFoam} incorporates automated mesh geometry tests (\texttt{tests/test\_mesh\_reconstruction\_verification.py}):
 \begin{itemize}

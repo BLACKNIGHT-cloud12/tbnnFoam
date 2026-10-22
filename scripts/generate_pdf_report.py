@@ -17,6 +17,7 @@ b64_bary = img_to_b64(fig_dir / 'barycentric_anisotropy_map.png')
 b64_hero = img_to_b64(fig_dir / 'tbnn_hero_showcase.png')
 b64_envelope = img_to_b64(fig_dir / 'timescale_and_invariant_distribution.png')
 b64_mesh = img_to_b64(fig_dir / 'mesh_sensitivity_study.png')
+b64_re17800 = img_to_b64(fig_dir / 'tbnn_Re17800_showcase.png')
 
 html_content = f"""<!DOCTYPE html>
 <html lang="en">
@@ -556,9 +557,52 @@ html_content = f"""<!DOCTYPE html>
   </ul>
 </div>
 
-<!-- PAGE 7: AUTOMATED TEST SUITE -->
+<!-- PAGE 8: HIGH-REYNOLDS NUMBER CASE STUDY -->
 <div class="page">
-  <h2>8. Automated Verification & Pytest Suite Breakdown</h2>
+  <h2>8. High-Reynolds-Number Case Study (Re<sub>b</sub> = 17,800, Re<sub>&tau;</sub> &approx; 519)</h2>
+  <p>
+    To evaluate model scalability to high Reynolds numbers matching the asymptotic DNS benchmark regime of Pirozzoli et al. (2018), an independent simulation was conducted at bulk Reynolds number <strong>Re<sub>b</sub> = 17,800</strong> (Re<sub>h</sub> = 8,900, Re<sub>&tau;</sub> &approx; 519) with &nu; = 5.618 &times; 10<sup>-6</sup> m<sup>2</sup>/s and U<sub>b</sub> = 1.0 m/s on an 80k-cell mesh (50 &times; 40 &times; 40):
+  </p>
+
+  <div class="fig-container">
+    <img src="{b64_re17800}" style="max-height: 250px;" alt="High-Re Re=17800 Showcase">
+    <div class="fig-caption">Figure 8: High-Reynolds-number validation at Re<sub>b</sub> = 17,800: (a) Streamwise velocity contours and secondary streamlines; (b) Secondary flow velocity vectors and detected 8 vortex cores; (c) Streamwise spatial development of secondary speed and centerline velocity; (d) Cross-stream vertical velocity profile across vortex core line y/h = 0.525.</div>
+  </div>
+
+  <table class="table-center">
+    <thead>
+      <tr>
+        <th>Station</th>
+        <th>x/D<sub>h</sub></th>
+        <th>U<sub>c</sub>/U<sub>b</sub></th>
+        <th>Raw Max V<sub>sec</sub>/U<sub>b</sub></th>
+        <th>Interior Max (|y|,|z| &le; 0.85h)</th>
+        <th>Cores</th>
+        <th>Q1 Core Distance to DNS</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>#1</td><td>1.1</td><td>1.019</td><td>9.63%</td><td>1.91%</td><td>0 (Rollup)</td><td>N/A</td></tr>
+      <tr><td>#3</td><td>3.1</td><td>1.054</td><td>10.43%</td><td>2.39%</td><td>0 (Rollup)</td><td>N/A</td></tr>
+      <tr><td>#6</td><td>6.1</td><td>1.096</td><td>9.69%</td><td>1.84%</td><td><strong>8 cores</strong></td><td>0.137 h</td></tr>
+      <tr><td>#7</td><td>7.1</td><td>1.108</td><td>9.55%</td><td>1.78%</td><td><strong>8 cores</strong></td><td>0.093 h</td></tr>
+      <tr><td>#9</td><td>9.1</td><td>1.132</td><td>9.39%</td><td>1.67%</td><td><strong>8 cores</strong></td><td><strong>0.060 h (1.2 cells)</strong></td></tr>
+      <tr style="background:#edf2f7; font-weight:bold;">
+        <td>DNS Ref</td><td>&infin;</td><td>1.33</td><td>2.03% - 2.30%</td><td>2.03% - 2.30%</td><td>8 cores</td><td>0.000 h (Ref)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>Topological Stability:</strong> The solver converges stably in 294 SIMPLE iterations, capturing all 8 distinct corner counter-rotating vortex pairs across the downstream developing region (x/D<sub>h</sub> &ge; 6.1).</li>
+    <li><strong>Core Speed Discrepancy:</strong> Downstream station interior maxima settle at 1.67% - 1.84% (mean core centroid speed 1.71%), which is 9.4% - 17.7% below the cited asymptotic periodic DNS lower bound (2.03%). This is consistent with an incompletely developed spatial duct (U<sub>c</sub>/U<sub>b</sub> = 1.132 vs DNS U<sub>c</sub>/U<sub>b</sub> &approx; 1.33).</li>
+    <li><strong>Proposed Near-Wall Mechanism:</strong> The raw domain maximum (9.40%) occurs strictly in the outermost boundary-layer cell center (|z/h| = 0.975); this is framed as a proposed numerical/wall-treatment mechanism under steep velocity gradients, while the interior vortex core circulation remains smooth at &sim; 1.71%.</li>
+  </ul>
+</div>
+
+<!-- PAGE 9: AUTOMATED TEST SUITE -->
+<div class="page">
+  <h2>9. Automated Verification & Pytest Suite Breakdown</h2>
   <p>
     The codebase includes an automated continuous test suite with <strong>17 unit and parity tests</strong> enforcing strict mathematical and numerical integrity across all modules:
   </p>
@@ -606,7 +650,7 @@ html_content = f"""<!DOCTYPE html>
     </tbody>
   </table>
 
-  <h2>9. Physical Limitations & Benchmark Comparability</h2>
+  <h2>10. Physical Limitations & Benchmark Comparability</h2>
   <p>
     A critical physical distinction documented in the repository explains the observed streamwise velocity profile differences:
   </p>
@@ -616,7 +660,7 @@ html_content = f"""<!DOCTYPE html>
     <li><strong>Roadmap:</strong> Future iterations will configure cyclic periodic boundary conditions with OpenFOAM's <code>meanVelocityForce</code> fvOptions for one-to-one boundary equivalence.</li>
   </ul>
 
-  <h2>10. Conclusion & Repository Access</h2>
+  <h2>11. Conclusion & Repository Access</h2>
   <p>
     <code>tbnnFoam</code> successfully bridges machine learning turbulence modeling and production CFD by solving key practical barriers: standalone zero-dependency C++ evaluation, closed-form Cardano realizability, and double-counting prevention. The complete open-source codebase, verification scripts, and simulation cases are hosted at:
   </p>

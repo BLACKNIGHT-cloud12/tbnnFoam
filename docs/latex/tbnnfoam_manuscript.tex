@@ -299,6 +299,48 @@ As shown in Table~\ref{tab:mesh}, grid refinement reduces the streamwise velocit
 \label{fig:mesh_sensitivity}
 \end{figure}
 
+\subsection{High-Reynolds-Number Case Study: $Re_b = 17{,}800$ ($Re_\tau \approx 519$)}
+To demonstrate scalability to higher Reynolds numbers matching the asymptotic DNS benchmark regime of Pirozzoli et al. \cite{pirozzoli2018}, a dedicated high-Reynolds-number verification case was conducted in a $50 \times 40 \times 40$ mesh ($80{,}000$ cells) with kinematic viscosity $\nu = 5.617978 \times 10^{-6}\text{ m}^2/\text{s}$, bulk velocity $U_b = 1.0\text{ m/s}$, and hydraulic diameter $D_h = 0.10\text{ m}$ ($h = 0.05\text{ m}$), giving:
+\begin{equation}
+Re_b = \frac{U_b D_h}{\nu} = 17{,}800 \quad (Re_h = 8{,}900, \quad Re_\tau \approx 519)
+\end{equation}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Streamwise spatial development of secondary flow and vortex core metrics at $Re_b = 17{,}800$.}
+\label{tab:re17800_development}
+\vspace{2pt}
+\begin{tabularx}{\textwidth}{crccccr}
+\toprule
+\textbf{Station} & \textbf{$x/D_h$} & \textbf{$U_c/U_b$} & \textbf{Raw Max $V_{\text{sec}}/U_b$} & \textbf{Interior Max ($|y|,|z| \le 0.85h$)} & \textbf{Cores} & \textbf{Q1 Core Distance to DNS} \\
+\midrule
+\#1 & 1.1 & 1.019 & 9.63\% & 1.91\% & 0 (Rollup) & N/A \\
+\#2 & 2.1 & 1.037 & 10.43\% & 2.80\% & 0 (Rollup) & N/A \\
+\#3 & 3.1 & 1.054 & 10.43\% & 2.39\% & 0 (Rollup) & N/A \\
+\#4 & 4.1 & 1.069 & 10.20\% & 1.95\% & 0 (Rollup) & N/A \\
+\#5 & 5.1 & 1.083 & 9.92\% & 1.87\% & 0 (Rollup) & N/A \\
+\#6 & 6.1 & 1.096 & 9.69\% & 1.84\% & 8 cores & $0.137\,h$ \\
+\#7 & 7.1 & 1.108 & 9.55\% & 1.78\% & 8 cores & $0.093\,h$ \\
+\#8 & 8.1 & 1.121 & 9.34\% & 1.70\% & 8 cores & $0.093\,h$ \\
+\#9 & 9.1 & 1.132 & 9.39\% & 1.67\% & 8 cores & $\mathbf{0.060\,h}$ (1.2 cells) \\
+\midrule
+\textbf{DNS Ref} & $\infty$ & $1.33$ & $2.03\% - 2.30\%$ & $\mathbf{2.03\% - 2.30\%}$ & 8 cores & $\mathbf{0.000\,h}$ (Ref) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The simulation converged in 294 SIMPLE iterations. Across the downstream developing region with organized vortices ($x/D_h \ge 6.1$), the secondary velocity at the eight detected vortex core centroids settles at $1.71\%$ (with interior-masked station maxima of $1.67\% - 1.84\%$). Compared against the lower bound of the cited asymptotic DNS range ($2.03\%$), the downstream station maxima are $9.4\% - 17.7\%$ below ($15.8\%$ below for the $1.71\%$ centroid mean). This underprediction reflects the developing state of the spatial duct ($U_c/U_b = 1.132$ at $x/D_h = 9.1$ vs. asymptotic $U_c/U_b \approx 1.33$ in periodic DNS).
+
+The downstream-averaged section ($x/D_h \in [6.1, 9.1]$) yields a Quadrant 1 centroid at $(0.575, 0.875)$ ($\Delta r = 0.093\,h$), while the downstream station at $x/D_h = 9.1$ resolves the core at $(0.525, 0.875)$ ($\Delta r = 0.060\,h$, $\approx 1.2$ discrete cells). The raw unmasked domain maximum of $9.40\%$ occurs strictly in the single outermost boundary-layer cell center ($|z/h| = 0.975$); this is framed as a proposed numerical/wall-treatment mechanism where steep velocity gradients interact with explicit anisotropic stress divergence under high-shear wall functions, while the physical vortex core circulation throughout the interior remains smooth at $\sim 1.71\%$.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/tbnn_Re17800_showcase.png}
+\caption{High-Reynolds-number validation at $Re_b = 17{,}800$ ($Re_\tau \approx 519$): (a) Streamwise velocity contours and secondary streamlines; (b) In-plane secondary flow velocity vectors and detected eight vortex cores; (c) Streamwise spatial development of secondary speed and centerline velocity; (d) Cross-stream vertical velocity profile across vortex core line $y/h = 0.525$.}
+\label{fig:re17800_showcase}
+\end{figure}
+
 \section{Automated Verification Suite}
 To ensure reproducibility and long-term code health, the repository includes an automated testing suite comprising 17 continuous unit tests across six verification modules:
 \begin{enumerate}
