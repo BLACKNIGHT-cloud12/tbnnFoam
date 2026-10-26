@@ -1,6 +1,7 @@
 # OpenFOAM intermediate build files
 **/Make/linux*
 test_evaluator_parity
+test_momentum_parity
 verification_squareDuct/constant/polyMesh
 verification_squareDuct/fine_mesh/constant/polyMesh
 verification_squareDuct_Re17800/constant/polyMesh
@@ -29,9 +30,6 @@ Thumbs.db
 
 # Local docs & templates (untracked on remote)
 docs/VALIDATION_PLAN.md
-CONTRIBUTING.md
-CODE_OF_CONDUCT.md
-.github/
 docs/index.html
 scripts/build_clean_studio.py
 docs/report/
