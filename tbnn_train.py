@@ -35,6 +35,13 @@ class TensorBasisNeuralNetwork(nn.Module):
         return anisotropy
 
 def train():
+    # Fixed seeds: the shipped weights are reproducible from this script on
+    # the pinned dependency versions in requirements.txt (CPU determinism;
+    # exact bit-equality across CUDA/platforms is not guaranteed).
+    np.random.seed(42)
+    torch.manual_seed(42)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(42)
     # The shipped model is trained on the canonical Re_b=4410 benchmark only;
     # no fallback dataset resolution. Legacy dataset names (Re1500/Re2200)
     # were removed with the re-audited benchmark.
