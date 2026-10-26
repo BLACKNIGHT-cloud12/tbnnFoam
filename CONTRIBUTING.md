@@ -47,5 +47,19 @@ python3 validate_and_plot.py
 
 ---
 
+## Repository Data Policy
+
+Some large-looking artifacts are committed deliberately, and knowing which ones keeps PRs reviewable:
+
+* **Committed solver result fields** (`verification_squareDuct/300/`, `verification_squareDuct/fine_mesh/300/`, `verification_squareDuct/baseline_sst/`, `verification_squareDuct_Re17800/294/`) are the canonical evaluation inputs: the pytest suite, the CI validation step, and every README metric are generated from them. Do not delete or replace them without regenerating and updating the corresponding metrics.
+* **Solver logs** (`log.tbnnFoam`, `log.blockMesh`) are kept as run provenance for the convergence claims in the README. Note that the `verification_squareDuct` log documents a verification re-run that is not the source of the committed snapshot (see the README "Committed Snapshot Provenance" note).
+* **`tbnn_model.pt` copies** inside each case's `constant/` are intentional: cases must run standalone from a fresh clone.
+* **Documents** exist once each; `docs/tbnnFoam_preprint.pdf` is the canonical compiled manuscript (the former duplicate `docs/latex/main.pdf` was removed).
+* **Legacy experiments** under `python/` write only to `python/legacy_exports/` — never to `export_weights/` or the repository-root model artifacts, which must only ever reflect the shipped model trained by `tbnn_train.py`.
+
+Moving the result fields to Git LFS or release assets is possible but would break the pure-Python CI (LFS artifacts are not fetched by default), which is why they remain regular tracked files.
+
+---
+
 ## Code of Conduct
 Please adhere to our [Code of Conduct](CODE_OF_CONDUCT.md) in all project interactions.
