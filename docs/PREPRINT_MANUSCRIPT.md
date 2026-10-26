@@ -23,7 +23,7 @@ Critically, we avoid overstating predictive performance and conduct an honest, i
 3. **Out-of-Distribution Diagnostic:** We distinguish between 1D marginal bounding and joint manifold containment. While $100.0\%$ of CFD cells satisfy marginal bounding across scalar invariants $I_1, I_2, I_5$ (and $> 99\%$ for $I_3, I_4$), a joint 5D nearest-neighbor distance diagnostic reveals that live CFD states experience modest distribution shift relative to frozen training gradients (median standardized $k$-NN distance of $0.21\,\sigma$, 95th percentile of $1.17\,\sigma$).
 4. **Discretization Sensitivity:** A two-level cross-sectional grid resolution study ($20 \times 20$ coarse vs. $40 \times 40$ fine) demonstrates that peak secondary circulation trends from $7.99\%$ down to $2.62\%$ (approaching the DNS benchmark target of $2.03\%$) and Q1 core distance error decreases from $0.586\,h$ to $0.474\,h$, while maintaining strict topological stability across all eight cores.
 
-All solver sources, evaluation scripts, raw DNS benchmark data, and an automated nineteen-test verification suite are openly distributed under the GPL-3.0 license.
+All solver sources, evaluation scripts, raw DNS benchmark data, and an automated twenty-one-test verification suite are openly distributed under the MIT license.
 
 ---
 
@@ -179,7 +179,7 @@ $$\mathbf{a}_{\text{realizable}} = f_{\text{lim}} \, \mathbf{a}, \quad f_{\text{
 This analytical projection guarantees positive semi-definiteness on the Lumley triangle in $\mathcal{O}(1)$ operations per cell, ensuring unconditional numerical stability without matrix iterative overhead.
 
 ### 3.4 Cross-Engine Numerical Parity Verification
-Numerical consistency between the TorchScript engine, the JSON-based native C++ evaluator, and the reference Python implementation is verified via the automated regression test suite ([`tests/test_parity.py`](file:///c:/Users/soumi/tbnnFoam/tests/test_parity.py)). Rather than asserting unrecorded precision across undefined distributions, the test suite executes explicit parity checks with defined numerical tolerances:
+Numerical consistency between the TorchScript engine, the JSON-based native C++ evaluator, and the reference Python implementation is verified via the automated regression test suite ([`tests/test_parity.py`](tests/test_parity.py)). Rather than asserting unrecorded precision across undefined distributions, the test suite executes explicit parity checks with defined numerical tolerances:
 
 1. **PyTorch vs. TorchScript (`test_torchscript_parity`):** Evaluates 10 randomized invariant states ($\lambda_i \in [-5, 5]$) and Pope tensor bases against both the Python `TensorBasisNeuralNetwork` model and the serialized TorchScript binary (`tbnn_model.pt`). Parity between the Python and TorchScript tensor outputs $\mathbf{a}$ is verified within an absolute tolerance of $\mathrm{atol} = 10^{-5}$ (`torch.allclose(out_py, out_ts, atol=1e-5)`).
 2. **PyTorch vs. Standalone Native C++ (`test_standalone_cpp_numerical_parity`):** Evaluates three canonical velocity gradient and turbulent timescale cases representing pure shear, general 3D shearing, and intense strained rotation against the standalone C++ binary `test_evaluator_parity` executed under OpenFOAM/WSL. When the compiled binary and OpenFOAM environment are present, the test verifies that invariants, tensor bases, network outputs $g^{(n)}$, and realizable anisotropy $\mathbf{a}$ match the Python reference implementation within an absolute tolerance of $\mathrm{atol} = 10^{-5}$ (`np.allclose(..., atol=1e-5)`). If the required binary or OpenFOAM environment is unavailable, the test is explicitly skipped with a recorded notification.
@@ -258,7 +258,7 @@ $$y/h \in [-1.0, 1.0], \quad z/h \in [-1.0, 1.0]$$
 Streamwise flow is along the $x$-axis. The eight-fold octant symmetry of the square duct produces eight counter-rotating secondary vortex cells (two per quadrant), pumping fluid from the core outward along the corner diagonals and returning toward the duct center along the wall bisectors.
 
 ### 5.2 Authoritative Scaling Reconciliation
-A frequent source of ambiguity in CFD peer review stems from differing dimensional representations between non-dimensional DNS databases and dimensional laboratory CFD setups. In `tbnnFoam`, we formally reconcile these scales under an authoritative non-dimensional framework ([`data/benchmark_dns/benchmark_metadata.json`](file:///c:/Users/soumi/tbnnFoam/data/benchmark_dns/benchmark_metadata.json)):
+A frequent source of ambiguity in CFD peer review stems from differing dimensional representations between non-dimensional DNS databases and dimensional laboratory CFD setups. In `tbnnFoam`, we formally reconcile these scales under an authoritative non-dimensional framework ([`data/benchmark_dns/benchmark_metadata.json`](data/benchmark_dns/benchmark_metadata.json)):
 
 - **Canonical Dimensionless Domain:** Normalized cross-stream coordinates $y^* = y/h \in [-1.0, 1.0]$, $z^* = z/h \in [-1.0, 1.0]$; normalized velocity ratios $U^* = U/U_b, V^* = V/U_b, W^* = W/U_b$; non-dimensional axial vorticity $\omega_x^* = \omega_x / (U_b / h)$.
 - **DNS Benchmark Physical Scale (Pirozzoli et al., 2018):** Unit hydraulic diameter $D_h = 1.0\text{ m}$ ($h = 0.5\text{ m}$), $U_b = 1.0\text{ m/s}$, $\nu = 2.26757 \times 10^{-4}\text{ m}^2/\text{s}$, giving:
@@ -272,7 +272,7 @@ Both dimensional representations map to identical dimensionless Navier-Stokes so
 
 ## 6. Independent Vortex Core Detection & Tracking Methodology
 
-To ensure that secondary vortex comparisons are objective and reproducible rather than relying on visual inspection or static annotations, the repository implements an independent algorithmic vortex detector in [`scripts/validation/vortex_detector.py`](file:///c:/Users/soumi/tbnnFoam/scripts/validation/vortex_detector.py).
+To ensure that secondary vortex comparisons are objective and reproducible rather than relying on visual inspection or static annotations, the repository implements an independent algorithmic vortex detector in [`scripts/validation/vortex_detector.py`](scripts/validation/vortex_detector.py).
 
 ### 6.1 Discretization and Normalization
 The computed cross-stream velocity field $(V, W)$ is differentiated using second-order central differences on the non-dimensional grid:
@@ -382,7 +382,7 @@ Figure 6 and Table 5 summarize the sensitivity results:
 4. **Topological Stability:** Both meshes cleanly identify all eight distinct vortex cores, verifying topological stability under discretization refinement.
 
 ### 8.2 Mesh Reconstruction & Cell Ordering Verification
-To eliminate verification limitations associated with hardcoded mesh dimensions and assumed cell ordering, `tbnnFoam` incorporates automated mesh geometry tests ([`tests/test_mesh_reconstruction_verification.py`](file:///c:/Users/soumi/tbnnFoam/tests/test_mesh_reconstruction_verification.py)):
+To eliminate verification limitations associated with hardcoded mesh dimensions and assumed cell ordering, `tbnnFoam` incorporates automated mesh geometry tests ([`tests/test_mesh_reconstruction_verification.py`](tests/test_mesh_reconstruction_verification.py)):
 - Cell centers generated by OpenFOAM (`postProcess -func writeCellCentres -time 0`) are parsed directly from the `0/C` field.
 - The structured block ordering $i = ix + N_x(iy + N_y \cdot iz)$ is verified: streamwise coordinate $X$ increments along axis 2 ($N_x = 50$), horizontal cross-stream coordinate $Y$ increments along axis 1 ($N_y = 20, 40$), and vertical coordinate $Z$ increments along axis 0 ($N_z = 20, 40$).
 - Normalized cross-sectional coordinates $y/h$ and $z/h$ ($h = 0.05\text{ m}$) derived from the true mesh geometry match uniform cell-center definitions to machine precision:
@@ -418,7 +418,7 @@ Table 6 summarizes the 1D marginal range coverage across all 20,000 cells in the
 ### 9.2 Joint 5D Distribution Shift Diagnostic
 Crucially, **1D marginal bounding does not guarantee joint manifold containment**. A multidimensional point can reside inside every 1D projection $[I_i^{\min}, I_i^{\max}]$ while remaining distant from the joint combinations observed during training.
 
-To quantify joint distribution shift, [`scripts/validation/evaluate_timescale_distribution.py`](file:///c:/Users/soumi/tbnnFoam/scripts/validation/evaluate_timescale_distribution.py) computes the standardized Euclidean nearest-neighbor distance ($k$-NN) in the 5D invariant space normalized by training statistics:
+To quantify joint distribution shift, [`scripts/validation/evaluate_timescale_distribution.py`](scripts/validation/evaluate_timescale_distribution.py) computes the standardized Euclidean nearest-neighbor distance ($k$-NN) in the 5D invariant space normalized by training statistics:
 $$d_{\text{kNN}}(\mathbf{x}_{\text{CFD}}) = \min_{j} \left\| \frac{\mathbf{x}_{\text{CFD}} - \boldsymbol{\mu}_{\text{DNS}}}{\boldsymbol{\sigma}_{\text{DNS}}} - \frac{\mathbf{x}_{\text{DNS}, j} - \boldsymbol{\mu}_{\text{DNS}}}{\boldsymbol{\sigma}_{\text{DNS}}} \right\|_2$$
 
 - **Median Standardized Distance:** $0.21\,\sigma$
@@ -461,7 +461,7 @@ The $9.34\%$ streamwise RMSE cannot be attributed solely to inlet boundary condi
 
 ## 11. Reproducibility & Open Source Verification Suite
 
-The repository incorporates an automated test suite executed via `pytest` ([`tests/`](file:///c:/Users/soumi/tbnnFoam/tests)):
+The repository incorporates an automated test suite executed via `pytest` ([`tests/`](tests)):
 
 ```bash
 pytest -v

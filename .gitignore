@@ -29,3 +29,10 @@ docs/index.html
 scripts/build_clean_studio.py
 docs/report/
 docs/latex/*.zip
+docs/latex/*.aux
+docs/latex/*.bbl
+docs/latex/*.blg
+docs/latex/*.log
+docs/latex/*.out
+docs/latex/*.toc
+docs/latex/main.pdf
