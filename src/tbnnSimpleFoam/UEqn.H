@@ -38,15 +38,18 @@
 
 MRF.correctBoundaryVelocity(U);
 
-tmp<fvVectorMatrix> tUEqn
-(
-    fvm::div(phi, U)
-  + MRF.DDt(U)
-  - fvm::laplacian(turbulence->nuEff(), U)
-  + fvc::div(tauExtra)
- ==
-    fvOptions(U)
-);
+    // tauExtra must retain the 2*nut*S term: it cancels the linear
+    // eddy-viscosity stress inside turbulence->divDevReff(U), so the net
+    // injected stress is the TBNN stress 2*k*a (same coupling as tbnnFoam.C).
+    tmp<fvVectorMatrix> tUEqn
+    (
+        fvm::div(phi, U)
+      + MRF.DDt(U)
+      + turbulence->divDevReff(U)
+      + fvc::div(tauExtra)
+     ==
+        fvOptions(U)
+    );
 fvVectorMatrix& UEqn = tUEqn.ref();
 
 UEqn.relax();
