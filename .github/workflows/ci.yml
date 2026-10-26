@@ -22,6 +22,11 @@ jobs:
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
+        # CPU-only torch wheel: matches the pinned local environment
+        # (2.14.1+cpu), avoids the ~2.5 GB of CUDA/triton wheels that the
+        # default Linux wheel pulls in, and is flaky-download-free on
+        # runners. No GPU is used anywhere in the test suite.
+        pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu
         pip install -r requirements.txt
 
     - name: Verify DNS Benchmark Data & Metadata
