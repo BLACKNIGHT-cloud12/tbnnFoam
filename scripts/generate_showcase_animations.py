@@ -34,7 +34,7 @@ def parse_foam_vec(file_path: Path):
 
 def gen_cross_section(repo_root: Path, out_path: Path):
     print('--> Generating Animation 1: Cross-Section Particle Dynamics from Genuine 200/U Field...')
-    u_file = (repo_root / 'verification_squareDuct' / '300' / 'U') if (repo_root / 'verification_squareDuct' / '300' / 'U').exists() else (repo_root / 'verification_squareDuct' / '200' / 'U')
+    u_file = repo_root / 'verification_squareDuct' / '300' / 'U'
     tbnn_u = parse_foam_vec(u_file)
     Nx, Ny_c, Nz_c = 50, 20, 20
     u_3d = tbnn_u.reshape(Nz_c, Ny_c, Nx, 3)
@@ -112,7 +112,7 @@ def gen_3d_ribbons(repo_root: Path, out_path: Path):
     ax.plot([0, 0], [h, h], [-h, h], color='#30363d', lw=1.2)
     ax.plot([L, L], [-h, -h], [-h, h], color='#30363d', lw=1.2)
     ax.plot([L, L], [h, h], [-h, h], color='#30363d', lw=1.2)
-    u_file = (repo_root / 'verification_squareDuct' / '300' / 'U') if (repo_root / 'verification_squareDuct' / '300' / 'U').exists() else (repo_root / 'verification_squareDuct' / '200' / 'U')
+    u_file = repo_root / 'verification_squareDuct' / '300' / 'U'
     tbnn_u = parse_foam_vec(u_file)
     Nx, Ny_c, Nz_c = 50, 20, 20
     u_3d = tbnn_u.reshape(Nz_c, Ny_c, Nx, 3)

@@ -1,5 +1,16 @@
-import os
+"""LEGACY EXPERIMENT - not the shipped model.
+
+The shipped tbnnFoam network (5 -> 64 -> 64 -> 64 -> 10, unnormalized
+invariants) is trained exclusively by tbnn_train.py at the repository
+root. This script is an earlier 30-wide variant with normalized
+invariants, weight decay and a tuple-returning forward that is
+INCOMPATIBLE with the TorchScript consumer in tbnnFoam.C. All outputs
+are therefore written to python/legacy_exports/ and never to
+export_weights/ or the repository-root artifact locations, so running
+it cannot clobber the audited shipped weights.
+"""
 import json
+import sys
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -7,41 +18,15 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-def comp_inv_and_bases(grad_U, omega):
-    N = grad_U.shape[0]
-    tau = 1.0 / np.clip(omega, 0.0001, 1000000.0)
-    S = 0.5 * (grad_U + np.swapaxes(grad_U, 1, 2))
-    W = 0.5 * (grad_U - np.swapaxes(grad_U, 1, 2))
-    s = S * tau[:, None, None]
-    w = W * tau[:, None, None]
-    s2 = np.matmul(s, s)
-    w2 = np.matmul(w, w)
-    s3 = np.matmul(s2, s)
-    w2s = np.matmul(w2, s)
-    w2s2 = np.matmul(w2, s2)
-    I1 = np.trace(s2, axis1=1, axis2=2)[:, None]
-    I2 = np.trace(w2, axis1=1, axis2=2)[:, None]
-    I3 = np.trace(s3, axis1=1, axis2=2)[:, None]
-    I4 = np.trace(w2s, axis1=1, axis2=2)[:, None]
-    I5 = np.trace(w2s2, axis1=1, axis2=2)[:, None]
-    invariants = np.hstack([I1, I2, I3, I4, I5])
-    I = np.eye(3)[None, :, :]
-    T = np.zeros((N, 10, 3, 3))
-    T[:, 0] = s
-    T[:, 1] = np.matmul(s, w) - np.matmul(w, s)
-    T[:, 2] = s2 - 1.0 / 3.0 * I1[:, :, None] * I
-    T[:, 3] = w2 - 1.0 / 3.0 * I2[:, :, None] * I
-    T[:, 4] = np.matmul(w, s2) - np.matmul(s2, w)
-    T[:, 5] = np.matmul(w2, s) + np.matmul(s, w2) - 2.0 / 3.0 * I4[:, :, None] * I
-    T[:, 6] = np.matmul(np.matmul(w, s), w2) - np.matmul(np.matmul(w2, s), w)
-    T[:, 7] = np.matmul(np.matmul(s, w), s2) - np.matmul(np.matmul(s2, w), s)
-    T[:, 8] = np.matmul(w2, s2) + np.matmul(s2, w2) - 2.0 / 3.0 * I5[:, :, None] * I
-    T[:, 9] = np.matmul(np.matmul(w, s2), w2) - np.matmul(np.matmul(w2, s2), w)
-    return (invariants, T)
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_REPO_ROOT))
+
+from tbnn_tensor_math import comp_inv_and_bases
+
 
 class TBNN(nn.Module):
 
-    def __init__(self, hidden_dim=64):
+    def __init__(self, hidden_dim=30):
         super(TBNN, self).__init__()
         self.mlp = nn.Sequential(nn.Linear(5, hidden_dim), nn.ReLU(), nn.Linear(hidden_dim, hidden_dim), nn.ReLU(), nn.Linear(hidden_dim, hidden_dim), nn.ReLU(), nn.Linear(hidden_dim, 10))
 
@@ -53,15 +38,9 @@ class TBNN(nn.Module):
 def train():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Training on device: {device}')
-    csv_path = Path('data/benchmark_dns/square_duct_dns_Reb4410_Retau150.csv')
+    csv_path = _REPO_ROOT / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
     if not csv_path.exists():
-        alt_paths = [Path('data/benchmark_dns/square_duct_dns_Re1500.csv'), Path('../data/benchmark_dns/square_duct_dns_Reb4410_Retau150.csv'), Path('../data/benchmark_dns/square_duct_dns_Re1500.csv'), Path('square_duct_dns_Reb4410_Retau150.csv')]
-        for p in alt_paths:
-            if p.exists():
-                csv_path = p
-                break
-    if not csv_path.exists():
-        raise FileNotFoundError(f'Cannot find dataset at {csv_path}. Please check file location.')
+        raise FileNotFoundError(f'Cannot find dataset at {csv_path}. Run from a full checkout of tbnnFoam.')
     df = pd.read_csv(csv_path)
     print(f'Training DNS Benchmark: Re_b = 4410 | Re_h = 2205 | Re_tau = 150 (Loaded {len(df)} points from {csv_path})')
     N = len(df)
@@ -94,7 +73,7 @@ def train():
     optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-05)
     criterion = nn.MSELoss()
     epochs = 600
-    print('[*] Starting training...')
+    print('[*] Starting training (LEGACY 30-wide experiment)...')
     for epoch in range(1, epochs + 1):
         model.train()
         optimizer.zero_grad()
@@ -109,18 +88,7 @@ def train():
                 val_loss = criterion(a_val_pred, Y_a_val)
                 frob_err = torch.mean(torch.norm(a_val_pred - Y_a_val, dim=(1, 2))).item()
             print(f'Epoch [{epoch:4d}/{epochs}] | Train Loss: {loss.item():.6e} | Val Loss: {val_loss.item():.6e} | Val Frob: {frob_err:.6e}')
-    held_csv = Path('data/benchmark_dns/square_duct_dns_Reb7000_Retau220.csv')
-    if not held_csv.exists():
-        alt_held = [
-            Path('data/benchmark_dns/square_duct_dns_Re2200.csv'),
-            Path('../data/benchmark_dns/square_duct_dns_Reb7000_Retau220.csv'),
-            Path('../data/benchmark_dns/square_duct_dns_Re2200.csv'),
-            Path('square_duct_dns_Reb7000_Retau220.csv')
-        ]
-        for p in alt_held:
-            if p.exists():
-                held_csv = p
-                break
+    held_csv = _REPO_ROOT / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb7000_Retau220.csv'
     if held_csv.exists():
         df_held = pd.read_csv(held_csv)
         N_h = len(df_held)
@@ -147,23 +115,22 @@ def train():
             held_loss = criterion(a_held_pred, Y_a_h)
             held_frob = torch.mean(torch.norm(a_held_pred - Y_a_h, dim=(1, 2))).item()
         print(f'Held-Out Generalization (Re_b = 7000 | Re_h = 3500 | Re_tau = 220): Loss = {held_loss.item():.6e} | Frob = {held_frob:.6e}')
-    print('Training complete!')
-    export_dir = Path('export_weights')
+    print('Legacy training complete!')
+    export_dir = _REPO_ROOT / 'python' / 'legacy_exports'
     export_dir.mkdir(parents=True, exist_ok=True)
     weights_dict = {'inv_mean': inv_mean.tolist(), 'inv_std': inv_std.tolist()}
-    layer_idx = 0
     for name, param in model.mlp.named_parameters():
         weights_dict[name] = param.detach().cpu().numpy().tolist()
-    json_path = export_dir / 'weights.json'
+    json_path = export_dir / 'weights_legacy_30w.json'
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(weights_dict, f, indent=2)
-    print(f'[+] Saved lightweight C++ weights to {json_path}')
+    print(f'[+] Saved legacy C++ weights to {json_path}')
     model.eval()
     example_inv = X_inv_tr[:1]
     example_basis = X_basis_tr[:1]
     traced_model = torch.jit.trace(model, (example_inv, example_basis))
-    pt_path = export_dir / 'tbnn_model.pt'
+    pt_path = export_dir / 'tbnn_model_legacy_30w.pt'
     traced_model.save(str(pt_path))
-    print(f'[+] Saved LibTorch TorchScript model to {pt_path}')
+    print(f'[+] Saved legacy TorchScript model to {pt_path}')
 if __name__ == '__main__':
     train()

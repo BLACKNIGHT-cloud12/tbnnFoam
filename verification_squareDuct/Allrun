@@ -17,7 +17,7 @@ if [ ! -f "constant/tbnn_model.pt" ]; then
         cp ../tbnn_model.pt constant/
     elif [ -f "../../tbnn_model.pt" ]; then
         echo "--> Copying tbnn_model.pt to constant/..."
-        cp ../tbnn_model.pt constant/
+        cp ../../tbnn_model.pt constant/
     fi
 fi
 

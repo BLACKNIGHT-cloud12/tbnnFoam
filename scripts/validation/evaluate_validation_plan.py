@@ -9,38 +9,7 @@ from scipy.interpolate import RegularGridInterpolator
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from scripts.validation.vortex_detector import detect_vortex_cores
-
-def parse_foam_vec(file_path: Path):
-    with open(file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
-    start_token = 'internalField'
-    idx = content.find(start_token)
-    if idx == -1:
-        return None
-    chunk = content[idx:]
-    open_paren = chunk.find('(')
-    if open_paren == -1:
-        return None
-    close_paren = chunk.find('\n)\n;', open_paren)
-    if close_paren == -1:
-        close_paren = chunk.find('\n);', open_paren)
-    if close_paren == -1:
-        close_paren = chunk.rfind(')')
-    if close_paren == -1:
-        return None
-    data_str = chunk[open_paren + 1:close_paren].strip()
-    vectors = []
-    for line in data_str.split('\n'):
-        line = line.strip().strip('()').strip()
-        if not line:
-            continue
-        parts = line.split()
-        if len(parts) == 3:
-            try:
-                vectors.append([float(parts[0]), float(parts[1]), float(parts[2])])
-            except ValueError:
-                continue
-    return np.array(vectors)
+from scripts.validation.foam_field_io import parse_foam_vec
 
 class ValidationEngine:
 
@@ -62,7 +31,7 @@ class ValidationEngine:
     def load_dns(self):
         dns_file = self.repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
         if not dns_file.exists():
-            dns_file = self.repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Re1500.csv'
+            raise FileNotFoundError(f'Canonical DNS dataset missing: {dns_file}')
         dns_data = []
         with open(dns_file, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
@@ -153,8 +122,15 @@ class ValidationEngine:
 
     def print_report(self):
         u_dns, v_dns, w_dns = self.load_dns()
-        tbnn_dir = '300' if (self.repo_root / 'verification_squareDuct' / '300' / 'U').exists() else '200'
-        base_dir = 'baseline_sst/111' if (self.repo_root / 'verification_squareDuct' / 'baseline_sst' / '111' / 'U').exists() else 'baseline_73'
+        # Committed result directories are the canonical evaluation inputs;
+        # legacy fallbacks ('200', 'baseline_73') pointed at data that no
+        # longer exists. rmse_v here is the V-component RMSE; the combined
+        # (V, W) secondary RMSE reported in the README comes from the case
+        # script validate_and_plot.py.
+        tbnn_dir = '300'
+        base_dir = 'baseline_sst/111'
+        if not (self.repo_root / 'verification_squareDuct' / tbnn_dir / 'U').exists():
+            raise FileNotFoundError('verification_squareDuct/300/U not found; run the case first')
         u_tbnn, v_tbnn, w_tbnn = self.load_cfd_cs(tbnn_dir)
         u_base, v_base, w_base = self.load_cfd_cs(base_dir)
         m_tbnn = self.evaluate_case(u_tbnn, v_tbnn, w_tbnn, u_dns, v_dns, w_dns)

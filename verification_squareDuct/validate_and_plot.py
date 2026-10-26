@@ -59,7 +59,7 @@ def validate():
     case_dir = Path(__file__).resolve().parent
     dns_file = case_dir.parent / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
     if not dns_file.exists():
-        dns_file = case_dir.parent / 'data' / 'benchmark_dns' / 'square_duct_dns_Re1500.csv'
+        raise FileNotFoundError(f'Canonical DNS dataset missing: {dns_file}')
     meta_file = case_dir.parent / 'data' / 'benchmark_dns' / 'benchmark_metadata.json'
     with open(meta_file, 'r') as f:
         meta = json.load(f)
@@ -84,8 +84,16 @@ def validate():
     U_dns_2d = dns_u.reshape(Nz, Ny)
     V_dns_2d = dns_v.reshape(Nz, Ny)
     W_dns_2d = dns_w.reshape(Nz, Ny)
-    tbnn_file = (case_dir / '300' / 'U') if (case_dir / '300' / 'U').exists() else (case_dir / '200' / 'U')
-    base_file = (case_dir / 'baseline_sst' / '111' / 'U') if (case_dir / 'baseline_sst' / '111' / 'U').exists() else (case_dir / 'baseline_73' / 'U')
+    # Committed result directories are the canonical evaluation inputs; the
+    # legacy fallbacks ('200', 'baseline_73') pointed at data that no longer
+    # exists. This script reports the combined (V, W) secondary RMSE that the
+    # README quotes; evaluate_validation_plan.py reports the V component only.
+    tbnn_file = case_dir / '300' / 'U'
+    base_file = case_dir / 'baseline_sst' / '111' / 'U'
+    if not tbnn_file.exists():
+        raise FileNotFoundError(f'Committed solution missing: {tbnn_file}')
+    if not base_file.exists():
+        raise FileNotFoundError(f'Committed baseline solution missing: {base_file}')
     tbnn_u = parse_foam_vec(tbnn_file)
     base_u = parse_foam_vec(base_file)
     Nx_c, Ny_c, Nz_c = 50, 20, 20
@@ -143,9 +151,6 @@ def validate():
     print("==================================================================")
     yn = Y_grid / h
     zn = Z_grid / h
-    dy = 2.0 * h / (Ny - 1)
-    dz = 2.0 * h / (Nz - 1)
-    omega_x = np.gradient(W_tbnn_2d, axis=1) / dy - np.gradient(V_tbnn_2d, axis=0) / dz
     diag_indices = np.arange(min(Ny, Nz))
     diag_coord = np.linspace(-0.5, 0.5, len(diag_indices))
     u_diag_dns = np.diagonal(U_dns_2d) / u_tau

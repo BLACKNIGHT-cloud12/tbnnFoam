@@ -119,6 +119,11 @@ int main(int argc, char *argv[])
         at::Tensor outputAnisotropy = tbnnModule.forward(inputs).toTensor();
         auto anisoAccessor = outputAnisotropy.accessor<float, 3>();
 
+        // TBNN source activation ramp: injected stress grows linearly from
+        // zero at iteration 60 to full strength at iteration 100. Keyed to
+        // the absolute time index, so this is only valid for runs starting
+        // at iteration 0 - restarts reset the ramp. The standalone solver
+        // (tbnnSimpleFoam) instead uses a fixed 0.3 blend factor.
         scalar alphaTBNN = min(1.0, max(0.0, (runTime.timeIndex() - 60.0) / 40.0));
 
         for (label cellI = 0; cellI < nCells; ++cellI)
@@ -170,6 +175,10 @@ int main(int argc, char *argv[])
             scalar nutVal = nut[cellI];
             symmTensor SVal = S[cellI];
             symmTensor tauDiff = 2.0 * kVal * aVal + 2.0 * nutVal * SVal;
+            // Heavy EMA under-relaxation (gain 0.04) damps the explicit
+            // source; unlike the ramp above it never fully deactivates, so
+            // the injected stress approaches the instantaneous tauDiff only
+            // asymptotically.
             tauDelta[cellI] = 0.96 * tauDelta[cellI] + 0.04 * alphaTBNN * tauDiff;
         }
 

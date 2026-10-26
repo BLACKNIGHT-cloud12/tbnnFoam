@@ -1,4 +1,5 @@
 import json
+import sys
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -7,75 +8,14 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def parse_foam_vec(file_path: Path):
-    with open(file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
-    idx = content.find('internalField')
-    if idx == -1:
-        return np.array([])
-    chunk = content[idx:]
-    open_paren = chunk.find('(')
-    if open_paren == -1:
-        return np.array([])
-    close_paren = chunk.find('\n)\n;', open_paren)
-    if close_paren == -1:
-        close_paren = chunk.find('\n);', open_paren)
-    if close_paren == -1:
-        close_paren = chunk.rfind(')')
-    data_str = chunk[open_paren + 1:close_paren].strip()
-    vectors = []
-    for line in data_str.split('\n'):
-        parts = line.strip().strip('()').split()
-        if len(parts) == 3:
-            try:
-                vectors.append([float(parts[0]), float(parts[1]), float(parts[2])])
-            except ValueError:
-                pass
-    return np.array(vectors)
-
-def parse_foam_scalar(file_path: Path):
-    with open(file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
-    chunk = content[content.find('internalField'):]
-    data_str = chunk[chunk.find('(') + 1:chunk.find(')', chunk.find('('))].strip()
-    return np.array([float(x) for x in data_str.split()])
-
-def comp_inv_and_bases_np(grad_U, omega):
-    N = grad_U.shape[0]
-    tau = np.minimum(1.0 / np.clip(omega, 0.0001, 1000000.0), 5.0)
-    S = 0.5 * (grad_U + np.swapaxes(grad_U, 1, 2))
-    W = 0.5 * (grad_U - np.swapaxes(grad_U, 1, 2))
-    s = S * tau[:, None, None]
-    w = W * tau[:, None, None]
-    s2 = np.matmul(s, s)
-    w2 = np.matmul(w, w)
-    s3 = np.matmul(s2, s)
-    w2s = np.matmul(w2, s)
-    w2s2 = np.matmul(w2, s2)
-    I1 = np.trace(s2, axis1=1, axis2=2)[:, None]
-    I2 = np.trace(w2, axis1=1, axis2=2)[:, None]
-    I3 = np.trace(s3, axis1=1, axis2=2)[:, None]
-    I4 = np.trace(w2s, axis1=1, axis2=2)[:, None]
-    I5 = np.trace(w2s2, axis1=1, axis2=2)[:, None]
-    inv = np.hstack([I1, I2, I3, I4, I5])
-    I = np.eye(3)[None, :, :]
-    T = np.zeros((N, 10, 3, 3))
-    T[:, 0] = s
-    T[:, 1] = np.matmul(s, w) - np.matmul(w, s)
-    T[:, 2] = s2 - 1.0 / 3.0 * I1[:, :, None] * I
-    T[:, 3] = w2 - 1.0 / 3.0 * I2[:, :, None] * I
-    T[:, 4] = np.matmul(w, s2) - np.matmul(s2, w)
-    T[:, 5] = np.matmul(w2, s) + np.matmul(s, w2) - 2.0 / 3.0 * I4[:, :, None] * I
-    T[:, 6] = np.matmul(np.matmul(w, s), w2) - np.matmul(np.matmul(w2, s), w)
-    T[:, 7] = np.matmul(np.matmul(s, w), s2) - np.matmul(np.matmul(s2, w), s)
-    T[:, 8] = np.matmul(w2, s2) + np.matmul(s2, w2) - 2.0 / 3.0 * I5[:, :, None] * I
-    T[:, 9] = np.matmul(np.matmul(w, s2), w2) - np.matmul(np.matmul(w2, s2), w)
-    return inv, T
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+from scripts.validation.foam_field_io import parse_foam_vec, parse_foam_scalar
+from tbnn_tensor_math import comp_inv_and_bases
 
 def analyze_timescale_and_invariants(repo_root: Path):
     dns_file = repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
     if not dns_file.exists():
-        dns_file = repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Re1500.csv'
+        raise FileNotFoundError(f'Canonical DNS dataset missing: {dns_file}')
     df_dns = pd.read_csv(dns_file)
     N_dns = len(df_dns)
     grad_U_dns = np.zeros((N_dns, 3, 3))
@@ -84,15 +24,17 @@ def analyze_timescale_and_invariants(repo_root: Path):
             grad_U_dns[:, i, j] = df_dns[f'grad_U_{i}{j}'].values
     omega_dns = df_dns['omega'].values
     tau_dns = np.minimum(5.0, 1.0 / np.maximum(omega_dns, 1e-4))
-    inv_dns, T_dns = comp_inv_and_bases_np(grad_U_dns, omega_dns)
+    inv_dns, T_dns = comp_inv_and_bases(grad_U_dns, omega_dns)
 
     case_dir = repo_root / 'verification_squareDuct'
+    # Committed result directory is the canonical evaluation input; the
+    # legacy '200' fallback pointed at a directory that no longer exists.
     u_file = case_dir / '300' / 'U'
-    if not u_file.exists():
-        u_file = case_dir / '200' / 'U'
     omega_file = case_dir / '300' / 'omega'
+    if not u_file.exists():
+        raise FileNotFoundError(f'Committed solution missing: {u_file}')
     if not omega_file.exists():
-        omega_file = case_dir / '200' / 'omega'
+        raise FileNotFoundError(f'Committed omega field missing: {omega_file}')
 
     u_cfd = parse_foam_vec(u_file)
     omega_cfd = parse_foam_scalar(omega_file)
@@ -122,7 +64,7 @@ def analyze_timescale_and_invariants(repo_root: Path):
         grad_U_cfd[:, :, :, c, 2] = np.gradient(u_3d[:, :, :, c], axis=0) / dz
 
     grad_U_flat = grad_U_cfd.reshape(-1, 3, 3)
-    inv_cfd, T_cfd = comp_inv_and_bases_np(grad_U_flat, omega_cfd)
+    inv_cfd, T_cfd = comp_inv_and_bases(grad_U_flat, omega_cfd)
 
     coverage = {}
     for i in range(5):

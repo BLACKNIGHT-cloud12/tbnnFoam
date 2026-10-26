@@ -1,4 +1,5 @@
 import sys
+import warnings
 from pathlib import Path
 import numpy as np
 import pytest
@@ -175,6 +176,9 @@ def test_standalone_cpp_numerical_parity():
                     json_end = res.stdout.rfind('}') + 1
                     cpp_data = json.loads(res.stdout[json_start:json_end])
     if cpp_data is None:
+        warnings.warn("C++ evaluator parity test SKIPPED - binary or OpenFOAM "
+                      "environment unavailable; cross-language parity is not being verified",
+                      stacklevel=1)
         pytest.skip("C++ parity binary or OpenFOAM environment not available")
     for idx, case in enumerate(cpp_data['cases']):
         py_res = py_results[idx]
@@ -405,9 +409,14 @@ def test_momentum_coupling_parity():
     repo_root = Path(__file__).resolve().parent.parent
     binary = _build_momentum_binary(repo_root)
     if binary is None:
+        warnings.warn("Momentum-coupling parity test SKIPPED - WSL/OpenFOAM "
+                      "toolchain unavailable; momentum assembly is not being verified",
+                      stacklevel=1)
         pytest.skip("WSL OpenFOAM toolchain not available to build momentum parity binary")
     data = _run_momentum_parity(repo_root, binary)
     if data is None:
+        warnings.warn("Momentum-coupling parity test SKIPPED - case failed to run",
+                      stacklevel=1)
         pytest.skip("momentum parity case failed to run")
     assert data['status'] == 'success'
     # fvc::grad(U) must reproduce the prescribed linear gradient exactly

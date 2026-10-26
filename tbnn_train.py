@@ -3,8 +3,15 @@ import torch.nn as nn
 import torch.optim as optim
 import csv
 import numpy as np
-import os
 from pathlib import Path
+
+# Single source of truth for the tensor algebra lives in tbnn_tensor_math;
+# these re-exports keep the historical import path (tests/test_parity.py)
+# working.
+from tbnn_tensor_math import comp_inv_and_bases, cardano_eigvals, project_realizable
+
+__all__ = ['TensorBasisNeuralNetwork', 'comp_inv_and_bases', 'cardano_eigvals',
+           'project_realizable', 'train']
 
 class TensorBasisNeuralNetwork(nn.Module):
 
@@ -27,66 +34,13 @@ class TensorBasisNeuralNetwork(nn.Module):
         anisotropy = torch.sum(g_expanded * tensor_bases, dim=1)
         return anisotropy
 
-def cardano_eigvals(A):
-    p = 0.5 * np.sum(A**2)
-    q = float(np.linalg.det(A))
-    if p < 1e-14:
-        return np.array([0.0, 0.0, 0.0])
-    m = 2.0 * np.sqrt(p / 3.0)
-    arg = np.clip(3.0 * q / (p * m), -1.0, 1.0)
-    theta = (1.0 / 3.0) * np.arccos(arg)
-    l1 = m * np.cos(theta)
-    l2 = m * np.cos(theta - 2.0 * np.pi / 3.0)
-    l3 = m * np.cos(theta + 2.0 * np.pi / 3.0)
-    return np.sort(np.array([l1, l2, l3]))[::-1]
-
-def project_realizable(A):
-    tr = np.trace(A) / 3.0
-    A_dev = A - tr * np.eye(3)
-    l = cardano_eigvals(A_dev)
-    scale = 1.0
-    if l[2] < -1.0 / 3.0:
-        scale = min(scale, (1.0 / 3.0) / abs(l[2]))
-    if l[0] > 2.0 / 3.0:
-        scale = min(scale, (2.0 / 3.0) / l[0])
-    return scale * A_dev
-
-def comp_inv_and_bases(grad_U, omega):
-    N = grad_U.shape[0]
-    tau = np.minimum(1.0 / np.clip(omega, 0.0001, 1000000.0), 5.0)
-    S = 0.5 * (grad_U + np.swapaxes(grad_U, 1, 2))
-    W = 0.5 * (grad_U - np.swapaxes(grad_U, 1, 2))
-    s = S * tau[:, None, None]
-    w = W * tau[:, None, None]
-    s2 = np.matmul(s, s)
-    w2 = np.matmul(w, w)
-    s3 = np.matmul(s2, s)
-    w2s = np.matmul(w2, s)
-    w2s2 = np.matmul(w2, s2)
-    I1 = np.trace(s2, axis1=1, axis2=2)[:, None]
-    I2 = np.trace(w2, axis1=1, axis2=2)[:, None]
-    I3 = np.trace(s3, axis1=1, axis2=2)[:, None]
-    I4 = np.trace(w2s, axis1=1, axis2=2)[:, None]
-    I5 = np.trace(w2s2, axis1=1, axis2=2)[:, None]
-    inv = np.hstack([I1, I2, I3, I4, I5])
-    I = np.eye(3)[None, :, :]
-    T = np.zeros((N, 10, 3, 3))
-    T[:, 0] = s
-    T[:, 1] = np.matmul(s, w) - np.matmul(w, s)
-    T[:, 2] = s2 - 1.0 / 3.0 * I1[:, :, None] * I
-    T[:, 3] = w2 - 1.0 / 3.0 * I2[:, :, None] * I
-    T[:, 4] = np.matmul(w, s2) - np.matmul(s2, w)
-    T[:, 5] = np.matmul(w2, s) + np.matmul(s, w2) - 2.0 / 3.0 * I4[:, :, None] * I
-    T[:, 6] = np.matmul(np.matmul(w, s), w2) - np.matmul(np.matmul(w2, s), w)
-    T[:, 7] = np.matmul(np.matmul(s, w), s2) - np.matmul(np.matmul(s2, w), s)
-    T[:, 8] = np.matmul(w2, s2) + np.matmul(s2, w2) - 2.0 / 3.0 * I5[:, :, None] * I
-    T[:, 9] = np.matmul(np.matmul(w, s2), w2) - np.matmul(np.matmul(w2, s2), w)
-    return (inv, T)
-
 def train():
-    csv_file = Path('data/benchmark_dns/square_duct_dns_Reb4410_Retau150.csv')
+    # The shipped model is trained on the canonical Re_b=4410 benchmark only;
+    # no fallback dataset resolution. Legacy dataset names (Re1500/Re2200)
+    # were removed with the re-audited benchmark.
+    csv_file = Path(__file__).resolve().parent / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
     if not csv_file.exists():
-        csv_file = Path('data/benchmark_dns/square_duct_dns_Re1500.csv')
+        csv_file = Path('data/benchmark_dns/square_duct_dns_Reb4410_Retau150.csv')
     data = []
     with open(csv_file, 'r') as f:
         reader = csv.DictReader(f)
@@ -151,9 +105,9 @@ def train():
                 val_loss = criterion(val_pred, Y_a_val_d)
             print(f'Epoch [{epoch:3d}/400] - Train Loss: {loss.item():.6e} | Val Loss: {val_loss.item():.6e}')
     model.eval()
-    held_out_file = Path('data/benchmark_dns/square_duct_dns_Reb7000_Retau220.csv')
+    held_out_file = Path(__file__).resolve().parent / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb7000_Retau220.csv'
     if not held_out_file.exists():
-        held_out_file = Path('data/benchmark_dns/square_duct_dns_Re2200.csv')
+        held_out_file = Path('data/benchmark_dns/square_duct_dns_Reb7000_Retau220.csv')
     if held_out_file.exists():
         held_data = []
         with open(held_out_file, 'r') as f:
@@ -195,29 +149,8 @@ def train():
     case_pt = Path('verification_squareDuct/constant/tbnn_model.pt')
     traced.save(str(case_pt))
     print(f'[+] Saved trained model to {case_pt}')
-    import json
-    export_dir = Path('export_weights')
-    export_dir.mkdir(parents=True, exist_ok=True)
-    json_path = export_dir / 'weights.json'
-    weights_dict = {
-        'inv_mean': [0.0, 0.0, 0.0, 0.0, 0.0],
-        'inv_std': [1.0, 1.0, 1.0, 1.0, 1.0],
-        '0.weight': model_cpu.mlp[0].weight.detach().numpy().tolist(),
-        '0.bias': model_cpu.mlp[0].bias.detach().numpy().tolist(),
-        '2.weight': model_cpu.mlp[2].weight.detach().numpy().tolist(),
-        '2.bias': model_cpu.mlp[2].bias.detach().numpy().tolist(),
-        '4.weight': model_cpu.mlp[4].weight.detach().numpy().tolist(),
-        '4.bias': model_cpu.mlp[4].bias.detach().numpy().tolist(),
-        '6.weight': model_cpu.mlp[6].weight.detach().numpy().tolist(),
-        '6.bias': model_cpu.mlp[6].bias.detach().numpy().tolist()
-    }
-    with open(json_path, 'w', encoding='utf-8') as f:
-        json.dump(weights_dict, f, indent=2)
-    print(f'[+] Saved C++ weights to {json_path}')
-    case_json_dir = Path('verification_squareDuct/constant/tbnn')
-    case_json_dir.mkdir(parents=True, exist_ok=True)
-    with open(case_json_dir / 'weights.json', 'w', encoding='utf-8') as f:
-        json.dump(weights_dict, f, indent=2)
+    from tbnn_export import export_cpp_weights
+    export_cpp_weights(model_cpu)
 
 if __name__ == '__main__':
     train()

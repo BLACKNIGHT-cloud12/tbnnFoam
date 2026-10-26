@@ -10,39 +10,18 @@ from scipy.interpolate import RegularGridInterpolator
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from scripts.validation.vortex_detector import detect_vortex_cores
-
-def parse_foam_vec(file_path: Path):
-    with open(file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
-    idx = content.find('internalField')
-    if idx == -1:
-        return np.array([])
-    chunk = content[idx:]
-    open_paren = chunk.find('(')
-    if open_paren == -1:
-        return np.array([])
-    close_paren = chunk.find('\n)\n;', open_paren)
-    if close_paren == -1:
-        close_paren = chunk.find('\n);', open_paren)
-    if close_paren == -1:
-        close_paren = chunk.rfind(')')
-    data_str = chunk[open_paren + 1:close_paren].strip()
-    vectors = []
-    for line in data_str.split('\n'):
-        parts = line.strip().strip('()').split()
-        if len(parts) == 3:
-            try:
-                vectors.append([float(parts[0]), float(parts[1]), float(parts[2])])
-            except ValueError:
-                pass
-    return np.array(vectors)
+from scripts.validation.foam_field_io import parse_foam_vec
 
 def run_mesh_sensitivity_study(repo_root: Path):
     case_dir = repo_root / 'verification_squareDuct'
+    # Committed result directories are the canonical evaluation inputs; the
+    # legacy '200' fallback pointed at a directory that no longer exists.
     coarse_u_file = case_dir / '300' / 'U'
-    if not coarse_u_file.exists():
-        coarse_u_file = case_dir / '200' / 'U'
     fine_u_file = case_dir / 'fine_mesh' / '300' / 'U'
+    if not coarse_u_file.exists():
+        raise FileNotFoundError(f'Committed coarse-mesh solution missing: {coarse_u_file}')
+    if not fine_u_file.exists():
+        raise FileNotFoundError(f'Committed fine-mesh solution missing: {fine_u_file}')
 
     meta_file = repo_root / 'data' / 'benchmark_dns' / 'benchmark_metadata.json'
     with open(meta_file, 'r', encoding='utf-8') as f:
@@ -54,7 +33,7 @@ def run_mesh_sensitivity_study(repo_root: Path):
 
     dns_file = repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
     if not dns_file.exists():
-        dns_file = repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Re1500.csv'
+        raise FileNotFoundError(f'Canonical DNS dataset missing: {dns_file}')
     dns_rows = []
     with open(dns_file, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)

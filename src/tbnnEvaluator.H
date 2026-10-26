@@ -152,6 +152,12 @@ public:
     {
         if (!initialized_)
         {
+            // Weights not loaded: fall back to g = (-1, 0, ..., 0), i.e.
+            // a = -T1 = -tau*S. This reproduces a Boussinesq-like linear
+            // response under the eddy-viscosity consistency nut ~ k/omega,
+            // but it is a diagnostic placeholder, not the trained model -
+            // loadWeights() failure is reported upstream and the case
+            // should not be used for quantitative results.
             for (int i = 0; i < 10; ++i) g[i] = (i == 0 ? -1.0 : 0.0);
             return;
         }

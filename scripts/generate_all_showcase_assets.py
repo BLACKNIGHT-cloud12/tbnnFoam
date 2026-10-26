@@ -88,7 +88,7 @@ def parse_log_residuals(log_path: Path):
 def load_dns_data(repo_root: Path):
     dns_file = repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
     if not dns_file.exists():
-        dns_file = repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Re1500.csv'
+        raise FileNotFoundError(f'Canonical DNS dataset missing: {dns_file}')
     meta_file = repo_root / 'data' / 'benchmark_dns' / 'benchmark_metadata.json'
     with open(meta_file, 'r', encoding='utf-8') as f:
         meta = json.load(f)
@@ -132,8 +132,8 @@ def gen_convergence(repo_root: Path, data):
     print('--> [1/4] Generating Asset 1: Solver Convergence Diagnostics (t = 1 -> 200)...')
     out_path = repo_root / 'docs' / 'figures' / 'animation_4_solver_convergence.gif'
     log_path = repo_root / 'verification_squareDuct' / 'log.tbnnFoam'
-    u_file = (repo_root / 'verification_squareDuct' / '300' / 'U') if (repo_root / 'verification_squareDuct' / '300' / 'U').exists() else (repo_root / 'verification_squareDuct' / '200' / 'U')
-    base_file = (repo_root / 'verification_squareDuct' / 'baseline_sst' / '111' / 'U') if (repo_root / 'verification_squareDuct' / 'baseline_sst' / '111' / 'U').exists() else (repo_root / 'verification_squareDuct' / 'baseline_73' / 'U')
+    u_file = repo_root / 'verification_squareDuct' / '300' / 'U'
+    base_file = repo_root / 'verification_squareDuct' / 'baseline_sst' / '111' / 'U'
     tbnn_u = parse_foam_vec(u_file)
     base_u = parse_foam_vec(base_file)
     Nx, Ny_c, Nz_c = 50, 20, 20
@@ -221,7 +221,7 @@ def gen_stress_mech(repo_root: Path, data):
     a22 = data['a22_dns']
     a33 = data['a33_dns']
     diff_dns = 2.0 * k_dns * (a22 - a33) / Ub**2
-    tau_file = (repo_root / 'verification_squareDuct' / '300' / 'tauR') if (repo_root / 'verification_squareDuct' / '300' / 'tauR').exists() else (repo_root / 'verification_squareDuct' / '200' / 'tauR')
+    tau_file = repo_root / 'verification_squareDuct' / '300' / 'tauR'
     tau_raw = parse_foam_symm(tau_file)
     Nx, Ny_c, Nz_c = 50, 20, 20
     tau_3d = tau_raw.reshape(Nz_c, Ny_c, Nx, 6)
@@ -324,7 +324,7 @@ def gen_barycentric(repo_root: Path, data):
         x_b = C1 * x_1c[0] + C2 * x_2c[0] + C3 * x_3c[0]
         y_b = C1 * x_1c[1] + C2 * x_2c[1] + C3 * x_3c[1]
         return (x_b, y_b)
-    a_file = (repo_root / 'verification_squareDuct' / '300' / 'aTBNN') if (repo_root / 'verification_squareDuct' / '300' / 'aTBNN').exists() else (repo_root / 'verification_squareDuct' / '200' / 'aTBNN')
+    a_file = repo_root / 'verification_squareDuct' / '300' / 'aTBNN'
     a_cfd_raw = parse_foam_symm(a_file)
     Nx, Ny_c, Nz_c = 50, 20, 20
     a_3d = a_cfd_raw.reshape(Nz_c, Ny_c, Nx, 6)
