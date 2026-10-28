@@ -179,7 +179,7 @@ def analyze_timescale_and_invariants(repo_root: Path):
         c = coverage[f'I_{i+1}']
         print(f"| I_{i+1} | [{c['dns_min']:+.3e}, {c['dns_max']:+.3e}] | [{c['cfd_min']:+.3e}, {c['cfd_max']:+.3e}] | **{c['coverage_percent']:.1f}%** |")
     print('--------------------------------------------------------------------------------')
-    print(f"| **Joint 5D Feature Distance (kNN)** | Median: {joint_diagnostic['knn_dist_median']:.2f} std | Mean: {joint_diagnostic['knn_dist_mean']:.2f} std | 95th Pct: {joint_diagnostic['knn_dist_95pct']:.2f} std |")
+    print(f"| **Joint 5D Feature Distance (kNN)** | Median: {joint_diagnostic['knn_dist_median']:.2f} std | Mean: {joint_diagnostic['knn_dist_mean']:.2f} std | 95th Pct: {joint_diagnostic['knn_dist_95pct']:.2f} std | Max: {joint_diagnostic['knn_dist_max']:.2f} std |")
     print('================================================================================')
     print(f'[+] Generated diagnostic distribution figure: {fig_path}')
 
