@@ -1,7 +1,7 @@
 # In-Situ Coupling of Tensor Basis Neural Networks for Turbulence Modeling in OpenFOAM: A Critical Verification, Validation, and Reproducibility Study
 
-**Soumik et al.**  
-*OpenFOAM Community / Applied Computational Fluid Dynamics Group*  
+**Soumik Ghosh**  
+*Independent Researcher*  
 *Repository: [https://github.com/BLACKNIGHT-cloud12/tbnnFoam](https://github.com/BLACKNIGHT-cloud12/tbnnFoam)*  
 *Preprint Date: October 2026*
 
