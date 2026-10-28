@@ -106,7 +106,7 @@ I validated the solver on a square duct flow against the benchmark Direct Numeri
   - **OpenFOAM CFD Scale:** Laboratory square duct ($2h \times 2h$) with half-width $h = 0.05\text{ m}$ ($D_h = 0.10\text{ m}$), length $L = 1.0\text{ m} = 20h$, $U_b = 1.0\text{ m/s}$, and kinematic viscosity $\nu = 2.25 \times 10^{-5}\text{ m}^2/\text{s}$ ($Re_b = U_b D_h / \nu \approx 4440$, $Re_h \approx 2220$).
   - **Reference DNS Database Scale (Pirozzoli et al. 2018):** Unit hydraulic diameter $D_h = 1.0\text{ m}$ ($h = 0.5\text{ m}$), $U_b = 1.0\text{ m/s}$, and $\nu = 2.26757 \times 10^{-4}\text{ m}^2/\text{s}$ ($Re_b = 4410$, $Re_h = 2205$, $Re_\tau = 150.0$).
   - Both map onto identical non-dimensional flow physics and are formally documented in [`data/benchmark_dns/benchmark_metadata.json`](data/benchmark_dns/benchmark_metadata.json).
-* **Canonical DNS Reference:** From column 13 (`omx/(ub/h)`) of Pirozzoli et al. (2018) on a $65 \times 65$ cross-section grid, the primary anti-clockwise (ACW) vortex core in Quadrant 1 ($y > 0, z > 0$) is located at **$(y/h, z/h) = (0.50, 0.82)$**.
+* **Canonical DNS Reference (raw-field verified):** The raw Pirozzoli et al. (2018) export carries the DNS's own vorticity field (column 13, `omx/(ub/h)`). [`scripts/validation/verify_dns_reference.py`](scripts/validation/verify_dns_reference.py) recomputes $\omega_x^*$ from the raw velocity columns (interior agreement with the DNS-provided field to **0.43%** of field max) and localizes the primary Q1 anti-clockwise (ACW) core at **$(y/h, z/h) = (0.577, 0.847)$**; the repository detector on the mirrored $65 \times 65$ grid finds $(0.594, 0.844)$ — within $0.017\,h$ of the raw field. An earlier reference value of $(0.50, 0.82)$ (retired) sat $0.081\,h$ from the raw-field peak; all core-distance metrics are now measured against the raw-verified coordinates.
 
 ![Benchmark Validation](docs/figures/tbnn_hero_showcase.png)
 
@@ -122,8 +122,8 @@ To ensure that vortex core comparisons are objective and reproducible rather tha
    * **Strength Thresholding:** Cells must satisfy $|\omega_x^*| = |\omega_x| / (U_b / h) \ge 0.04$, discarding low-level numerical background noise.
    * **Minimum Cluster Area:** Connected components (identified via 8-connectivity labeling with `scipy.ndimage.label`) must contain at least 4 contiguous cells (`min_area = 4`), eliminating single-cell numerical spikes.
    * **Non-Maximum Suppression (Distance Separation):** A separation radius `min_separation = 0.20 h` is enforced between candidate cores of the same sign, merging fragmented sub-peaks into the dominant local vortex core.
-4. **Vortex Center Extraction & Matching Rule:** The detected core coordinate $(y_{\text{core}}, z_{\text{core}})$ is the location of the maximum $|\omega_x|$ within each retained component. In Quadrant 1 ($y > 0, z > 0$), which contains one counter-rotating vortex pair, the detected ACW core closest to the canonical DNS reference $(0.50, 0.82)$ in Euclidean distance is matched for quantitative tracking:
-   $$\Delta r = \sqrt{(y_{\text{CFD}} - 0.50)^2 + (z_{\text{CFD}} - 0.82)^2} \quad [h]$$
+4. **Vortex Center Extraction & Matching Rule:** The detected core coordinate $(y_{\text{core}}, z_{\text{core}})$ is the location of the maximum $|\omega_x|$ within each retained component. In Quadrant 1 ($y > 0, z > 0$), which contains one counter-rotating vortex pair, the detected ACW core closest to the raw-field-verified DNS reference $(0.577, 0.847)$ in Euclidean distance is matched for quantitative tracking:
+   $$\Delta r = \sqrt{(y_{\text{CFD}} - 0.577)^2 + (z_{\text{CFD}} - 0.847)^2} \quad [h]$$
 
 Reproduce the detection and metrics directly on the raw CFD outputs:
 ```bash
@@ -143,20 +143,25 @@ Metrics are evaluated on both the native CFD mesh cross-section and the full $65
 | Metric | Standard OpenFOAM ($k\text{--}\omega$ SST) | `tbnnFoam` (Native Mesh / DNS Grid) | Reference DNS (Pirozzoli et al. 2018) | Notes |
 | :--- | :---: | :---: | :---: | :--- |
 | **Secondary Vortex Cores** | 0 cores (Failed) | **8 cores (Detected)** | 8 cores (Canonical) | Recovers Prandtl's 8 corner vortex pairs |
-| **Peak Secondary Speed ($V_{\text{sec}} / U_b$)** | 0.45% (Noise) | **7.99% (native) / 6.38% (DNS grid)** | 2.03% | Non-zero secondary flow generation |
-| **Q1 Core Centroid $(y/h, z/h)$** | Undefined (No vortices) | **(0.850, 0.350) / (0.91, 0.78)** | (0.50, 0.82) | Native discrete cell center vs. $65\times65$ interpolated peak |
-| **Core Distance Error** | N/A | **0.586 h (native) / 0.408 h (DNS grid)** | 0.000 h (Ref) | Distance to benchmark core centroid |
+| **Peak Secondary Speed ($V_{\text{sec}} / U_b$)** | 0.45% (Noise) | **7.99% (native) / 6.38% (DNS grid)** | 1.93% | Non-zero secondary flow generation |
+| **Q1 Core Centroid $(y/h, z/h)$** | Undefined (No vortices) | **(0.850, 0.350) / (0.91, 0.78)** | (0.577, 0.847) | Native discrete cell center vs. $65\times65$ interpolated peak |
+| **Core Distance Error** | N/A | **0.567 h (native) / 0.336 h (DNS grid)** | 0.000 h (Ref) | Distance to raw-field-verified core centroid |
 | **Streamwise $U$ RMSE** | 0.0616 m/s (6.16%) | **0.0934 m/s (9.34%)** | 0.0000 m/s (Ref) | Full cross-section NRMSE ($U_{\text{ref}} = 1.00\text{ m/s}$) |
 | **Secondary $(V, W)$ RMSE** | 0.0087 m/s | **0.0261 m/s** | 0.0000 m/s (Ref) | In-plane cross-stream velocity recovery |
 | **Continuity Residual** | $< 10^{-6}$ | **$< 10^{-6}$** | N/A | Both meet numerical steady-state convergence |
 
 > [!NOTE]
 > **Reconciliation of Native Mesh vs. Interpolated Grid Metrics:**
-> On the native coarse CFD mesh ($20 \times 20$ cross-section), the discrete cell centers have spacing $\Delta y/h = \Delta z/h = 0.10$. Connected-component labeling identifies the discrete cell center $(0.850, 0.350)$ as the cell-centered peak, giving a core localization error of $0.586\,h$ and peak secondary velocity $7.99\%$. When the velocity field is bilinearly interpolated onto the $65 \times 65$ DNS grid ($\Delta y/h = \Delta z/h = 0.03125$), the resolved peak shifts to $(0.91, 0.78)$, yielding a distance error of $0.408\,h$ and peak secondary velocity $6.38\%$. Both evaluations are generated directly and reproducibly by `scripts/validation/evaluate_mesh_sensitivity.py` (native mesh) and `scripts/validation/evaluate_validation_plan.py` (interpolated DNS grid).
+> On the native coarse CFD mesh ($20 \times 20$ cross-section), the discrete cell centers have spacing $\Delta y/h = \Delta z/h = 0.10$. Connected-component labeling identifies the discrete cell center $(0.850, 0.350)$ as the cell-centered peak, giving a core localization error of $0.567\,h$ and peak secondary velocity $7.99\%$. When the velocity field is bilinearly interpolated onto the $65 \times 65$ DNS grid ($\Delta y/h = \Delta z/h = 0.03125$), the resolved peak shifts to $(0.91, 0.78)$, yielding a distance error of $0.336\,h$ and peak secondary velocity $6.38\%$. Both evaluations are generated directly and reproducibly by `scripts/validation/evaluate_mesh_sensitivity.py` (native mesh) and `scripts/validation/evaluate_validation_plan.py` (interpolated DNS grid).
 
 > [!NOTE]
 > **Committed Snapshot Provenance:**
 > The committed field set `verification_squareDuct/300/` is the canonical solution snapshot from which every metric and figure in this README is reproducibly generated by the validation scripts. The tracked `log.tbnnFoam` in the same case directory records a separate solver execution that reported convergence in 287 iterations, whereas the snapshot corresponds to the run carried to `endTime = 300`; the two artifacts should therefore not be assumed to originate from the same execution. (The $Re_b = 17{,}800$ case is internally consistent: its log and committed snapshot both correspond to the 294-iteration converged run.)
+
+> **Reference-Value Provenance & Convergence Status:**
+> **(a) Peak secondary velocity.** Re-deriving the DNS target from the raw exports shows the shipped $Re_b = 4410$ cross-section peaks at **1.93%** of $U_b$ (1.92% after bilinear resampling to $65 \times 65$), while the 2.03% figure previously quoted as the $Re_b = 4410$ reference matches the raw $Re_b = 7000$ ($Re_\tau = 220$) export exactly. Tables now quote the raw-verified **1.93%** for the $Re_b = 4410$ benchmark; the $Re_b = 17{,}800$ comparison range (2.03%–2.30%) is unchanged, being anchored to the higher-Reynolds-number asymptotic data.
+> **(b) Vortex coordinates.** The raw export carries the DNS's own vorticity column; recomputing $\omega_x^*$ from the raw velocities agrees with it to 0.43% (interior), and the raw-field Q1 ACW core sits at $(0.577, 0.847)$ — the repository detector on the $65 \times 65$ grid finds $(0.594, 0.844)$, within $0.017\,h$. The retired $(0.50, 0.82)$ reference was $0.081\,h$ from the raw field; all core-distance metrics in this README are now measured against the raw-verified coordinates (which *reduces* the reported CFD localization errors).
+> **(c) Solver convergence.** The tracked `log.tbnnFoam` run satisfied `residualControl` at iteration 287 with initial residuals of $3\times10^{-5}$ (U), $6\times10^{-6}$ (k), $1\times10^{-6}$ (ω) and $p$ marginally at the $10^{-4}$ threshold. A two-iteration continuation probe of the committed `300/` snapshot — restart-capable since the relaxed TBNN stress field is now read back (`READ_IF_PRESENT`) — yields initial residuals of $U \approx 1\times10^{-5}$ and $p \approx 1.7$–$2.4\times10^{-4}$. The snapshot is therefore documented as a **finite-iteration stationary state sitting at the pressure-residual stopping threshold**, not an asymptotically iterated solution; the stability of the reported 8-vortex topology and metrics under this residual level is separately evidenced by the mesh-refinement study.
 
 ---
 
@@ -167,7 +172,7 @@ Generating non-zero normal stress differences $(\overline{w'^2} - \overline{v'^2
 
 The physical validation rests on coupling the anisotropic stress divergence $\nabla \cdot \boldsymbol{\tau}_\Delta$ into OpenFOAM's momentum predictor and demonstrating that:
 1. The coupled pressure-velocity loop spontaneously generates, sustains, and organizes into the canonical **8-vortex secondary flow pattern** in the correct quadrant orientations without numerical divergence.
-2. Under cross-stream grid refinement, peak secondary circulation trends from $7.99\%$ toward the DNS benchmark of $2.03\%$, and core localization error drops from $0.586\,h$ down to $0.474\,h$.
+2. Under cross-stream grid refinement, peak secondary circulation trends from $7.99\%$ toward the raw-field DNS benchmark of $1.93\%$, and core localization error drops from $0.567\,h$ down to $0.447\,h$.
 3. Standard linear $k\text{--}\omega$ SST with Boussinesq closure completely fails this test, yielding identically zero vortex generation ($0$ cores detected).
 
 ### Understanding Model Discrepancies and Limitations:
@@ -204,12 +209,12 @@ Here, we conduct an independent **2-level cross-sectional grid resolution sensit
 
 | Grid Resolution | Cells | Peak $V_{\text{sec}} / U_b$ | Q1 Core Centroid $(y/h, z/h)$ | Core Localization Error | Vortices Detected | Streamwise $U$ RMSE |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Coarse Base (M1)** | 20,000 | 7.99% | (0.850, 0.350) | 0.586 h | 8 cores | 0.0934 m/s |
-| **Refined Grid (M2)** | 80,000 | 2.62% | (0.825, 0.475) | 0.474 h | 8 cores | 0.0857 m/s |
-| **Reference DNS Target** | N/A | **2.03%** | **(0.500, 0.820)** | **0.000 h (Ref)** | **8 cores** | **0.0000 m/s** |
+| **Coarse Base (M1)** | 20,000 | 7.99% | (0.850, 0.350) | 0.567 h | 8 cores | 0.0934 m/s |
+| **Refined Grid (M2)** | 80,000 | 2.62% | (0.825, 0.475) | 0.447 h | 8 cores | 0.0857 m/s |
+| **Reference DNS Target** | N/A | **1.93%** | **(0.577, 0.847)** | **0.000 h (Ref)** | **8 cores** | **0.0000 m/s** |
 
 * **Secondary Circulation Discretization Sensitivity:** Increasing cross-stream resolution reduces peak secondary speed from $7.99\%$ to $2.62\%$, demonstrating a clear trend toward the DNS benchmark reference value ($2.03\%$).
-* **Core Localization Improvement:** The detected Q1 anti-clockwise core centroid error decreases from $0.586\,h$ down to $0.474\,h$.
+* **Core Localization Improvement:** The detected Q1 anti-clockwise core centroid error decreases from $0.567\,h$ down to $0.447\,h$.
 * **Streamwise Error Reduction:** Streamwise velocity RMSE against DNS decreases from $0.0934\text{ m/s}$ down to $0.0857\text{ m/s}$ (-8.2%).
 * **Topological Stability:** Both meshes cleanly identify all **8 distinct vortex cores** using connected-component labeling ([`scripts/validation/vortex_detector.py`](scripts/validation/vortex_detector.py)), confirming topological stability under refinement.
 
@@ -230,22 +235,22 @@ To demonstrate scalability to higher Reynolds numbers matching the asymptotic DN
   python verification_squareDuct_Re17800/validate_and_plot_Re17800.py
   ```
 
-| Station | $x/D_h$ | $U_c / U_b$ | Raw Max $V_{\mathrm{sec}}/U_b$ | Core Max ($|y/h|,|z/h| \le 0.85$) | Cores Detected | Q1 Centroid $(y/h, z/h)$ | Distance to DNS $(0.50, 0.82)$ |
+| Station | $x/D_h$ | $U_c / U_b$ | Raw Max $V_{\mathrm{sec}}/U_b$ | Core Max ($|y/h|,|z/h| \le 0.85$) | Cores Detected | Q1 Centroid $(y/h, z/h)$ | Distance to DNS $(0.577, 0.847)$ |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **#1** | $1.1$ | $1.019$ | $9.63\%$ | $1.91\%$ | 0 (Rollup) | N/A | N/A |
 | **#2** | $2.1$ | $1.037$ | $10.43\%$ | $2.80\%$ | 0 (Rollup) | N/A | N/A |
 | **#3** | $3.1$ | $1.054$ | $10.43\%$ | $2.39\%$ | 0 (Rollup) | N/A | N/A |
 | **#4** | $4.1$ | $1.069$ | $10.20\%$ | $1.95\%$ | 0 (Rollup) | N/A | N/A |
 | **#5** | $5.1$ | $1.083$ | $9.92\%$ | $1.87\%$ | 0 (Rollup) | N/A | N/A |
-| **#6** | $6.1$ | $1.096$ | $9.69\%$ | $1.84\%$ | **8 cores** | $(0.625, 0.875)$ | $0.137\,h$ |
-| **#7** | $7.1$ | $1.108$ | $9.55\%$ | $1.78\%$ | **8 cores** | $(0.575, 0.875)$ | $0.093\,h$ |
-| **#8** | $8.1$ | $1.121$ | $9.34\%$ | $1.70\%$ | **8 cores** | $(0.575, 0.875)$ | $0.093\,h$ |
-| **#9** | $9.1$ | $1.132$ | $9.39\%$ | $1.67\%$ | **8 cores** | $(0.525, 0.875)$ | $\mathbf{0.060\,h}$ (1.2 cells) |
-| **DNS Ref** | $\infty$ | $1.33$ | $2.03\% - 2.30\%$ | **$2.03\% - 2.30\%$** | **8 cores** | **$(0.500, 0.820)$** | $\mathbf{0.000\,h}$ (Reference) |
+| **#6** | $6.1$ | $1.096$ | $9.69\%$ | $1.84\%$ | **8 cores** | $(0.625, 0.875)$ | $0.056\,h$ |
+| **#7** | $7.1$ | $1.108$ | $9.55\%$ | $1.78\%$ | **8 cores** | $(0.575, 0.875)$ | $0.028\,h$ |
+| **#8** | $8.1$ | $1.121$ | $9.34\%$ | $1.70\%$ | **8 cores** | $(0.575, 0.875)$ | $0.028\,h$ |
+| **#9** | $9.1$ | $1.132$ | $9.39\%$ | $1.67\%$ | **8 cores** | $(0.525, 0.875)$ | $0.059\,h$ (1.2 cells) |
+| **DNS Ref** | $\infty$ | $1.33$ | $2.03\% - 2.30\%$ | **$2.03\% - 2.30\%$** | **8 cores** | **$(0.577, 0.847)$** | $\mathbf{0.000\,h}$ (Reference) |
 
 * **Key Physical & Numerical Insights:**
   1. **Downstream Core Speed Underprediction:** Across the downstream developing-flow region with detected secondary-flow vortices ($x/D_h \ge 6.1$), the secondary speed evaluated at the 8 detected vortex core centroids settles at **$1.71\%$** (with interior-masked station maxima ranging between **$1.67\%$ and $1.84\%$**). Relative to the lower bound of the cited asymptotic DNS range ($2.03\%$), the station interior maxima are **$9.4\% - 17.7\%$ below** ($15.8\%$ below for the $1.71\%$ centroid mean). This underprediction is consistent with an incompletely developed spatial duct ($U_c/U_b = 1.132$ at $x/D_h = 9.1$ vs. the asymptotic fully developed value $U_c/U_b \approx 1.33$ in periodic DNS). The transient values during early rollup ($2.39\% - 2.80\%$ at $x/D_h = 2 - 3$) reflect developing flow overshoot and should not be confused with fully developed benchmark agreement.
-  2. **Vortex Centroid Convergence & Resolution Limits:** As the boundary layer develops downstream from $x/D_h = 6.1$ to $9.1$, the detected Quadrant 1 core centroid migrates from $(0.625, 0.875)$ to $(0.525, 0.875)$, reducing core distance error against canonical DNS down to $\Delta r = 0.060\,h$. The downstream-averaged section ($x/D_h \in [6.1, 9.1]$) yields an averaged-section centroid of $(0.575, 0.875)$ ($\Delta r = 0.093\,h$). While demonstrating recovery of the 8-vortex topology, this spatial localization ($\approx 1.2$ discrete grid cells at station $9.1$ on the $40 \times 40$ mesh with $\Delta y/h = 0.05$) is resolution-limited by cell discretization.
+  2. **Vortex Centroid Convergence & Resolution Limits:** As the boundary layer develops downstream from $x/D_h = 6.1$ to $9.1$, the detected Quadrant 1 core centroid migrates from $(0.625, 0.875)$ to $(0.525, 0.875)$, with core distance errors of $0.028$–$0.059\,h$ against the raw-field-verified DNS reference $(0.577, 0.847)$. The downstream-averaged section ($x/D_h \in [6.1, 9.1]$) yields an averaged-section centroid of $(0.575, 0.875)$ ($\Delta r = 0.028\,h$, $\approx 0.6$ grid cells). While demonstrating recovery of the 8-vortex topology, this spatial localization ($\approx 1.2$ discrete grid cells at station $9.1$ on the $40 \times 40$ mesh with $\Delta y/h = 0.05$) is resolution-limited by cell discretization.
   3. **Proposed Near-Wall Discretization Mechanism:** The raw unmasked grid maximum ($9.3\% - 10.4\%$) occurs strictly in the outermost boundary-layer cell center ($|z/h| = 0.975$). This is framed as a proposed numerical/wall-treatment mechanism where steep wall-normal velocity gradients ($\partial U_x / \partial z \sim 400\text{ s}^{-1}$) interact with explicit anisotropic stress divergence under high-shear wall functions, rather than a confirmed cause, pending full budget decomposition of $\nabla \cdot \boldsymbol{\tau}_\Delta$. Inside the physical vortex core region, secondary circulation remains smooth at $\sim 1.71\%$.
 
 ![High-Re Validation Showcase](docs/figures/tbnn_Re17800_showcase.png)

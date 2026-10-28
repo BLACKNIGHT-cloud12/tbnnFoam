@@ -48,7 +48,9 @@ volSymmTensorField a_TBNN
         "a_TBNN",
         runTime.timeName(),
         mesh,
-        IOobject::NO_READ,
+        // READ_IF_PRESENT makes restarts continue the relaxed TBNN stress
+        // state instead of re-ramping from zero (zero-init on fresh runs).
+        IOobject::READ_IF_PRESENT,
         IOobject::AUTO_WRITE
     ),
     mesh,
@@ -63,7 +65,7 @@ volSymmTensorField tauExtra
         "tauExtra",
         runTime.timeName(),
         mesh,
-        IOobject::NO_READ,
+        IOobject::READ_IF_PRESENT,
         IOobject::AUTO_WRITE
     ),
     mesh,

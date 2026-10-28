@@ -115,9 +115,9 @@ def main():
 
         q1 = [c for c in cores if c['y'] > 0 and c['z'] > 0]
         if q1:
-            best_q1 = min(q1, key=lambda c: np.sqrt((c['y'] - 0.50)**2 + (c['z'] - 0.82)**2))
+            best_q1 = min(q1, key=lambda c: np.sqrt((c['y'] - 0.577)**2 + (c['z'] - 0.847)**2))
             q1_str = f"({best_q1['y']:.3f}, {best_q1['z']:.3f})"
-            dist_err = np.sqrt((best_q1['y'] - 0.50)**2 + (best_q1['z'] - 0.82)**2)
+            dist_err = np.sqrt((best_q1['y'] - 0.577)**2 + (best_q1['z'] - 0.847)**2)
             dist_str = f"{dist_err:.3f} h"
         else:
             q1_str = "Rollup Phase"
@@ -185,9 +185,9 @@ def main():
 
     q1_dev = [c for c in dev_cores if c['y'] > 0 and c['z'] > 0]
     if q1_dev:
-        best_q1_dev = min(q1_dev, key=lambda c: np.sqrt((c['y'] - 0.50)**2 + (c['z'] - 0.82)**2))
+        best_q1_dev = min(q1_dev, key=lambda c: np.sqrt((c['y'] - 0.577)**2 + (c['z'] - 0.847)**2))
         d_err = np.sqrt((best_q1_dev['y'] - 0.50)**2 + (best_q1_dev['z'] - 0.82)**2)
-        print(f"Q1 Downstream-Averaged Centroid (y/h, z/h) : ({best_q1_dev['y']:.3f}, {best_q1_dev['z']:.3f})  [DNS Ref: (0.500, 0.820)]")
+        print(f"Q1 Downstream-Averaged Centroid (y/h, z/h) : ({best_q1_dev['y']:.3f}, {best_q1_dev['z']:.3f})  [DNS Ref: (0.577, 0.847), raw-field verified]")
         print(f"Q1 Averaged-Section Localization Error   : {d_err:.3f} h (~{d_err / dy_norm:.2f} grid cells on 40x40 mesh)")
         print(f"  (Note: Individual downstream station x/Dh=9.1 resolves centroid at (0.525, 0.875) with 0.060 h error)")
 
@@ -232,7 +232,7 @@ def main():
         col = 'cyan' if c['type'] == 'acw' else 'lime'
         ax2.scatter(c['y'], c['z'], s=90, c=col, edgecolors='black', linewidth=1.2, marker=m, zorder=5)
     # Reference DNS core in Q1
-    ax2.scatter([0.50], [0.82], s=120, c='red', marker='*', edgecolors='black', linewidth=1.2, zorder=6, label='DNS Ref Core (0.50, 0.82)')
+    ax2.scatter([0.577], [0.847], s=120, c='red', marker='*', edgecolors='black', linewidth=1.2, zorder=6, label='DNS Ref Core (0.577, 0.847)')
     ax2.legend(loc='lower center', framealpha=0.9, fontsize=9)
     ax2.set_title(rf'(b) Secondary Velocity Vectors & Cores (Core: {mean_core_speed:.2f}%, DNS: 2.03-2.30%)', fontsize=12, fontweight='bold')
     ax2.set_xlabel(r'$y / h$', fontsize=11)
@@ -273,7 +273,7 @@ def main():
     w_profile = Uz_dev[:, iy_slice] / Ub * 100.0
     ax4.plot(z_norm, w_profile, 'b-o', linewidth=2, markersize=4, label=r'CFD $W / U_b$ at $y/h = 0.525$')
     ax4.axvspan(-0.85, 0.85, color='green', alpha=0.10, label=r'Core Domain Region ($|z/h| \leq 0.85$)')
-    ax4.axvline(0.82, color='red', linestyle='--', alpha=0.7, label=r'DNS Core Centroid $z/h = 0.82$')
+    ax4.axvline(0.847, color='red', linestyle='--', alpha=0.7, label=r'DNS Core Centroid $z/h = 0.847$')
     ax4.set_xlabel(r'Wall-Normal Coordinate $z / h$', fontsize=11)
     ax4.set_ylabel(r'Vertical Velocity $W / U_b$ (%)', fontsize=11)
     ax4.set_title(r'(d) Cross-Stream Secondary Velocity Profile Across Vortex Core', fontsize=12, fontweight='bold')

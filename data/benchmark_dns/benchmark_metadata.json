@@ -36,10 +36,10 @@
     "openfoam_cfd_physical_scale": {
       "description": "Dimensional laboratory duct scale simulated in OpenFOAM (verification_squareDuct case)",
       "duct_half_width_h_m": 0.05,
-      "hydraulic_diameter_Dh_m": 0.10,
+      "hydraulic_diameter_Dh_m": 0.1,
       "duct_length_L_m": 1.0,
       "bulk_velocity_Ub_m_s": 1.0,
-      "kinematic_viscosity_nu_m2_s": 0.0000225,
+      "kinematic_viscosity_nu_m2_s": 2.25e-05,
       "bulk_reynolds_number_Re_b": 4444,
       "half_width_reynolds_number_Re_h": 2222
     }
@@ -50,29 +50,68 @@
     "friction_reynolds_number_Re_tau": 150.0,
     "duct_half_width_h_m": 0.05,
     "dns_half_width_h_m": 0.5,
-    "hydraulic_diameter_Dh_m": 0.10,
+    "hydraulic_diameter_Dh_m": 0.1,
     "dns_hydraulic_diameter_Dh_m": 1.0,
     "bulk_velocity_Ub_m_s": 1.0,
-    "kinematic_viscosity_nu_m2_s": 0.0000225,
+    "kinematic_viscosity_nu_m2_s": 2.25e-05,
     "dns_kinematic_viscosity_nu_m2_s": 0.000226757,
     "friction_velocity_u_tau_m_s": 0.0675
   },
   "geometry_and_domain": {
     "cross_section": "2h x 2h square",
-    "canonical_normalized_y_range": [-1.0, 1.0],
-    "canonical_normalized_z_range": [-1.0, 1.0],
-    "dns_physical_y_range_m": [-0.5, 0.5],
-    "dns_physical_z_range_m": [-0.5, 0.5],
-    "cfd_physical_y_range_m": [-0.05, 0.05],
-    "cfd_physical_z_range_m": [-0.05, 0.05],
+    "canonical_normalized_y_range": [
+      -1.0,
+      1.0
+    ],
+    "canonical_normalized_z_range": [
+      -1.0,
+      1.0
+    ],
+    "dns_physical_y_range_m": [
+      -0.5,
+      0.5
+    ],
+    "dns_physical_z_range_m": [
+      -0.5,
+      0.5
+    ],
+    "cfd_physical_y_range_m": [
+      -0.05,
+      0.05
+    ],
+    "cfd_physical_z_range_m": [
+      -0.05,
+      0.05
+    ],
     "streamwise_length_Lx": "4 * pi * h (DNS periodic) / 20 * h (CFD developing)",
     "symmetry": "8-fold octant symmetry"
   },
   "reference_vortex_cores_quadrant1": {
-    "description": "Normalized core coordinate in quadrant y/h in [0, 1], z/h in [0, 1]",
-    "y_core_over_h": 0.50,
-    "z_core_over_h": 0.82,
-    "peak_secondary_velocity_ratio_Vmax_over_Ub": 0.0203
+    "description": "Normalized Q1 primary-vortex reference in quadrant y/h in [0, 1], z/h in [0, 1]. VERIFIED against the raw DNS export's own vorticity column (omx/(ub/h)) by scripts/validation/verify_dns_reference.py.",
+    "y_core_over_h": 0.577,
+    "z_core_over_h": 0.847,
+    "peak_secondary_velocity_ratio_Vmax_over_Ub": 0.0193,
+    "verification_provenance": {
+      "raw_field_acw_core_y_z_over_h": [
+        0.577,
+        0.847
+      ],
+      "raw_field_acw_omx_star": 0.254,
+      "detector_on_65x65_grid_y_z_over_h": [
+        0.594,
+        0.844
+      ],
+      "detector_offset_from_raw_field_h": 0.017,
+      "raw_secondary_peak_ratio": 0.0193,
+      "resampled_65x65_peak_ratio": 0.0192,
+      "legacy_reference_y_z_over_h": [
+        0.5,
+        0.82
+      ],
+      "legacy_reference_offset_from_raw_field_h": 0.081,
+      "legacy_peak_ratio_note": "The legacy 2.03% target matches the raw Re_b=7000 (Re_tau=220) export peak exactly, not the Re_b=4410 plane (1.93% raw / 1.92% resampled); it was retained as a literature-style target. Tables now quote the raw-verified 1.93%.",
+      "vorticity_discretization_check": "Recomputed omega_x* from raw velocities agrees with the DNS-provided vorticity column to 0.43% of field max in the interior."
+    }
   },
   "held_out_benchmark": {
     "case_name": "Square Duct DNS at Re_tau = 220 (Re_b = 7000, Re_h = 3500)",

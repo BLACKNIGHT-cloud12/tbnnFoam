@@ -47,6 +47,8 @@ autoPtr<incompressible::turbulenceModel> turbulence
 
 Info<< "Creating TBNN Reynolds Stress and Anisotropy fields\n" << endl;
 
+// READ_IF_PRESENT makes restarts continue the relaxed TBNN stress state
+// instead of re-ramping from zero (zero-init on fresh runs).
 volSymmTensorField aTBNN
 (
     IOobject
@@ -54,7 +56,7 @@ volSymmTensorField aTBNN
         "aTBNN",
         runTime.timeName(),
         mesh,
-        IOobject::NO_READ,
+        IOobject::READ_IF_PRESENT,
         IOobject::AUTO_WRITE
     ),
     mesh,
@@ -68,7 +70,7 @@ volSymmTensorField tauR
         "tauR",
         runTime.timeName(),
         mesh,
-        IOobject::NO_READ,
+        IOobject::READ_IF_PRESENT,
         IOobject::AUTO_WRITE
     ),
     mesh,
@@ -82,7 +84,7 @@ volSymmTensorField tauDelta
         "tauDelta",
         runTime.timeName(),
         mesh,
-        IOobject::NO_READ,
+        IOobject::READ_IF_PRESENT,
         IOobject::AUTO_WRITE
     ),
     mesh,

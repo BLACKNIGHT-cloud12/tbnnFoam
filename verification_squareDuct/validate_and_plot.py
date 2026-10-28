@@ -184,8 +184,8 @@ def validate():
     ax_b.legend(loc='lower center', fontsize=9.5, framealpha=0.95)
     ax_b.grid(True, linestyle=':', alpha=0.6)
     fig.text(0.74, 0.94, 'Streamwise Secondary Vortex Distribution\nPirozzoli et al. (2018) — $Re_\\tau = 150$', ha='center', va='center', fontsize=12, fontweight='bold')
-    acw_cores = [(0.50, 0.82), (-0.82, 0.50), (-0.50, -0.82), (0.82, -0.50)]
-    cw_cores = [(0.82, 0.50), (-0.50, 0.82), (-0.82, -0.50), (0.50, -0.82)]
+    acw_cores = [(0.577, 0.847), (-0.847, 0.577), (-0.577, -0.847), (0.847, -0.577)]
+    cw_cores = [(0.847, 0.577), (-0.577, 0.847), (-0.847, -0.577), (0.577, -0.847)]
 
     def calc_pdf(cores, grid_y, grid_z, sigma=0.1):
         pdf = np.zeros_like(grid_y)
