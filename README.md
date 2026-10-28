@@ -178,7 +178,7 @@ The physical validation rests on coupling the anisotropic stress divergence $\na
 ### Understanding Model Discrepancies and Limitations:
 1. **Developing Spatial Duct vs. Streamwise-Periodic Box:**
    The reference DNS benchmark of Pirozzoli et al. (2018) was simulated in an idealized streamwise-periodic box driven by a body force (representing an asymptotically fully developed duct of infinite length). In contrast, our OpenFOAM simulation is a spatially developing duct ($L = 20h = 1.0\text{ m}$) with a uniform velocity inlet ($U_b = 1.0\text{ m/s}$) and physical boundary layers growing along the walls. 
-   Because secondary flow is triggered locally by near-wall corner normal stress differences, the 8 secondary vortex cells establish quickly ($x/h \ge 6$). However, the centerline streamwise core requires a longer development length ($U_{\text{center}} \approx 1.25\text{ m/s}$ in our CFD case vs $1.33\text{ m/s}$ in the periodic DNS). Standard linear $k\text{--}\omega$ SST exhibits slightly lower streamwise error ($6.16\%$) simply because it lacks cross-stream convective momentum transport to the corners, yet it fails entirely on the secondary flow physics ($0$ vortex cores).
+   Because secondary flow is triggered locally by near-wall corner normal stress differences, the 8 secondary vortex cells establish quickly ($x/h \ge 6$). However, the centerline streamwise core requires a longer development length ($U_{\text{center}} \approx 1.25\text{ m/s}$ in our CFD case vs $1.33\text{ m/s}$ in the periodic DNS). Standard linear $k\text{--}\omega$ SST exhibits slightly lower streamwise error ($6.16\%$) simply because it lacks cross-stream convective momentum transport to the corners, yet it fails to reproduce the secondary-flow topology ($0$ vortex cores).
 2. **Neural Network Model-Form Uncertainty:**
    The $9.3\%$ streamwise RMSE is not attributable solely to boundary conditions. The neural network closure is an empirical approximation trained on frozen DNS gradients. In live CFD coupling, the emerging secondary flow deforms the mean velocity field $\mathbf{U}$, modifying the velocity gradients fed back into the network at each SIMPLE iteration. This interactive feedback, combined with the finite expressivity of the MLP, introduces genuine model-form discrepancy.
 3. **Modelled $\omega$ Surrogate & Turbulent Timescale Sensitivity:**
@@ -334,8 +334,8 @@ To eliminate verification limitations associated with hard-coded mesh dimensions
    - Streamwise cells $X$ strictly increment along the fastest axis (axis 2, $N_x = 50$).
    - Horizontal cross-stream cells $Y$ strictly increment along axis 1 ($N_y = 20$ coarse, $40$ fine).
    - Vertical cross-stream cells $Z$ strictly increment along axis 0 ($N_z = 20$ coarse, $40$ fine).
-   - True cell center coordinates $y/h$ and $z/h$ derived from the mesh geometry match uniform cell-center definitions to within machine precision ($\Delta_{\max} < 2 \times 10^{-16}$).
-This ensures that field reshaping introduces identically zero distortion or bias into the computed vortex centers and velocity RMSE.
+   - True cell center coordinates $y/h$ and $z/h$ derived from the mesh geometry agree with uniform cell-center definitions to within floating-point roundoff ($\Delta_{\max} < 2 \times 10^{-16}$).
+This ensures that field reshaping introduces no detectable distortion at floating-point precision into the computed vortex centers and velocity RMSE.
 
 ---
 
