@@ -46,11 +46,11 @@
 \maketitle
 
 \begin{abstract}
-Linear eddy viscosity models based on the Boussinesq hypothesis remain the workhorse of industrial Computational Fluid Dynamics (CFD). However, they fundamentally fail to predict turbulence-driven secondary flows of Prandtl's second kind due to their enforced alignment between the Reynolds stress anisotropy tensor and the mean strain rate tensor. Data-driven turbulence closures utilizing Tensor Basis Neural Networks (TBNN; Ling et al., \textit{J.~Fluid Mech.}, 2016) provide a frame-invariant methodology for representing Reynolds-stress anisotropy by projection onto Pope's ten symmetric integrity basis tensors.
+Linear eddy viscosity models based on the Boussinesq hypothesis remain the workhorse of industrial Computational Fluid Dynamics (CFD). However, by enforcing alignment between the Reynolds-stress anisotropy tensor and the mean strain-rate tensor, they cannot reproduce the normal-stress anisotropy required for Prandtl's second-kind secondary flows in the canonical square-duct configuration. Data-driven turbulence closures utilizing Tensor Basis Neural Networks (TBNN; Ling et al., \textit{J.~Fluid Mech.}, 2016) provide a frame-invariant methodology for representing Reynolds-stress anisotropy by projection onto Pope's ten symmetric integrity basis tensors.
 
 In this work, we present an in-situ coupled CFD solver, \texttt{tbnnFoam}, implemented within OpenFOAM 2606. The solver features a dual-runtime inference architecture: an embedded LibTorch C++ engine and a zero-dependency standalone C++ matrix evaluator incorporating an analytical Cardano cubic eigensolver that enforces physical realizability on the Lumley triangle in $\mathcal{O}(1)$ operations. Cross-engine numerical parity across PyTorch, TorchScript, and the standalone C++ matrix evaluator is verified within an absolute tolerance of $10^{-5}$ across synthetic test cases spanning shear, rotational, and complex 3D strain states, with the standalone C++ comparison executed when the OpenFOAM environment and compiled test binary are present. Beyond evaluator parity, the momentum-equation coupling itself is verified by an assembled-matrix test: in the Boussinesq limit the coupled equation reduces exactly to the baseline linear model (maximum relative deviation $3.6 \times 10^{-17}$).
 
-We validate the coupled solver on developing turbulent flow in a square duct at bulk Reynolds number $Re_b \approx 4410$ ($Re_\tau = 150$) against high-fidelity Direct Numerical Simulation (DNS; Pirozzoli et al., \textit{J.~Fluid Mech.}, 2018). An independent algorithmic vortex detector employing connected-component labeling on non-dimensional axial vorticity ($\omega_x^* = \omega_x / (U_b / h)$) confirms that \texttt{tbnnFoam} structurally recovers the secondary-flow mechanism by identifying all eight counter-rotating secondary recirculation cells where the standard linear $k\text{--}\omega$ SST closure tested here completely fails (detecting zero vortex cores).
+We validate the coupled solver on developing turbulent flow in a square duct at bulk Reynolds number $Re_b \approx 4410$ ($Re_\tau = 150$) against high-fidelity Direct Numerical Simulation (DNS; Pirozzoli et al., \textit{J.~Fluid Mech.}, 2018). An independent algorithmic vortex detector employing connected-component labeling on non-dimensional axial vorticity ($\omega_x^* = \omega_x / (U_b / h)$) confirms that \texttt{tbnnFoam} structurally recovers the secondary-flow mechanism by identifying all eight counter-rotating secondary recirculation cells where the standard linear $k\text{--}\omega$ SST closure tested here fails to reproduce the secondary-flow topology (detecting zero vortex cores).
 
 Critically, this constitutes a \textbf{partial validation}: while secondary circulation topology is successfully recovered, vortex core localization exhibits notable offset ($0.567\,h$ error on the coarse mesh and $0.447\,h$ on the refined mesh against the raw-field-verified DNS reference $(0.577, 0.847)$), and peak secondary speed exhibits strong discretization sensitivity, decreasing from $7.99\%$ to $2.62\%$ (relative to the raw-field DNS peak of $1.93\%$). We emphasize that structural recovery does not establish accurate pointwise vortex localization or full quantitative agreement with periodic DNS.
 
@@ -234,7 +234,7 @@ To balance research flexibility with production deployment, \texttt{tbnnFoam} im
 Both engines are dynamically configured: layer widths ($H_0, H_1, H_2$) and matrix shapes (\texttt{[64, 5]}, \texttt{[64, 64]}, \texttt{[64, 64]}, \texttt{[10, 64]}) are determined dynamically from the model definition, avoiding hardcoded array dimensions.
 
 \subsection{Analytical Cardano Cubic Realizability Enforcement}
-If a neural network predicts unphysical stress states violating positive semidefiniteness, CFD solvers diverge rapidly. Classical iterative realizability projections (e.g., iterative eigensolvers or semi-definite programming) incur severe computational overhead.
+If a neural network predicts an anisotropy state that violates Reynolds-stress realizability, CFD solvers diverge rapidly. Classical iterative realizability projections (e.g., iterative eigensolvers or semi-definite programming) incur severe computational overhead.
 
 In \texttt{tbnnFoam}, we implement a closed-form analytical eigensolver based on Cardano's cubic formula. Because $\mathbf{a}$ is symmetric and trace-free ($\mathrm{tr}(\mathbf{a}) = 0$), its characteristic polynomial reduces to:
 \begin{equation}
@@ -260,7 +260,7 @@ If the minimum eigenvalue violates $\lambda_{\min} < -\frac{1}{3}$, the anisotro
 \mathbf{a}_{\text{realizable}} = f_{\text{lim}} \, \mathbf{a}, \quad f_{\text{lim}} = \min\left(1.0, \, \frac{1/3}{|\lambda_{\min}|}\right)
 \end{equation}
 
-This analytical projection enforces positive semidefiniteness on the Lumley triangle in $\mathcal{O}(1)$ operations per cell, providing realizability by construction while avoiding the overhead of iterative eigenvalue projections. Realizability of the modelled stress tensor is a necessary condition for robust coupled integration; solver-level stability under the tested cases is demonstrated empirically in Sections~\ref{sec:limitations} and~8.
+This analytical projection enforces Reynolds-stress realizability within the Lumley triangle in $\mathcal{O}(1)$ operations per cell, providing realizability by construction while avoiding the overhead of iterative eigenvalue projections. Realizability of the modelled stress tensor is a necessary condition for robust coupled integration; solver-level stability under the tested cases is demonstrated empirically in Sections~\ref{sec:limitations} and~8.
 
 \subsection{Cross-Engine Numerical Parity Verification}
 Numerical consistency between the TorchScript engine, the JSON-based native C++ evaluator, and the reference Python implementation is verified via the automated regression test suite (\texttt{tests/test\_parity.py}). Rather than asserting unrecorded precision across undefined distributions, the test suite executes explicit parity checks with defined numerical tolerances:
@@ -415,7 +415,7 @@ In machine learning for fluid dynamics, it is essential to distinguish between \
     \begin{enumerate}
         \item The solver converges stably without numerical divergence.
         \item The coupled velocity field spontaneously generates and sustains the correct eight-cell secondary flow topology.
-        \item The standard linear $k\text{--}\omega$ SST closure tested here completely fails this test.
+        \item The standard linear $k\text{--}\omega$ SST closure tested here fails to reproduce the secondary-flow topology.
     \end{enumerate}
 \end{itemize}
 

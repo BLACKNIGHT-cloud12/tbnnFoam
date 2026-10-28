@@ -63,7 +63,7 @@ At each iteration of the SIMPLE loop, the solver couples the neural network to t
 3. **Neural Network Evaluation:** Feeds the 5 scalar invariants into the network to predict 10 scalar expansion coefficients $g^{(1)} \dots g^{(10)}$.
 4. **Anisotropy Assembly:** Computes the deviatoric anisotropy tensor:
    $$\mathbf{a} = \sum_{n=1}^{10} g^{(n)}(\boldsymbol{\lambda}) \, \mathbf{T}^{(n)}$$
-5. **Realizability Enforcement:** Uses a closed-form Cardano cubic eigensolver to clamp the eigenvalues of $\mathbf{a}$ to the Lumley triangle, ensuring physical positive semidefiniteness without iterative overhead.
+5. **Realizability Enforcement:** Uses a closed-form Cardano cubic eigensolver to clamp the eigenvalues of $\mathbf{a}$ to the Lumley triangle, ensuring Reynolds-stress realizability without iterative overhead.
 6. **Momentum Injection:** Formulates the perturbation stress $\boldsymbol{\tau}_\Delta = 2k\mathbf{a} + 2\nu_t \mathbf{S}$ and injects its divergence $\nabla \cdot \boldsymbol{\tau}_\Delta$ into OpenFOAM's momentum predictor (`UEqn.H`).
 
 ### Key Implementation Safeguards
