@@ -18,7 +18,7 @@ We validate the coupled solver on developing turbulent flow in a square duct at 
 Crucially, this constitutes a **partial validation**: while secondary circulation topology is successfully recovered, vortex core localization exhibits notable offset ($0.586\,h$ error on the coarse mesh and $0.474\,h$ on the refined mesh against the canonical DNS reference $(0.50, 0.82)$), and peak secondary speed exhibits strong discretization sensitivity, decreasing from $7.99\%$ to $2.62\%$ (relative to DNS $2.03\%$). We emphasize that structural recovery does not establish accurate pointwise vortex localization or full quantitative agreement with periodic DNS.
 
 Critically, we avoid overstating predictive performance and conduct an honest, in-depth evaluation of model limitations and physical discrepancies:
-1. **Velocity Discrepancy:** The streamwise velocity Normalized Root-Mean-Square Error ($\mathrm{NRMSE}_U$) is $9.34\%$ ($0.0934\text{ m/s}$ relative to bulk velocity $U_b = 1.0\text{ m/s}$). We show that this discrepancy arises from a combined influence of entrance-length spatial boundary layer development in the CFD domain ($L = 10h$) compared to the streamwise-periodic DNS box, alongside genuine neural network model-form uncertainty under live pressure-velocity coupling.
+1. **Velocity Discrepancy:** The streamwise velocity Normalized Root-Mean-Square Error ($\mathrm{NRMSE}_U$) is $9.34\%$ ($0.0934\text{ m/s}$ relative to bulk velocity $U_b = 1.0\text{ m/s}$). We show that this discrepancy arises from a combined influence of entrance-length spatial boundary layer development in the CFD domain ($L = 20h$) compared to the streamwise-periodic DNS box, alongside genuine neural network model-form uncertainty under live pressure-velocity coupling.
 2. **Timescale Surrogate Sensitivity:** Direct numerical simulation provides exact velocity gradients and Reynolds stresses but inherently lacks the specific dissipation rate $\omega$. We examine the role of the semi-empirical $\omega$ surrogate and prove that because Cayley-Hamilton invariants scale non-linearly with turbulent timescale $\tau = \min(1/\omega, 5.0\text{ s})$ ($I_1, I_2 \propto \tau^2$; $I_3 \propto \tau^3$), timescale estimation errors directly modulate secondary circulation intensity.
 3. **Out-of-Distribution Diagnostic:** We distinguish between 1D marginal bounding and joint manifold containment. While $100.0\%$ of CFD cells satisfy marginal bounding across scalar invariants $I_1, I_2, I_5$ (and $> 99\%$ for $I_3, I_4$), a joint 5D nearest-neighbor distance diagnostic reveals that live CFD states experience modest distribution shift relative to frozen training gradients (median standardized $k$-NN distance of $0.21\,\sigma$, 95th percentile of $1.17\,\sigma$).
 4. **Discretization Sensitivity:** A two-level cross-sectional grid resolution study ($20 \times 20$ coarse vs. $40 \times 40$ fine) demonstrates that peak secondary circulation trends from $7.99\%$ down to $2.62\%$ (approaching the DNS benchmark target of $2.03\%$) and Q1 core distance error decreases from $0.586\,h$ to $0.474\,h$, while maintaining strict topological stability across all eight cores.
@@ -307,7 +307,7 @@ In machine learning for fluid dynamics, it is essential to distinguish between *
 Figure 3 presents the secondary flow streamline patterns and in-plane velocity vectors computed by standard $k\text{--}\omega$ SST, `tbnnFoam`, and the reference DNS.
 
 ![Secondary Flow Comparison](figures/tbnn_hero_showcase.png)
-*Figure 3: Cross-stream secondary velocity field and streamlines at $x/h = 7.0$ for standard linear OpenFOAM ($k\text{--}\omega$ SST), `tbnnFoam` (TBNN closure), and Reference DNS (Pirozzoli et al., 2018).*
+*Figure 3: Cross-stream secondary velocity field and streamlines (averaging window $x/D_h \in [4.1, 7.9]$) for standard linear OpenFOAM ($k\text{--}\omega$ SST), `tbnnFoam` (TBNN closure), and Reference DNS (Pirozzoli et al., 2018).*
 
 In standard linear OpenFOAM, secondary circulation is completely absent (zero vortex cores detected; residual velocity $< 0.45\%$, representing numerical roundoff noise). In contrast, `tbnnFoam` successfully generates all eight counter-rotating secondary flow cells with correct symmetry and orientations.
 
@@ -325,7 +325,7 @@ Figure 5 illustrates the turbulent anisotropy states on the Barycentric map (Ban
 In linear OpenFOAM, the solution remains locked at the top apex (isotropic turbulence). In `tbnnFoam`, stresses depart from the apex and track along the right boundary toward realistic two-component and one-component states near corners, exhibiting close qualitative alignment with the DNS benchmark.
 
 ### 7.4 Quantitative Comparison Table
-Table 4 presents the comprehensive validation metrics evaluated at developing station $x/h = 7.0$ ($x/D_h = 3.5$):
+Table 4 presents the comprehensive validation metrics evaluated over the downstream averaging window $x/D_h \in [4.1, 7.9]$ ($x/h \in [8.2, 15.8]$, cells 20-40 of 50):
 
 | Validation Metric | Standard OpenFOAM ($k\text{--}\omega$ SST) | `tbnnFoam` (Native Mesh / DNS Grid) | Reference DNS (Pirozzoli et al., 2018) | Physical Interpretation |
 | :--- | :---: | :---: | :---: | :--- |
@@ -436,7 +436,7 @@ Because the live CFD simulation is a spatially developing duct ($\partial U/\par
 To uphold scientific integrity and avoid overselling, we explicitly highlight three key modeling limitations:
 
 ### 10.1 Developing Duct vs. Streamwise-Periodic DNS
-The DNS benchmark of Pirozzoli et al. (2018) was simulated in an idealized streamwise-periodic box driven by a uniform body force, representing an asymptotically fully developed duct of infinite length. In contrast, our OpenFOAM simulation models a spatially developing duct ($L = 10h = 0.5\text{ m}$) with a uniform velocity inlet ($U_b = 1.0\text{ m/s}$) and physical boundary layers developing along the walls.
+The DNS benchmark of Pirozzoli et al. (2018) was simulated in an idealized streamwise-periodic box driven by a uniform body force, representing an asymptotically fully developed duct of infinite length. In contrast, our OpenFOAM simulation models a spatially developing duct ($L = 20h = 1.0\text{ m}$) with a uniform velocity inlet ($U_b = 1.0\text{ m/s}$) and physical boundary layers developing along the walls.
 
 Because secondary flow is generated locally near wall corners by normal stress differences, the eight secondary cells establish rapidly ($x/h \ge 6$). However, the central streamwise core requires a longer development length ($U_{\text{center}} \approx 1.25\text{ m/s}$ in our CFD domain vs. $1.33\text{ m/s}$ in the periodic DNS). Standard linear $k\text{--}\omega$ SST exhibits lower streamwise RMSE ($6.16\%$) solely because it lacks cross-stream convective momentum transport to duct corners, yet it fails entirely on the secondary flow physics ($0$ vortex cores).
 
