@@ -200,6 +200,7 @@ The architecture specifications are summarized in Table~\ref{tab:network_topolog
 \centering
 \caption{Neural network topology and hyperparameters.}
 \label{tab:network_topology}
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{l l l}
 \toprule
 Parameter & Value / Configuration & Physical / Numerical Purpose \\
@@ -211,7 +212,7 @@ Parameter & Value / Configuration & Physical / Numerical Purpose \\
 \textbf{Total Parameters} & 9,354 trainable parameters & Exact layer count: $384 + 4160 + 4160 + 650 = 9,354$ \\
 \textbf{Training Loss} & Root-Mean-Square Error on $\mathbf{a}$ & $\mathcal{L} = \frac{1}{N}\sum_{i=1}^N \|\mathbf{a}_{\text{pred}, i} - \mathbf{a}_{\text{DNS}, i}\|_F^2$ \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
 Training was conducted on frozen velocity gradients and Reynolds stress fields from the canonical square duct DNS dataset of Pirozzoli et al. \cite{pirozzoli2018turbulence} at $Re_\tau = 150$.
@@ -257,9 +258,9 @@ This analytical projection guarantees positive semi-definiteness on the Lumley t
 \subsection{Cross-Engine Numerical Parity Verification}
 Numerical consistency between the TorchScript engine, the JSON-based native C++ evaluator, and the reference Python implementation is verified via the automated regression test suite (\texttt{tests/test\_parity.py}). Rather than asserting unrecorded precision across undefined distributions, the test suite executes explicit parity checks with defined numerical tolerances:
 \begin{enumerate}
-    \item \textbf{PyTorch vs. TorchScript (\texttt{test\_torchscript\_parity}):} Evaluates 10 randomized invariant states ($\lambda_i \in [-5, 5]$) and Pope tensor bases against both the Python \texttt{TensorBasisNeuralNetwork} model and the serialized TorchScript binary (\texttt{tbnn\_model.pt}). Parity between the Python and TorchScript tensor outputs $\mathbf{a}$ is verified within an absolute tolerance of $\mathrm{atol} = 10^{-5}$ (\texttt{torch.allclose(out\_py, out\_ts, atol=1e-5)}).
+    \item \textbf{PyTorch vs. TorchScript (\texttt{test\_torchscript\_parity}):} Evaluates 10 randomized invariant states ($\lambda_i \in [-5, 5]$) and Pope tensor bases against the Python reference model \texttt{TensorBasisNeuralNetwork} and against the serialized TorchScript binary (\texttt{tbnn\_model.pt}). Parity between the Python and TorchScript tensor outputs $\mathbf{a}$ is verified within an absolute tolerance of $\mathrm{atol} = 10^{-5}$ (\texttt{torch.allclose(out\_py, out\_ts, atol=1e-5)}).
     \item \textbf{PyTorch vs. Standalone Native C++ (\texttt{test\_standalone\_cpp\_numerical\_parity}):} Evaluates three canonical velocity gradient and turbulent timescale cases representing pure shear, general 3D shearing, and intense strained rotation against the standalone C++ binary \texttt{test\_evaluator\_parity} executed under OpenFOAM/WSL. When the compiled binary and OpenFOAM environment are present, the test verifies that invariants, tensor bases, network outputs $g^{(n)}$, and realizable anisotropy $\mathbf{a}$ match the Python reference implementation within an absolute tolerance of $\mathrm{atol} = 10^{-5}$ (\texttt{np.allclose(..., atol=1e-5)}). If the required binary or OpenFOAM environment is unavailable, the test is explicitly skipped with a recorded notification.
-    \item \textbf{Momentum-Equation Coupling Parity (\texttt{test\_momentum\_coupling\_parity} + \texttt{test\_solver\_momentum\_assembly\_consistency}):} Beyond evaluator-level parity, the momentum assembly itself is verified numerically. On a $2 \times 2 \times 2$ $k\text{--}\omega$ SST case with an exactly linear velocity field, the standalone solver's assembled momentum matrix is compared against the baseline linear model. When the network outputs the Boussinesq-consistent anisotropy $\mathbf{a} = -(\nu_t/k)\mathbf{S}$, the perturbation stress vanishes to $1.3 \times 10^{-16}$ relative and the assembled equation reduces to the baseline linear model with a maximum relative matrix deviation of $3.6 \times 10^{-17}$, confirming exact Boussinesq-limit consistency. A complementary source-level assertion locks both solver UEqn sites to the shared \texttt{divDevReff}-based coupling, guarding against formulation drift between the two engines.
+    \item \textbf{Momentum-Equation Coupling Parity} (\texttt{test\_momentum\_coupling\_parity}, plus the source-level assertion \texttt{test\_solver\_momentum\_assembly\_consistency}): Beyond evaluator-level parity, the momentum assembly itself is verified numerically. On a $2 \times 2 \times 2$ $k\text{--}\omega$ SST case with an exactly linear velocity field, the standalone solver's assembled momentum matrix is compared against the baseline linear model. When the network outputs the Boussinesq-consistent anisotropy $\mathbf{a} = -(\nu_t/k)\mathbf{S}$, the perturbation stress vanishes to $1.3 \times 10^{-16}$ relative and the assembled equation reduces to the baseline linear model with a maximum relative matrix deviation of $3.6 \times 10^{-17}$, confirming exact Boussinesq-limit consistency. A complementary source-level assertion locks both solver UEqn sites to the shared \texttt{divDevReff}-based coupling, guarding against formulation drift between the two engines.
 \end{enumerate}
 
 Table~\ref{tab:numerical_parity} summarizes the verified parity specifications and testing conditions.
@@ -268,6 +269,7 @@ Table~\ref{tab:numerical_parity} summarizes the verified parity specifications a
 \centering
 \caption{Numerical parity verification and physical consistency checks across Python, TorchScript C++, and Native C++ engines under stated test conditions.}
 \label{tab:numerical_parity}
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{l l c l c}
 \toprule
 Comparison Component & Test Function & Tolerance & Condition / Environment & Status \\
@@ -280,7 +282,7 @@ Comparison Component & Test Function & Tolerance & Condition / Environment & Sta
 \textbf{Cardano Realizability} & \texttt{test\_realizability} & $\lambda_{\min} \ge -1/3$ & Perturbation matrices ($N=50$) & \textbf{Guaranteed} \\
 \textbf{Coupling Boussinesq Limit} & \texttt{test\_momentum\_coupling\_parity} & $\le 10^{-8}$ relative & Assembled fvMatrix, $2^3$ $k\text{--}\omega$ SST mesh & \textbf{Passed ($3.6 \times 10^{-17}$)} \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
 \section{CFD Solver Coupling Pipeline}
@@ -449,6 +451,7 @@ Table~\ref{tab:validation_comparison} presents the comprehensive validation metr
 \centering
 \caption{Comprehensive quantitative comparison between linear RANS, \texttt{tbnnFoam}, and reference DNS.}
 \label{tab:validation_comparison}
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{l c c c l}
 \toprule
 Validation Metric & Standard OpenFOAM & \texttt{tbnnFoam} & Reference DNS & Physical Interpretation \\
@@ -462,7 +465,7 @@ Validation Metric & Standard OpenFOAM & \texttt{tbnnFoam} & Reference DNS & Phys
 \textbf{Secondary $(V, W)$ RMSE} & 0.0087 m/s & \textbf{0.0261 m/s} & 0.0000 m/s & In-plane cross-stream velocity \\
 \textbf{Continuity Residual} & $< 10^{-6}$ & \textbf{$< 10^{-6}$} & N/A & Steady-state convergence \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
 \subsection{Assessment of Validation Scope: Structural Recovery vs. Quantitative DNS Fidelity}
@@ -499,6 +502,7 @@ Figure~\ref{fig:mesh_sensitivity} and Table~\ref{tab:mesh_sensitivity} summarize
 \centering
 \caption{Discretization sensitivity metrics under cross-stream grid refinement.}
 \label{tab:mesh_sensitivity}
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{l c c c c}
 \toprule
 Parameter / Metric & Coarse Mesh (M1) & Refined Mesh (M2) & Relative Delta & DNS Target \cite{pirozzoli2018turbulence} \\
@@ -511,7 +515,7 @@ Parameter / Metric & Coarse Mesh (M1) & Refined Mesh (M2) & Relative Delta & DNS
 \textbf{Vortex Cores Detected} & 8 cores & 8 cores & Stable (8 cores) & \textbf{8 cores} \\
 \textbf{Streamwise $U$ RMSE} & 0.0934 m/s & 0.0857 m/s & -8.2\% & 0.0000 m/s \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
 \textbf{Key Observations:}
@@ -533,6 +537,7 @@ Re_b = \frac{U_b D_h}{\nu} = 17{,}800 \quad (Re_h = 8{,}900, \quad Re_\tau \appr
 \small
 \caption{Streamwise spatial development of secondary flow and vortex core localization at $Re_b = 17{,}800$.}
 \label{tab:re17800_development}
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{c c c c c c c}
 \toprule
 Station & $x/D_h$ & $U_c/U_b$ & Raw Max $V_{\text{sec}}/U_b$ & Interior Max ($|y|,|z| \le 0.85h$) & Cores & Q1 Distance to DNS \\
@@ -549,7 +554,7 @@ Station & $x/D_h$ & $U_c/U_b$ & Raw Max $V_{\text{sec}}/U_b$ & Interior Max ($|y
 \midrule
 \textbf{DNS Ref} & $\infty$ & $1.33$ & $2.03\% - 2.30\%$ & $\mathbf{2.03\% - 2.30\%}$ & 8 cores & $\mathbf{0.000\,h}$ (Ref) \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
 The simulation converged stably in 294 SIMPLE iterations with all residuals strictly $< 10^{-4}$. Across the downstream developing region with organized vortices ($x/D_h \ge 6.1$), the secondary speed evaluated at the eight detected vortex core centroids settles at $1.71\%$ (with interior-masked station maxima between $1.67\%$ and $1.84\%$). Compared to the cited asymptotic DNS lower bound ($2.03\%$), the station interior maxima are $9.4\% - 17.7\%$ below ($15.8\%$ below for the $1.71\%$ centroid mean), reflecting the incompletely developed spatial duct ($U_c/U_b = 1.132$ at $x/D_h = 9.1$ vs. asymptotic $U_c/U_b \approx 1.33$ in periodic DNS).
@@ -564,7 +569,7 @@ The downstream-averaged section ($x/D_h \in [6.1, 9.1]$) yields an averaged-sect
 \end{figure}
 
 \subsection{Mesh Reconstruction \& Cell Ordering Verification}
-To eliminate verification limitations associated with hardcoded mesh dimensions and assumed cell ordering, \texttt{tbnnFoam} incorporates automated mesh geometry tests (\texttt{tests/test\_mesh\_reconstruction\_verification.py}):
+To eliminate verification limitations associated with hardcoded mesh dimensions and assumed cell ordering, \texttt{tbnnFoam} incorporates automated mesh geometry tests (\path{tests/test_mesh_reconstruction_verification.py}):
 \begin{itemize}
     \item Cell centers generated by OpenFOAM (\texttt{postProcess -func writeCellCentres -time 0}) are parsed directly from the \texttt{0/C} field.
     \item The structured block ordering $i = ix + N_x(iy + N_y \cdot iz)$ is verified: streamwise coordinate $X$ increments along axis 2 ($N_x = 50$), horizontal cross-stream coordinate $Y$ increments along axis 1 ($N_y = 20, 40$), and vertical coordinate $Z$ increments along axis 0 ($N_z = 20, 40$).
@@ -596,6 +601,7 @@ Table~\ref{tab:marginal_bounds} summarizes the 1D marginal range coverage across
 \centering
 \caption{Empirical bounds and marginal coverage of Cayley-Hamilton invariants across the live CFD domain.}
 \label{tab:marginal_bounds}
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{l c c c}
 \toprule
 Feature / Invariant & DNS Training Envelope & CFD Operating Range (20k Cells) & Marginal Coverage \\
@@ -607,13 +613,15 @@ Feature / Invariant & DNS Training Envelope & CFD Operating Range (20k Cells) & 
 \textbf{$I_5 = \mathrm{tr}(\mathbf{w}^2\mathbf{s}^2)$} & $[-0.435, 0.000]$ & $[-2.350 \times 10^{-3}, -4.317 \times 10^{-14}]$ & \textbf{100.0\% In-Bounds} \\
 \textbf{Basis Norms $\|\mathbf{T}^{(n)}\|_F$} & $[0.0, 1.318]$ & $[0.0, 0.243]$ & \textbf{100.0\% Bounded} \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
 \subsection{Joint 5D Distribution Shift Diagnostic}
 Crucially, \textbf{1D marginal bounding does not guarantee joint manifold containment}. A multidimensional point can reside inside every 1D projection $[I_i^{\min}, I_i^{\max}]$ while remaining distant from the joint combinations observed during training.
 
-To quantify joint distribution shift, \texttt{scripts/validation/evaluate\_timescale\_distribution.py} computes the standardized Euclidean nearest-neighbor distance ($k$-NN) in the 5D invariant space normalized by training statistics:
+\begin{sloppypar}
+To quantify joint distribution shift, \path{scripts/validation/evaluate_timescale_distribution.py} computes the standardized Euclidean nearest-neighbor distance ($k$-NN) in the 5D invariant space normalized by training statistics:
+\end{sloppypar}
 \begin{equation}
 d_{\text{kNN}}(\mathbf{x}_{\text{CFD}}) = \min_{j} \left\| \frac{\mathbf{x}_{\text{CFD}} - \boldsymbol{\mu}_{\text{DNS}}}{\boldsymbol{\sigma}_{\text{DNS}}} - \frac{\mathbf{x}_{\text{DNS}, j} - \boldsymbol{\mu}_{\text{DNS}}}{\boldsymbol{\sigma}_{\text{DNS}}} \right\|_2
 \end{equation}
