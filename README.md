@@ -63,7 +63,7 @@ At each iteration of the SIMPLE loop, the solver couples the neural network to t
 3. **Neural Network Evaluation:** Feeds the 5 scalar invariants into the network to predict 10 scalar expansion coefficients $g^{(1)} \dots g^{(10)}$.
 4. **Anisotropy Assembly:** Computes the deviatoric anisotropy tensor:
    $$\mathbf{a} = \sum_{n=1}^{10} g^{(n)}(\boldsymbol{\lambda}) \, \mathbf{T}^{(n)}$$
-5. **Realizability Enforcement:** Uses a closed-form Cardano cubic eigensolver to clamp the eigenvalues of $\mathbf{a}$ to the Lumley triangle, ensuring physical positive semi-definiteness without iterative overhead.
+5. **Realizability Enforcement:** Uses a closed-form Cardano cubic eigensolver to clamp the eigenvalues of $\mathbf{a}$ to the Lumley triangle, ensuring physical positive semidefiniteness without iterative overhead.
 6. **Momentum Injection:** Formulates the perturbation stress $\boldsymbol{\tau}_\Delta = 2k\mathbf{a} + 2\nu_t \mathbf{S}$ and injects its divergence $\nabla \cdot \boldsymbol{\tau}_\Delta$ into OpenFOAM's momentum predictor (`UEqn.H`).
 
 ### Key Implementation Safeguards
@@ -200,7 +200,7 @@ The physical validation rests on coupling the anisotropic stress divergence $\na
 
 A formal Grid Convergence Index (GCI) according to Roache and ASME V&V 20 standards requires at least three geometrically scaled grid levels with constant refinement ratio ($r \ge 1.3$) to evaluate the asymptotic observed order of convergence $p$. 
 
-Here, we conduct an independent **2-level cross-sectional grid resolution sensitivity check** comparing the standard base mesh ($20\text{k}$ cells) and a 4x cross-stream refined mesh ($80\text{k}$ cells) to examine discretization sensitivity and verify that the detected secondary vortices are genuine physical solutions rather than numerical grid artifacts:
+Here, we conduct an independent **2-level cross-sectional grid resolution sensitivity check** comparing the standard base mesh ($20\text{k}$ cells) and a 4× cross-stream refined mesh ($80\text{k}$ cells) to examine discretization sensitivity and verify that the detected secondary vortices are genuine physical solutions rather than numerical grid artifacts:
 
 * **Coarse Mesh (M1):** $50 \times 20 \times 20 = 20{,}000$ cells ($\Delta y = \Delta z = 0.005\text{ m}$).
 * **Refined Mesh (M2):** $50 \times 40 \times 40 = 80{,}000$ cells ($\Delta y = \Delta z = 0.0025\text{ m}$).
@@ -288,7 +288,7 @@ $$d_{\text{kNN}}(\mathbf{x}_{\text{CFD}}) = \min_{j} \left\| \frac{\mathbf{x}_{\
 * **95th Percentile:** $1.17\,\sigma$
 * **Maximum Distance:** $1.43\,\sigma$
 
-This establishes that live CFD operating points remain closely clustered around observed training states (median gap $< 0.25$ standard deviations), preventing unphysical tensor extrapolations while transparently characterizing the joint distribution shift inherent in live Navier-Stokes coupling.
+This establishes that live CFD operating points remain closely clustered around observed training states (median gap $< 0.25$ standard deviations), indicating limited distributional extrapolation and reducing concern about severe out-of-distribution tensor predictions, while transparently characterizing the joint distribution shift inherent in live Navier-Stokes coupling.
 
 ---
 

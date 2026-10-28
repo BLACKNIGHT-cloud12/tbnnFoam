@@ -46,23 +46,23 @@
 \maketitle
 
 \begin{abstract}
-Linear eddy viscosity models based on the Boussinesq hypothesis remain the workhorse of industrial Computational Fluid Dynamics (CFD). However, they fundamentally fail to predict turbulence-driven secondary flows of Prandtl's second kind due to their enforced alignment between the Reynolds stress anisotropy tensor and the mean strain rate tensor. Data-driven turbulence closures utilizing Tensor Basis Neural Networks (TBNN; Ling et al., \textit{J.~Fluid Mech.}, 2016) provide a mathematically rigorous, frame-invariant methodology to represent Reynolds stress anisotropy by projecting onto Pope's ten symmetric integrity basis tensors.
+Linear eddy viscosity models based on the Boussinesq hypothesis remain the workhorse of industrial Computational Fluid Dynamics (CFD). However, they fundamentally fail to predict turbulence-driven secondary flows of Prandtl's second kind due to their enforced alignment between the Reynolds stress anisotropy tensor and the mean strain rate tensor. Data-driven turbulence closures utilizing Tensor Basis Neural Networks (TBNN; Ling et al., \textit{J.~Fluid Mech.}, 2016) provide a frame-invariant methodology for representing Reynolds-stress anisotropy by projection onto Pope's ten symmetric integrity basis tensors.
 
 In this work, we present an in-situ coupled CFD solver, \texttt{tbnnFoam}, implemented within OpenFOAM 2606. The solver features a dual-runtime inference architecture: an embedded LibTorch C++ engine and a zero-dependency standalone C++ matrix evaluator incorporating an analytical Cardano cubic eigensolver that enforces physical realizability on the Lumley triangle in $\mathcal{O}(1)$ operations. Cross-engine numerical parity across PyTorch, TorchScript, and the standalone C++ matrix evaluator is verified within an absolute tolerance of $10^{-5}$ across synthetic test cases spanning shear, rotational, and complex 3D strain states, with the standalone C++ comparison executed when the OpenFOAM environment and compiled test binary are present. Beyond evaluator parity, the momentum-equation coupling itself is verified by an assembled-matrix test: in the Boussinesq limit the coupled equation reduces exactly to the baseline linear model (maximum relative deviation $3.6 \times 10^{-17}$).
 
-We validate the coupled solver on developing turbulent flow in a square duct at bulk Reynolds number $Re_b \approx 4410$ ($Re_\tau = 150$) against high-fidelity Direct Numerical Simulation (DNS; Pirozzoli et al., \textit{J.~Fluid Mech.}, 2018). An independent algorithmic vortex detector employing connected-component labeling on non-dimensional axial vorticity ($\omega_x^* = \omega_x / (U_b / h)$) confirms that \texttt{tbnnFoam} structurally recovers the secondary-flow mechanism by identifying all eight counter-rotating secondary recirculation cells where standard linear $k\text{--}\omega$ SST completely fails (detecting zero vortex cores).
+We validate the coupled solver on developing turbulent flow in a square duct at bulk Reynolds number $Re_b \approx 4410$ ($Re_\tau = 150$) against high-fidelity Direct Numerical Simulation (DNS; Pirozzoli et al., \textit{J.~Fluid Mech.}, 2018). An independent algorithmic vortex detector employing connected-component labeling on non-dimensional axial vorticity ($\omega_x^* = \omega_x / (U_b / h)$) confirms that \texttt{tbnnFoam} structurally recovers the secondary-flow mechanism by identifying all eight counter-rotating secondary recirculation cells where the standard linear $k\text{--}\omega$ SST closure tested here completely fails (detecting zero vortex cores).
 
 Critically, this constitutes a \textbf{partial validation}: while secondary circulation topology is successfully recovered, vortex core localization exhibits notable offset ($0.567\,h$ error on the coarse mesh and $0.447\,h$ on the refined mesh against the raw-field-verified DNS reference $(0.577, 0.847)$), and peak secondary speed exhibits strong discretization sensitivity, decreasing from $7.99\%$ to $2.62\%$ (relative to the raw-field DNS peak of $1.93\%$). We emphasize that structural recovery does not establish accurate pointwise vortex localization or full quantitative agreement with periodic DNS.
 
 Furthermore, we avoid overstating predictive performance and conduct an honest, in-depth evaluation of model limitations and physical discrepancies:
 \begin{enumerate}
-    \item \textbf{Velocity Discrepancy:} The streamwise velocity Normalized Root-Mean-Square Error ($\mathrm{NRMSE}_U$) is $9.34\%$ ($0.0934\text{ m/s}$ relative to bulk velocity $U_b = 1.0\text{ m/s}$). We show that this discrepancy arises from a combined influence of entrance-length spatial boundary layer development in the CFD domain ($L = 20h$) compared to the streamwise-periodic DNS box, alongside genuine neural network model-form uncertainty under live pressure-velocity coupling.
+    \item \textbf{Velocity Discrepancy:} The streamwise velocity Normalized Root-Mean-Square Error ($\mathrm{NRMSE}_U$) is $9.34\%$ ($0.0934\text{ m/s}$ relative to bulk velocity $U_b = 1.0\text{ m/s}$). This discrepancy is consistent with a combined influence of entrance-length spatial boundary-layer development in the CFD domain ($L = 20h$) relative to the streamwise-periodic DNS box, alongside genuine neural-network model-form uncertainty under live pressure--velocity coupling.
     \item \textbf{Timescale Surrogate Sensitivity:} Direct numerical simulation provides exact velocity gradients and Reynolds stresses but inherently lacks the specific dissipation rate $\omega$. We examine the role of the semi-empirical $\omega$ surrogate and prove that because Cayley-Hamilton invariants scale non-linearly with turbulent timescale $\tau = \min(1/\omega, 5.0\text{ s})$ ($I_1, I_2 \propto \tau^2$; $I_3 \propto \tau^3$), timescale estimation errors directly modulate secondary circulation intensity.
     \item \textbf{Out-of-Distribution Diagnostic:} We distinguish between 1D marginal bounding and joint manifold containment. While $100.0\%$ of CFD cells satisfy marginal bounding across scalar invariants $I_1, I_2, I_5$ (and $> 99\%$ for $I_3, I_4$), a joint 5D nearest-neighbor distance diagnostic reveals that live CFD states experience modest distribution shift relative to frozen training gradients (median standardized $k$-NN distance of $0.21\,\sigma$, 95th percentile of $1.17\,\sigma$).
     \item \textbf{Discretization Sensitivity:} A two-level cross-sectional grid resolution study ($20 \times 20$ coarse vs. $40 \times 40$ fine) demonstrates that peak secondary circulation trends from $7.99\%$ down to $2.62\%$ (approaching the raw-field DNS benchmark target of $1.93\%$) and Q1 core distance error decreases from $0.567\,h$ to $0.447\,h$, while maintaining strict topological stability across all eight cores.
 \end{enumerate}
 
-All solver sources, evaluation scripts, raw DNS benchmark data, and an automated twenty-one-test verification suite are openly distributed under the MIT license.
+All solver sources, evaluation scripts, raw DNS benchmark data, and an automated 21-test verification suite are openly distributed under the MIT license.
 \end{abstract}
 
 \vspace{0.5cm}
@@ -89,7 +89,7 @@ U \frac{\partial \omega_x}{\partial x} + V \frac{\partial \omega_x}{\partial y} 
 \label{eq:vorticity_transport}
 \end{equation}
 
-Because linear eddy viscosity closures enforce isotropic normal stresses in pure shear flows ($\overline{{v'}^2} = \overline{{w'}^2} = \frac{2}{3}k$), the driving source term $\frac{\partial^2}{\partial y \partial z}(\overline{{w'}^2} - \overline{{v'}^2})$ vanishes identically. Consequently, conventional linear RANS models (such as standard $k\text{--}\varepsilon$ and $k\text{--}\omega$ SST) predict identically zero secondary circulation in straight ducts.
+Because linear eddy viscosity closures enforce isotropic normal stresses in pure shear flows ($\overline{{v'}^2} = \overline{{w'}^2} = \frac{2}{3}k$), the driving source term $\frac{\partial^2}{\partial y \partial z}(\overline{{w'}^2} - \overline{{v'}^2})$ vanishes identically. Consequently, in this canonical straight-duct configuration, linear eddy-viscosity closures cannot generate the normal-stress anisotropy required to sustain Prandtl's second-kind secondary circulation.
 
 \subsection{Non-Linear Tensor Closures and Machine Learning}
 To overcome this fundamental limitation, classical algebraic non-linear stress models (e.g., Speziale \cite{speziale1991analytical}; Craft et al. \cite{craft1996development}; Wallin \& Johansson \cite{wallin2000explicit}) incorporated higher-order tensor polynomial expansions. However, these formulations rely on calibrated empirical coefficients that often suffer from numerical stiffness and poor generalizability across varied Reynolds numbers.
@@ -234,7 +234,7 @@ To balance research flexibility with production deployment, \texttt{tbnnFoam} im
 Both engines are dynamically configured: layer widths ($H_0, H_1, H_2$) and matrix shapes (\texttt{[64, 5]}, \texttt{[64, 64]}, \texttt{[64, 64]}, \texttt{[10, 64]}) are determined dynamically from the model definition, avoiding hardcoded array dimensions.
 
 \subsection{Analytical Cardano Cubic Realizability Enforcement}
-If a neural network predicts unphysical stress states violating positive semi-definiteness, CFD solvers diverge rapidly. Classical iterative realizability projections (e.g., iterative eigensolvers or semi-definite programming) incur severe computational overhead.
+If a neural network predicts unphysical stress states violating positive semidefiniteness, CFD solvers diverge rapidly. Classical iterative realizability projections (e.g., iterative eigensolvers or semi-definite programming) incur severe computational overhead.
 
 In \texttt{tbnnFoam}, we implement a closed-form analytical eigensolver based on Cardano's cubic formula. Because $\mathbf{a}$ is symmetric and trace-free ($\mathrm{tr}(\mathbf{a}) = 0$), its characteristic polynomial reduces to:
 \begin{equation}
@@ -260,7 +260,7 @@ If the minimum eigenvalue violates $\lambda_{\min} < -\frac{1}{3}$, the anisotro
 \mathbf{a}_{\text{realizable}} = f_{\text{lim}} \, \mathbf{a}, \quad f_{\text{lim}} = \min\left(1.0, \, \frac{1/3}{|\lambda_{\min}|}\right)
 \end{equation}
 
-This analytical projection enforces positive semi-definiteness on the Lumley triangle in $\mathcal{O}(1)$ operations per cell, providing realizability by construction while avoiding the overhead of iterative eigenvalue projections. Realizability of the modelled stress tensor is a necessary condition for robust coupled integration; solver-level stability under the tested cases is demonstrated empirically in Sections~\ref{sec:limitations} and~8.
+This analytical projection enforces positive semidefiniteness on the Lumley triangle in $\mathcal{O}(1)$ operations per cell, providing realizability by construction while avoiding the overhead of iterative eigenvalue projections. Realizability of the modelled stress tensor is a necessary condition for robust coupled integration; solver-level stability under the tested cases is demonstrated empirically in Sections~\ref{sec:limitations} and~8.
 
 \subsection{Cross-Engine Numerical Parity Verification}
 Numerical consistency between the TorchScript engine, the JSON-based native C++ evaluator, and the reference Python implementation is verified via the automated regression test suite (\texttt{tests/test\_parity.py}). Rather than asserting unrecorded precision across undefined distributions, the test suite executes explicit parity checks with defined numerical tolerances:
@@ -415,7 +415,7 @@ In machine learning for fluid dynamics, it is essential to distinguish between \
     \begin{enumerate}
         \item The solver converges stably without numerical divergence.
         \item The coupled velocity field spontaneously generates and sustains the correct eight-cell secondary flow topology.
-        \item Standard linear RANS closures completely fail this test.
+        \item The standard linear $k\text{--}\omega$ SST closure tested here completely fails this test.
     \end{enumerate}
 \end{itemize}
 
@@ -457,13 +457,13 @@ Table~\ref{tab:validation_comparison} presents the comprehensive validation metr
 
 \begin{table}[htbp]
 \centering
-\caption{Comprehensive quantitative comparison between linear RANS, \texttt{tbnnFoam}, and reference DNS.}
+\caption{Comprehensive quantitative comparison between linear RANS, \texttt{tbnnFoam}, and reference DNS. The two \texttt{tbnnFoam} entries correspond to the native coarse-mesh result and its DNS-grid interpolation, respectively; the refined $40 \times 40$ result is reported separately in Table~\ref{tab:mesh_sensitivity}.}
 \label{tab:validation_comparison}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{l c c c l}
 \toprule
 Validation Metric & Standard OpenFOAM & \texttt{tbnnFoam} & Reference DNS & Physical Interpretation \\
-& ($k\text{--}\omega$ SST) & (Native / DNS Grid) & \cite{pirozzoli2018turbulence} & \\
+& ($k\text{--}\omega$ SST) & (coarse native / DNS-grid interpolated) & \cite{pirozzoli2018turbulence} & \\
 \midrule
 \textbf{Secondary Cores} & 0 cores (Failed) & \textbf{8 cores (Detected)} & 8 cores (Canonical) & Recovers Prandtl's 8 cells \\
 \textbf{Peak $V_{\text{sec}} / U_b$} & 0.45\% (Noise) & \textbf{7.99\% / 6.38\%} & 1.93\% & Non-zero secondary flow \\
@@ -481,7 +481,7 @@ A rigorous scientific appraisal requires distinguishing qualitative structural r
 \begin{enumerate}
     \item \textbf{Evidence for Structural Recovery:} The coupled \texttt{tbnnFoam} solver successfully activates the non-linear normal stress difference mechanism $(\overline{{w'}^2} - \overline{{v'}^2})$, generating the complete eight-cell secondary recirculation pattern across the four quadrants where standard linear Boussinesq closures predict identically zero secondary circulation.
     \item \textbf{Prominent Localization Discrepancy:} The detected Q1 vortex core center is located at $(0.850, 0.350)$ on the coarse mesh and $(0.825, 0.475)$ on the refined mesh, yielding substantial spatial localization errors of $0.567\,h$ and $0.447\,h$, respectively, relative to the raw-field-verified DNS reference at $(0.577, 0.847)$. Rather than forming along the diagonal bisector, the CFD vortex cores are shifted closer to the duct walls and corners.
-    \item \textbf{Secondary Velocity Overprediction and Discretization Sensitivity:} The coarse-mesh peak secondary velocity is significantly overpredicted at $7.99\%$ (native discrete) and $6.38\%$ (interpolated grid) compared to the raw-field DNS benchmark of $1.93\%$. While 4x cross-stream refinement reduces this peak to $2.62\%$ (exceeding DNS), this large delta demonstrates that secondary circulation magnitude is strongly coupled to cross-stream resolution and boundary-layer shear discretization.
+    \item \textbf{Secondary Velocity Overprediction and Discretization Sensitivity:} The coarse-mesh peak secondary velocity is significantly overpredicted at $7.99\%$ (native discrete) and $6.38\%$ (interpolated grid) compared to the raw-field DNS benchmark of $1.93\%$. While 4$\times$ cross-stream refinement reduces this peak to $2.62\%$ (exceeding DNS), this large delta demonstrates that secondary circulation magnitude is strongly coupled to cross-stream resolution and boundary-layer shear discretization.
 \end{enumerate}
 
 Consequently, we characterize the validation as \textbf{partial}: it confirms that the in-situ TBNN model successfully triggers Prandtl's secondary recirculation mechanism in OpenFOAM, but does not achieve precise vortex localization or complete quantitative fidelity with fully developed periodic DNS.
@@ -491,7 +491,7 @@ Consequently, we characterize the validation as \textbf{partial}: it confirms th
 \subsection{Cross-Sectional Mesh Sensitivity Study}
 A formal Grid Convergence Index (GCI) according to Roache \cite{roache1998verification} and ASME V\&V 20 standards \cite{asme2009standard} requires at least three geometrically scaled grid levels with constant refinement ratio ($r \ge 1.3$) to evaluate the asymptotic observed order of convergence $p$.
 
-Here, we conduct an independent \textbf{two-level cross-sectional discretization sensitivity study} comparing the standard base mesh ($20{,}000$ cells) and a 4x cross-stream refined mesh ($80{,}000$ cells):
+Here, we conduct an independent \textbf{two-level cross-sectional discretization sensitivity study} comparing the standard base mesh ($20{,}000$ cells) and a 4$\times$ cross-stream refined mesh ($80{,}000$ cells):
 \begin{itemize}
     \item \textbf{Coarse Mesh (M1):} $50 \times 20 \times 20 = 20{,}000$ cells ($\Delta y = \Delta z = 0.005\text{ m} = 0.10\,h$).
     \item \textbf{Refined Mesh (M2):} $50 \times 40 \times 40 = 80{,}000$ cells ($\Delta y = \Delta z = 0.0025\text{ m} = 0.05\,h$).
@@ -515,10 +515,10 @@ Figure~\ref{fig:mesh_sensitivity} and Table~\ref{tab:mesh_sensitivity} summarize
 \toprule
 Parameter / Metric & Coarse Mesh (M1) & Refined Mesh (M2) & Relative Delta & DNS Target \cite{pirozzoli2018turbulence} \\
 \midrule
-\textbf{Cross-Sectional Grid} & 20 x 20 (400 cells) & 40 x 40 (1600 cells) & 4x Refinement & 65 x 65 (DNS) \\
-\textbf{Total Mesh Cells} & 20,000 cells & 80,000 cells & 4x Refinement & N/A \\
+\textbf{Cross-Sectional Grid} & $20 \times 20$ (400 cells) & $40 \times 40$ (1600 cells) & 4$\times$ Refinement & $65 \times 65$ (DNS) \\
+\textbf{Total Mesh Cells} & 20,000 cells & 80,000 cells & 4$\times$ Refinement & N/A \\
 \textbf{Peak $V_{\text{sec}} / U_b$} & 7.99\% & 2.62\% & -67.2\% & \textbf{1.93\%} \\
-\textbf{Q1 Core $(y/h, z/h)$} & (0.850, 0.350) & (0.825, 0.475) & Shift: +0.120 h & \textbf{(0.577, 0.847)} \\
+\textbf{Q1 Core $(y/h, z/h)$} & (0.850, 0.350) & (0.825, 0.475) & Error reduction: $-21.2\%$ & \textbf{(0.577, 0.847)} \\
 \textbf{Core Localization Error} & 0.567 h & 0.447 h & -0.120 h (-21.2\%) & \textbf{0.000 h (Ref)} \\
 \textbf{Vortex Cores Detected} & 8 cores & 8 cores & Stable (8 cores) & \textbf{8 cores} \\
 \textbf{Streamwise $U$ RMSE} & 0.0934 m/s & 0.0857 m/s & -8.2\% & 0.0000 m/s \\
@@ -643,7 +643,7 @@ d_{\text{kNN}}(\mathbf{x}_{\text{CFD}}) = \min_{j} \left\| \frac{\mathbf{x}_{\te
     \item \textbf{Maximum Distance:} $1.43\,\sigma$
 \end{itemize}
 
-\textbf{Physical Interpretation:} Because the live CFD simulation is a spatially developing duct ($\partial U/\partial x \ne 0$) with interactive velocity feedback, whereas the DNS benchmark is an idealized periodic box, live CFD states experience modest joint distribution shift. However, with a median gap of $< 0.25$ standard deviations, the CFD operating points remain closely clustered around training states, preventing unphysical tensor extrapolations while avoiding oversimplified claims of ``zero distribution shift.''
+\textbf{Physical Interpretation:} Because the live CFD simulation is a spatially developing duct ($\partial U/\partial x \ne 0$) with interactive velocity feedback, whereas the DNS benchmark is an idealized periodic box, live CFD states experience modest joint distribution shift. However, with a median gap of $< 0.25$ standard deviations, the CFD operating points remain closely clustered around the training states, indicating limited distributional extrapolation and reducing concern about severe out-of-distribution tensor predictions, while avoiding oversimplified claims of ``zero distribution shift.'''
 
 \section{Honest Discussion of Limitations \& Model-Form Uncertainty}
 \label{sec:limitations}

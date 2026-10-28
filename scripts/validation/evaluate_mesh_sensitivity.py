@@ -261,11 +261,11 @@ def run_mesh_sensitivity_study(repo_root: Path):
     print('================================================================================')
     print('| Parameter / Metric | Coarse Mesh (20x20) | Refined Mesh (40x40) | Relative Delta | DNS Reference |')
     print('| :--- | :---: | :---: | :---: | :---: |')
-    print(f"| **Cross-Sectional Grid** | 20 x 20 (400 cells) | 40 x 40 (1600 cells) | 4x Refinement | 65 x 65 (DNS) |")
-    print(f"| **Total Mesh Cells** | 20,000 cells | 80,000 cells | 4x Refinement | N/A |")
+    print(f"| **Cross-Sectional Grid** | 20 × 20 (400 cells) | 40 × 40 (1600 cells) | 4× Refinement | 65 × 65 (DNS) |")
+    print(f"| **Total Mesh Cells** | 20,000 cells | 80,000 cells | 4× Refinement | N/A |")
     delta_vmax = (vmax_f - vmax_c) / vmax_c * 100.0
     print(f"| **Peak Secondary V_sec / Ub** | {vmax_c*100:.2f}% | {vmax_f*100:.2f}% | {delta_vmax:+.1f}% | **{dns_vmax_ratio*100:.2f}%** |")
-    print(f"| **Q1 Core Position (y/h, z/h)** | ({core_c_y:.3f}, {core_c_z:.3f}) | ({core_f_y:.3f}, {core_f_z:.3f}) | Shift: {(dist_err_c - dist_err_f):+.3f} h | **({dns_core_y:.2f}, {dns_core_z:.2f})** |")
+    print(f"| **Q1 Core Position (y/h, z/h)** | ({core_c_y:.3f}, {core_c_z:.3f}) | ({core_f_y:.3f}, {core_f_z:.3f}) | Error reduction: {100.0 * (dist_err_f - dist_err_c) / dist_err_c:+.1f}% | **({dns_core_y:.2f}, {dns_core_z:.2f})** |")
     print(f"| **Core Localization Error** | {dist_err_c:.3f} h | {dist_err_f:.3f} h | {(dist_err_f - dist_err_c):+.3f} h | **0.000 h (Ref)** |")
     print(f"| **Vortex Cores Detected** | {len(cores_c)} cores | {len(cores_f)} cores | Stable (8 cores) | **8 cores** |")
     delta_rmse = (rmse_f - rmse_c) / rmse_c * 100.0
