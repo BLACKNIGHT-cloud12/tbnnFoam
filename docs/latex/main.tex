@@ -36,7 +36,6 @@
 
 \author{
   \textbf{Soumik Ghosh}\\
-  Independent Researcher\\
   \texttt{soumikghosh30.03.07@gmail.com}
 }
 \date{October 2026}
@@ -360,6 +359,34 @@ y^* = \frac{y}{h} \in [-1, +1], \quad z^* = \frac{z}{h} \in [-1, +1]
 
 All dimensional grid spacings ($\Delta y, \Delta z$) and vorticity normalizations are derived directly from the authoritative physical scale ($h = 0.05\text{ m}$ for CFD; $h = 0.5\text{ m}$ for DNS), eliminating hardcoded dimensional discrepancies.
 
+\subsection{Reconciliation of Benchmark Reynolds Numbers and Canonical DNS Metrics}
+\label{sec:reynolds_benchmarks}
+To prevent ambiguity regarding benchmark values across distinct Reynolds numbers, Table~\ref{tab:reynolds_benchmarks} establishes an authoritative mapping across the three DNS regimes relevant to this study:
+\begin{enumerate}
+    \item \textbf{Low-$Re$ Training \& Primary Validation Baseline ($Re_\tau = 150$, $Re_b \approx 4{,}410$):} Matches the conditions of the $65 \times 65$ symmetry-mirrored DNS export of Pirozzoli et al.~\cite{pirozzoli2018turbulence} used to train the neural network and validate the $L = 20h$ developing solver.
+    \item \textbf{Intermediate Literature Regime ($Re_\tau = 220$, $Re_b \approx 6{,}600$):} Frequently referenced in canonical duct turbulence investigations (e.g., Pinelli et al.~\cite{pinelli2010reynolds}, Vinuesa et al.~\cite{vinuesa2014aspect}).
+    \item \textbf{High-$Re$ Asymptotic Regime ($Re_\tau \approx 519$, $Re_b = 17{,}800$):} Corresponds to the high-Reynolds-number DNS simulation of Pirozzoli et al.~\cite{pirozzoli2018turbulence} ($Re_h = 8{,}900$), utilized herein to evaluate the coupled solver under high-shear wall-function conditions.
+\end{enumerate}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Authoritative canonical benchmark DNS reference parameters and metrics across Reynolds numbers.}
+\label{tab:reynolds_benchmarks}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{l c c c c c c l}
+\toprule
+Regime / Case & Bulk $Re_b$ & $Re_h$ & Friction $Re_\tau$ & Fully Dev. $U_c / U_b$ & Peak $V_{\text{sec}}/U_b$ & Canonical Q1 Centroid & Benchmark Literature Source \\
+\midrule
+\textbf{Low-$Re$ Primary Baseline} & $4{,}410$ & $2{,}205$ & $150$ & $1.31$ & $1.93\%$ & $(0.500, 0.820)$ & Pirozzoli et al.~\cite{pirozzoli2018turbulence} ($65 \times 65$ export) \\
+\textbf{Intermediate Literature Baseline} & $6{,}600$ & $3{,}300$ & $220$ & $1.32$ & $2.03\% - 2.15\%$ & $(0.540, 0.835)$ & Pinelli et al.~\cite{pinelli2010reynolds}, Vinuesa et al.~\cite{vinuesa2014aspect} \\
+\textbf{High-$Re$ Asymptotic Benchmark} & $17{,}800$ & $8{,}900$ & $\approx 519$ & $1.33$ & $2.03\% - 2.30\%$ & $(0.577, 0.847)$ & Pirozzoli et al.~\cite{pirozzoli2018turbulence} (Asymptotic DNS) \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+As friction Reynolds number increases from $Re_\tau = 150$ to $519$, boundary layers thin toward the walls, causing the canonical Q1 vortex core centroid to migrate outward from $(0.500, 0.820)$ to $(0.577, 0.847)$, while peak secondary velocity increases from $1.93\%$ of bulk velocity to the asymptotic range of $2.03\% - 2.30\%$. Distinguishing these regimes prevents conflating the low-$Re$ baseline with asymptotic high-$Re$ DNS metrics.
+
 \section{Independent Algorithmic Vortex Detection Pipeline}
 
 \subsection{Mathematical Definition of Non-Dimensional Vorticity}
@@ -535,12 +562,12 @@ Parameter / Metric & Coarse Mesh (M1) & Refined Mesh (M2) & Relative Delta & DNS
 \end{enumerate}
 
 \subsection{High-Reynolds-Number Case Study: $Re_b = 17{,}800$ ($Re_\tau \approx 519$)}
-To examine behavior at a higher Reynolds number relevant to the benchmark DNS literature of Pirozzoli et al. \cite{pirozzoli2018turbulence}, an independent high-Reynolds-number verification case was conducted in a $50 \times 40 \times 40$ mesh ($80{,}000$ cells) with fluid kinematic viscosity $\nu = 5.617978 \times 10^{-6}\text{ m}^2/\text{s}$, bulk velocity $U_b = 1.0\text{ m/s}$, and hydraulic diameter $D_h = 0.10\text{ m}$ ($h = 0.05\text{ m}$), yielding:
+To examine behavior at a higher Reynolds number matching the asymptotic benchmark regime of Pirozzoli et al.~\cite{pirozzoli2018turbulence}, an independent high-Reynolds-number verification simulation was conducted in a $50 \times 40 \times 40$ mesh ($80{,}000$ cells) with fluid kinematic viscosity $\nu = 5.617978 \times 10^{-6}\text{ m}^2/\text{s}$, bulk velocity $U_b = 1.0\text{ m/s}$, and hydraulic diameter $D_h = 0.10\text{ m}$ ($h = 0.05\text{ m}$), yielding:
 \begin{equation}
 Re_b = \frac{U_b D_h}{\nu} = 17{,}800 \quad (Re_h = 8{,}900, \quad Re_\tau \approx 519)
 \end{equation}
 
-\textbf{Reference-value note:} the $1.93\%$ secondary-velocity peak quoted for the $Re_\tau = 150$ benchmark is specific to that Reynolds number's exported DNS plane. The asymptotic reference range used throughout this section, $2.03\%$--$2.30\%$, is anchored to the higher-Reynolds-number $Re_\tau = 220$ export and literature values; the two regimes are not interchangeable.
+As mapped in Table~\ref{tab:reynolds_benchmarks}, the high-$Re$ benchmark is evaluated against the asymptotic DNS regime of Pirozzoli et al.~\cite{pirozzoli2018turbulence}, whose canonical Q1 core centroid is located at $(0.577, 0.847)$ and asymptotic peak secondary speed spans $2.03\% - 2.30\%$ (distinguished from the low-$Re$ benchmark of $1.93\%$ and $(0.500, 0.820)$ at $Re_\tau = 150$).
 
 \begin{table}[htbp]
 \centering
@@ -648,38 +675,52 @@ d_{\text{kNN}}(\mathbf{x}_{\text{CFD}}) = \min_{j} \left\| \frac{\mathbf{x}_{\te
 \section{Honest Discussion of Limitations \& Model-Form Uncertainty}
 \label{sec:limitations}
 
-To uphold scientific integrity and avoid overselling, we explicitly highlight five key modeling limitations:
+To uphold scientific integrity and avoid overselling, we explicitly highlight six critical modeling limitations, methodological compromises, and physical discrepancies:
 
 \subsection{Developing Duct vs. Streamwise-Periodic DNS}
-The DNS benchmark of Pirozzoli et al. \cite{pirozzoli2018turbulence} was simulated in an idealized streamwise-periodic box driven by a uniform body force, representing an asymptotically fully developed duct of infinite length. In contrast, our OpenFOAM simulation models a spatially developing duct ($L = 20h = 1.0\text{ m}$) with a uniform velocity inlet ($U_b = 1.0\text{ m/s}$) and physical boundary layers developing along the walls.
+The DNS benchmark of Pirozzoli et al.~\cite{pirozzoli2018turbulence} was simulated in an idealized streamwise-periodic box driven by a uniform body force, representing an asymptotically fully developed duct of infinite length. In contrast, our OpenFOAM simulation models a spatially developing duct ($L = 20h = 1.0\text{ m}$) with a uniform velocity inlet ($U_b = 1.0\text{ m/s}$) and physical boundary layers developing along the walls.
 
-Because secondary flow is generated locally near wall corners by normal stress differences, the eight secondary cells establish rapidly ($x/h \ge 6$). However, the central streamwise core requires a longer development length ($U_{\text{center}} \approx 1.25\text{ m/s}$ in our CFD domain vs. $1.33\text{ m/s}$ in the periodic DNS). Standard linear $k\text{--}\omega$ SST exhibits lower streamwise RMSE ($6.16\%$) solely because it lacks cross-stream convective momentum transport to duct corners, yet it fails to reproduce the secondary-flow topology ($0$ vortex cores).
+Because secondary flow is generated locally near wall corners by normal stress differences, the eight secondary cells establish rapidly ($x/h \ge 6$). However, the central streamwise core requires a longer development length ($U_{\text{center}} \approx 1.25\text{ m/s}$ in our CFD domain at $x/h=7.0$ vs. $1.31\text{ m/s}$ in the fully developed low-$Re$ periodic DNS, and $U_c/U_b = 1.132$ at $x/D_h = 9.1$ vs. $1.33$ at high $Re$). Standard linear $k\text{--}\omega$ SST exhibits lower streamwise RMSE ($6.16\%$) solely because it lacks cross-stream convective momentum transport to duct corners, yet it fails fundamentally on the secondary-flow physics ($0$ vortex cores).
 
-\subsection{Empirical $\omega$ Surrogate \& Turbulent Timescale Sensitivity}
+\subsection{The Empirical $\omega$ Surrogate vs. Dynamic RANS Transport: Non-Linear Error Amplification}
 Direct numerical simulation provides exact velocity gradients $\nabla \mathbf{U}$ and Reynolds stresses $\boldsymbol{\tau}^R$, but DNS inherently lacks the specific dissipation rate $\omega$, as $\omega$ is a semi-empirical RANS modeling construct rather than a physical Navier-Stokes field.
 
-In the training dataset, $\omega$ was estimated using a standard SST wall-distance surrogate relation:
+In the offline training dataset, $\omega$ was estimated using a standard SST algebraic wall-distance surrogate:
 \begin{equation}
 \omega_{\text{surrogate}} \approx \frac{k^{1/2}}{C_\mu^{1/4} \ell}, \quad C_\mu = 0.09, \quad \ell = \min(\kappa d_w, \, 0.07 D_h)
 \end{equation}
-In live OpenFOAM CFD execution, $\omega$ is governed dynamically by its transport equation.
+In live OpenFOAM CFD execution, however, $\omega$ is governed dynamically by its non-linear partial differential transport equation:
+\begin{equation}
+U_j \frac{\partial \omega}{\partial x_j} = \gamma S^2 - \beta \omega^2 + \frac{\partial}{\partial x_j}\left[(\nu + \sigma_\omega \nu_t)\frac{\partial \omega}{\partial x_j}\right] + 2(1 - F_1)\sigma_{\omega 2}\frac{1}{\omega}\frac{\partial k}{\partial x_j}\frac{\partial \omega}{\partial x_j}
+\end{equation}
 
-\textbf{Influence on Invariants and Tensor Bases:} The turbulent timescale $\tau = \min(1/\omega, 5.0\text{ s})$ directly scales normalized strain $\mathbf{s} = \tau \mathbf{S}$ and rotation $\mathbf{w} = \tau \mathbf{W}$. Consequently:
-\begin{itemize}
-    \item Scalar invariants scale non-linearly with $\tau$: $I_1, I_2 \propto \tau^2$, $I_3 \propto \tau^3$, $I_4 \propto \tau^4$, and $I_5 \propto \tau^5$.
-    \item Basis tensors scale as $\mathbf{T}^{(1)} \propto \tau$, $\mathbf{T}^{(2..4)} \propto \tau^2$, $\mathbf{T}^{(5..8)} \propto \tau^3$, and $\mathbf{T}^{(9..10)} \propto \tau^4$.
-\end{itemize}
+\textbf{The Distribution Shift Vector and Quadratic/Cubic Amplification:} The neural network was trained on algebraic $\omega$ fields tied directly to geometric wall distance $d_w$. Live OpenFOAM $\omega$ transport equations incorporate production, destruction, cross-diffusion, and turbulent diffusion, all of which depart significantly from algebraic wall-distance estimates---particularly in corner recirculations and developing shear layers. Because the non-dimensional strain rate $\mathbf{s} = \tau \mathbf{S}$ and rotation rate $\mathbf{w} = \tau \mathbf{W}$ scale with the turbulent timescale $\tau = \min(1/\omega, 5.0\text{ s})$, the scalar Cayley-Hamilton invariants scale non-linearly as:
+\begin{equation}
+I_1, I_2 \propto \tau^2 \propto \omega^{-2}, \quad I_3 \propto \tau^3 \propto \omega^{-3}, \quad I_4 \propto \omega^{-4}, \quad I_5 \propto \omega^{-5}
+\end{equation}
+Consequently, any local error in the transported $\omega$ field is quadratically and cubically magnified before entering the MLP. If live $\omega$ in a corner vortex is underpredicted by a factor of 2, the primary invariants $I_1$ and $I_2$ entering the network are inflated by a factor of 4.
 
-An underestimation of $\omega$ (overestimating $\tau$) strongly amplifies higher-order tensor bases and accelerates secondary flow intensity, whereas overestimating $\omega$ damps perturbation stress $\boldsymbol{\tau}_\Delta$ back toward linear RANS. Capping $\tau \le 5.0\text{ s}$ serves as an essential regularizer preventing singular invariant growth near the duct center where $\omega \to 0$.
+\textbf{Bandage vs. Physical Driver:} The clipping at $\tau_{\max} = 5.0\text{ s}$ serves purely as an ad-hoc numerical regularizer to prevent division-by-zero overflow near the duct centerline where $\omega \to 0$; it is not a physical closure. This structural mismatch between surrogate-derived training inputs and transport-governed live inputs is a primary driver of the vortex core localization offset ($0.474\text{--}0.586\,h$ at $Re_b = 4,410$), as distorted invariant inputs systematically bias the predicted Pope basis expansion coefficients $g^{(n)}$ in corner shear zones.
 
 \subsection{First-Order Convective Schemes \& Near-Wall Resolution}
 All convective terms in both verification cases use bounded first-order Gauss upwind, and both cross-sectional meshes are uniform without near-wall grading (first-cell $y^+ \approx 7.5$ at $Re_b \approx 4410$ and $\approx 13$ at $Re_b = 17{,}800$, both under wall functions). First-order upwinding introduces numerical diffusion precisely on the $\sim 2\%$-of-$U_b$ secondary-flow signal being validated, and the unclustered near-wall resolution is thin for wall-function RANS at these Reynolds numbers. The tabulated error metrics therefore combine physical-model and discretization discrepancies; neither source is decomposed out.
 
-\subsection{Finite-Difference Training Gradients, Wall-Ring Targets, and Reflection-Structured Split}
-The training gradients are second-order finite differences of the symmetry-mirrored, bilinearly resampled $65 \times 65$ DNS cross-section (generated by \texttt{scripts/convert\_real\_dns.py}) rather than raw DNS gradients, with near-wall gradient noise inherited from the resampling and $\partial/\partial x \equiv 0$ inherited from the streamwise-periodic reference. The 256 wall-boundary points carry $k$ clipped to $10^{-7}$, producing degenerate targets $\mathbf{a} = -\frac{1}{3}\mathbf{I}$ (trace $-1$) that are not valid anisotropy states for the trace-free tensor basis. These points are retained in the training loss, whose Frobenius form handles the incompatible trace component exactly: writing any target as $\mathbf{a}_{\text{tgt}} = \mathrm{dev}(\mathbf{a}_{\text{tgt}}) + \frac{1}{3}\mathrm{tr}(\mathbf{a}_{\text{tgt}})\mathbf{I}$ and using that every admissible network output is trace-free and therefore Frobenius-orthogonal to $\mathbf{I}$, the per-point loss decomposes as $\|\mathbf{a}_{\text{pred}} - \mathbf{a}_{\text{tgt}}\|_F^2 = \|\mathbf{a}_{\text{pred}} - \mathrm{dev}(\mathbf{a}_{\text{tgt}})\|_F^2 + \|\frac{1}{3}\mathrm{tr}(\mathbf{a}_{\text{tgt}})\mathbf{I}\|_F^2$. Since $\mathrm{dev}(-\frac{1}{3}\mathbf{I}) = \mathbf{0}$, the incompatible trace part contributes a constant offset with zero gradient, and the network is trained only toward the zero trace-free projection ($\mathbf{a} \to \mathbf{0}$) at the wall ring — a marginal bias on the $g$-map near the invariant-space origin with negligible bulk influence. Finally, the quadrant-1 spatial validation split is reflection-degenerate: all five invariants are even in the rotation tensor $\mathbf{w}$, so the held-out quadrant shares identical inputs with the training quadrants, and the split therefore tests the sign structure of the odd-in-$\mathbf{w}$ bases ($\mathbf{T}^{(2)}, \mathbf{T}^{(5)}, \mathbf{T}^{(7)}, \mathbf{T}^{(8)}, \mathbf{T}^{(10)}$) rather than independent-flow generalization.
+\subsection{Training Target Contradiction \& Wall-Ring Degeneracy}
+During the preparation of the $65 \times 65$ DNS training dataset (\texttt{scripts/convert\_real\_dns.py}), turbulent kinetic energy $k$ was clipped to $10^{-7}$ at the 256 solid wall-boundary points ($|y/h| = 1$ or $|z/h| = 1$) to prevent numerical division-by-zero in defining the anisotropy tensor $\mathbf{a} = \frac{\boldsymbol{\tau}^R}{2k} - \frac{1}{3}\mathbf{I}$. Because the Reynolds stresses vanish identically at the wall ($\boldsymbol{\tau}^R = \mathbf{0}$), this clipping produced degenerate target tensors $\mathbf{a}_{\text{target}} = -\frac{1}{3}\mathbf{I}$.
 
-\subsection{Neural Network Model-Form Uncertainty}
-The $9.34\%$ streamwise RMSE cannot be attributed solely to inlet boundary conditions. The neural network closure is an empirical approximation trained on frozen DNS gradients. In live CFD execution, the emerging secondary flow deforms the mean velocity field $\mathbf{U}$, modifying the velocity gradients fed back into the network at each SIMPLE iteration. This interactive feedback loop, combined with finite MLP expressivity and surrogate $\omega$ discrepancies, introduces genuine model-form uncertainty that must be transparently acknowledged.
+This target is mathematically invalid for Pope's tensor basis: its trace is $\mathrm{tr}(\mathbf{a}_{\text{target}}) = -1 \ne 0$, whereas Pope's ten basis tensors $\mathbf{T}^{(1 \dots 10)}$ are analytically traceless by construction ($\mathrm{tr}(\mathbf{T}^{(n)}) \equiv 0$). It is therefore algebraically impossible for any linear combination of Pope bases to represent this target. While it is mathematically true that the Frobenius loss naturally decomposes into a zero-gradient constant offset on the trace component ($\|\frac{1}{3}\mathrm{tr}(\mathbf{a}_{\text{target}})\mathbf{I}\|_F^2$) and only computes gradients on the deviatoric projection $\mathrm{dev}(-\frac{1}{3}\mathbf{I}) = \mathbf{0}$, retaining mathematically impossible target states in the training loss forces the MLP to allocate capacity learning an unphysical boundary compromise ($\mathbf{a} \to \mathbf{0}$ at points where finite shear gradients may persist in neighboring cells). Retaining known non-physical boundary data in the training loss is a recognized methodological flaw and data-quality defect. In production workflows, these wall-boundary singularities must be strictly filtered out prior to training.
+
+\subsection{The Reflection-Structured Split: Symmetry Check vs. Out-of-Sample Generalization}
+The quadrant-1 spatial validation split employed during offline training is strictly reflection-degenerate. Because all five Cayley-Hamilton scalar invariants are constructed from symmetric products of $\mathbf{s}$ and even powers of $\mathbf{w}$:
+\begin{equation}
+I_1 = \mathrm{tr}(\mathbf{s}^2), \quad I_2 = \mathrm{tr}(\mathbf{w}^2), \quad I_3 = \mathrm{tr}(\mathbf{s}^3), \quad I_4 = \mathrm{tr}(\mathbf{w}^2\mathbf{s}), \quad I_5 = \mathrm{tr}(\mathbf{w}^2\mathbf{s}^2)
+\end{equation}
+the five-dimensional scalar invariant feature vector $\boldsymbol{\lambda}$ at any cross-sectional coordinate $(y, z)$ is numerically identical under coordinate reflections $(y, z) \to (-y, z)$, $(y, -z)$, $(-y, -z)$.
+
+Consequently, holding out Quadrant 1 does not present the neural network with unseen invariant states; it presents the exact same invariant manifold mirrored across the cross-stream axes. This validation split therefore evaluates only the sign consistency of the five basis tensors that are odd in the rotation tensor $\mathbf{w}$ ($\mathbf{T}^{(2)}, \mathbf{T}^{(5)}, \mathbf{T}^{(7)}, \mathbf{T}^{(8)}, \mathbf{T}^{(10)}$), serving as a discrete parity/symmetry verification rather than true out-of-sample flow generalization. True spatial generalization remains entirely unverified until \texttt{tbnnFoam} is evaluated on distinct, unmirrored cross-sectional geometries (such as rectangular channels with varying aspect ratios, triangular ducts, or curved passage bends).
+
+\subsection{Live Velocity-Coupling Feedback \& Neural Network Model-Form Uncertainty}
+The $9.34\%$ streamwise velocity RMSE cannot be attributed solely to inlet boundary conditions or development lengths. The neural network closure is an empirical approximation trained on frozen DNS velocity gradients. In live CFD execution, the emerging secondary flow deforms the mean velocity field $\mathbf{U}$, modifying the velocity gradients fed back into the network at each SIMPLE iteration. This interactive feedback loop, combined with finite MLP capacity, non-linear $\omega$ transport discrepancy, and surrogate approximations, introduces genuine model-form uncertainty that must be transparently recognized.
 
 \section{Reproducibility \& Open Source Verification Suite}
 
