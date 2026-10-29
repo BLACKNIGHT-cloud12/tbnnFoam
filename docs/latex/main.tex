@@ -51,9 +51,9 @@ In this work, we present an in-situ coupled CFD solver, \texttt{tbnnFoam}, imple
 
 We validate the coupled solver on developing turbulent flow in a square duct at bulk Reynolds number $Re_b \approx 4410$ ($Re_\tau = 150$) against high-fidelity Direct Numerical Simulation (DNS; Pirozzoli et al., \textit{J.~Fluid Mech.}, 2018). An independent algorithmic vortex detector employing connected-component labeling on non-dimensional axial vorticity ($\omega_x^* = \omega_x / (U_b / h)$) confirms that \texttt{tbnnFoam} structurally recovers the secondary-flow mechanism by identifying all eight counter-rotating secondary recirculation cells where the standard linear $k\text{--}\omega$ SST closure tested here fails to reproduce the secondary-flow topology (detecting zero vortex cores).
 
-Critically, this constitutes a \textbf{partial validation}: while secondary circulation topology is successfully recovered, vortex core localization exhibits notable offset ($0.567\,h$ error on the coarse mesh and $0.447\,h$ on the refined mesh against the raw-field-verified DNS reference $(0.577, 0.847)$), and peak secondary speed exhibits strong discretization sensitivity, decreasing from $7.99\%$ to $2.62\%$ (relative to the raw-field DNS peak of $1.93\%$). We emphasize that structural recovery does not establish accurate pointwise vortex localization or full quantitative agreement with periodic DNS.
+The outcome is a \textbf{partial validation}: while secondary circulation topology is recovered, vortex core localization exhibits notable offset ($0.567\,h$ error on the coarse mesh and $0.447\,h$ on the refined mesh against the raw-field-verified DNS reference $(0.577, 0.847)$), and peak secondary speed exhibits strong discretization sensitivity, decreasing from $7.99\%$ to $2.62\%$ (relative to the raw-field DNS peak of $1.93\%$). We emphasize that structural recovery does not establish accurate pointwise vortex localization or full quantitative agreement with periodic DNS.
 
-Furthermore, we avoid overstating predictive performance and conduct an honest, in-depth evaluation of model limitations and physical discrepancies:
+Four limitations of the present implementation deserve emphasis before the results are interpreted:
 \begin{enumerate}
     \item \textbf{Velocity Discrepancy:} The streamwise velocity Normalized Root-Mean-Square Error ($\mathrm{NRMSE}_U$) is $9.34\%$ ($0.0934\text{ m/s}$ relative to bulk velocity $U_b = 1.0\text{ m/s}$). This discrepancy is consistent with a combined influence of entrance-length spatial boundary-layer development in the CFD domain ($L = 20h$) relative to the streamwise-periodic DNS box, alongside genuine neural-network model-form uncertainty under live pressure--velocity coupling.
     \item \textbf{Timescale Surrogate Sensitivity:} Direct numerical simulation provides exact velocity gradients and Reynolds stresses but inherently lacks the specific dissipation rate $\omega$. We examine the role of the semi-empirical $\omega$ surrogate and prove that because Cayley-Hamilton invariants scale non-linearly with turbulent timescale $\tau = \min(1/\omega, 5.0\text{ s})$ ($I_1, I_2 \propto \tau^2$; $I_3 \propto \tau^3$), timescale estimation errors directly modulate secondary circulation intensity.
@@ -73,7 +73,7 @@ All solver sources, evaluation scripts, raw DNS benchmark data, and an automated
 
 \section{Introduction}
 
-Turbulent flows in non-circular ducts and channels are characterized by secondary motions of the second kind \cite{prandtl1926ausgebildete}. Although secondary velocities typically represent only $1\%\text{--}3\%$ of the bulk streamwise velocity, they exert a profound influence on momentum redistribution, wall shear stress profiles, and heat transfer enhancement across engineering applications, including nuclear fuel assemblies, gas turbine blade cooling passages, heat exchangers, and non-circular pipelines \cite{gessner1973origin, brundrett1964production}.
+Turbulent flows in non-circular ducts and channels are characterized by secondary motions of the second kind \cite{prandtl1926ausgebildete}. Although secondary velocities typically represent only $1\%\text{--}3\%$ of the bulk streamwise velocity, they strongly shape momentum redistribution, wall shear stress profiles, and heat transfer in engineering applications such as nuclear fuel assemblies, gas turbine blade cooling passages, heat exchangers, and non-circular pipelines \cite{gessner1973origin, brundrett1964production}.
 
 \subsection{Failure of Linear Eddy Viscosity Models}
 In standard Reynolds-Averaged Navier-Stokes (RANS) closures, the linear Boussinesq hypothesis approximates the deviatoric Reynolds stress anisotropy tensor $\mathbf{a}$ as linearly proportional to the mean strain rate tensor $\mathbf{S}$:
@@ -93,19 +93,19 @@ Because linear eddy viscosity closures enforce isotropic normal stresses in pure
 \subsection{Non-Linear Tensor Closures and Machine Learning}
 To overcome this fundamental limitation, classical algebraic non-linear stress models (e.g., Speziale \cite{speziale1991analytical}; Craft et al. \cite{craft1996development}; Wallin \& Johansson \cite{wallin2000explicit}) incorporated higher-order tensor polynomial expansions. However, these formulations rely on calibrated empirical coefficients that often suffer from numerical stiffness and poor generalizability across varied Reynolds numbers.
 
-Machine learning offers a compelling data-driven paradigm to extract non-linear constitutive relations directly from high-fidelity Direct Numerical Simulation (DNS) and Large Eddy Simulation (LES) datasets \cite{vinuesa2014aspect, pirozzoli2018turbulence}. Ling et al. \cite{ling2016reynolds} demonstrated that standard multi-layer perceptrons (MLPs) operating on raw velocity gradients violate Galilean and rotational frame-invariance. To enforce rotational invariance strictly by construction, Ling et al. proposed the Tensor Basis Neural Network (TBNN), which embeds Pope's \cite{pope1975more} integrity tensor basis into the network architecture.
+Machine learning offers a data-driven route to extracting non-linear constitutive relations directly from high-fidelity Direct Numerical Simulation (DNS) and Large Eddy Simulation (LES) datasets \cite{vinuesa2014aspect, pirozzoli2018turbulence}. Ling et al. \cite{ling2016reynolds} demonstrated that standard multi-layer perceptrons (MLPs) operating on raw velocity gradients violate Galilean and rotational frame-invariance. To enforce rotational invariance strictly by construction, Ling et al. proposed the Tensor Basis Neural Network (TBNN), which embeds Pope's \cite{pope1975more} integrity tensor basis into the network architecture.
 
 \subsection{Challenges in In-Situ Live CFD Coupling}
-While a priori evaluations of TBNN closures (evaluating stress predictions on frozen DNS velocity fields) have shown outstanding accuracy, live \textit{in-situ} coupling of data-driven models within Navier-Stokes solvers introduces severe challenges:
+While a priori evaluations of TBNN closures (evaluating stress predictions on frozen DNS velocity fields) have shown good accuracy, live \textit{in-situ} coupling of data-driven models within Navier-Stokes solvers introduces severe challenges:
 \begin{enumerate}
     \item \textbf{Numerical Stability \& Divergence:} Coupling non-linear anisotropic Reynolds stress divergences explicitly into the momentum equations frequently destabilizes the pressure-velocity coupling loop (e.g., SIMPLE or PISO), degrading diagonal dominance.
-    \item \textbf{Physical Realizability Violations:} Unconstrained neural network predictions can yield unphysical, negative normal stresses (violating the Lumley triangle bounds), leading to catastrophic solver divergence.
+    \item \textbf{Physical Realizability Violations:} Unconstrained neural network predictions can yield unphysical, negative normal stresses (violating the Lumley triangle bounds), and can destabilize the solution.
     \item \textbf{Distribution Shift \& A Posteriori Feedback:} During live CFD execution, the predicted anisotropic stresses deform the mean velocity field $\mathbf{U}$, modifying the velocity gradients fed back into the network at subsequent iterations. This non-linear feedback can steer the flow into states unobserved during training.
-    \item \textbf{Implementation \& Dependency Overhead:} Modern deep learning libraries (e.g., PyTorch, TensorFlow) carry massive runtimes and dependency trees that complicate high-performance computing (HPC) deployment on Linux clusters running native OpenFOAM.
+    \item \textbf{Implementation \& Dependency Overhead:} Modern deep learning libraries (e.g., PyTorch, TensorFlow) carry large runtimes and deep dependency trees that complicate high-performance computing (HPC) deployment on Linux clusters running native OpenFOAM.
 \end{enumerate}
 
 \subsection{Scope and Contributions of this Study}
-In this work, we address these challenges through an open, reproducible, and critically validated OpenFOAM implementation (\texttt{tbnnFoam}). Rather than overclaiming predictive capabilities or advertising a ``universal'' turbulence model, we focus on rigorous verification, honest physical validation, and transparent reporting of discrepancies:
+In this work, we address these challenges through an open, reproducible, and critically validated OpenFOAM implementation (\texttt{tbnnFoam}). Rather than advertise a ``universal'' turbulence model, the work concentrates on verification, physical validation, and transparent reporting of discrepancies:
 \begin{itemize}
     \item We formulate a stable momentum coupling pipeline that isolates the non-linear perturbation stress $\boldsymbol{\tau}_\Delta = 2k\mathbf{a} + 2\nu_t \mathbf{S}$, injecting only the deviatoric anisotropic divergence while retaining implicit linear diffusion for numerical stability.
     \item We implement a dual-engine architecture featuring both an embedded LibTorch C++ runtime and a zero-dependency standalone C++ evaluator utilizing an analytical Cardano cubic eigensolver for physical realizability enforcement.
@@ -435,7 +435,7 @@ By the $y \leftrightarrow z$ antisymmetry of $\omega_x^*$ for the square duct, t
 \section{Results \& Comparative Analysis}
 
 \subsection{Representational Capability vs. Physical Realization}
-In machine learning for fluid dynamics, it is essential to distinguish between \textbf{mathematical representational capability} and \textbf{coupled physical realization}:
+A distinction is needed between \textbf{mathematical representational capability} and \textbf{coupled physical realization}:
 \begin{itemize}
     \item Generating non-zero normal stress differences ($\overline{{w'}^2} - \overline{{v'}^2} \ne 0$) is an intrinsic mathematical feature of non-linear tensor expansions. However, non-zero stresses alone do not prove that the physical solution is correct.
     \item True physical validation requires coupling the non-linear divergence into OpenFOAM's live SIMPLE loop and demonstrating that:
@@ -654,7 +654,7 @@ Feature / Invariant & DNS Training Envelope & CFD Operating Range (20k Cells) & 
 \end{table}
 
 \subsection{Joint 5D Distribution Shift Diagnostic}
-Crucially, \textbf{1D marginal bounding does not guarantee joint manifold containment}. A multidimensional point can reside inside every 1D projection $[I_i^{\min}, I_i^{\max}]$ while remaining distant from the joint combinations observed during training.
+However, \textbf{1D marginal bounding does not guarantee joint manifold containment}. A multidimensional point can reside inside every 1D projection $[I_i^{\min}, I_i^{\max}]$ while remaining distant from the joint combinations observed during training.
 
 \begin{sloppypar}
 To quantify joint distribution shift, \path{scripts/validation/evaluate_timescale_distribution.py} computes the standardized Euclidean nearest-neighbor distance ($k$-NN) in the 5D invariant space normalized by training statistics:
@@ -675,7 +675,7 @@ d_{\text{kNN}}(\mathbf{x}_{\text{CFD}}) = \min_{j} \left\| \frac{\mathbf{x}_{\te
 \section{Honest Discussion of Limitations \& Model-Form Uncertainty}
 \label{sec:limitations}
 
-To uphold scientific integrity and avoid overselling, we explicitly highlight six critical modeling limitations, methodological compromises, and physical discrepancies:
+Six limitations, methodological compromises, and physical discrepancies deserve explicit statement:
 
 \subsection{Developing Duct vs. Streamwise-Periodic DNS}
 The DNS benchmark of Pirozzoli et al.~\cite{pirozzoli2018turbulence} was simulated in an idealized streamwise-periodic box driven by a uniform body force, representing an asymptotically fully developed duct of infinite length. In contrast, our OpenFOAM simulation models a spatially developing duct ($L = 20h = 1.0\text{ m}$) with a uniform velocity inlet ($U_b = 1.0\text{ m/s}$) and physical boundary layers developing along the walls.
