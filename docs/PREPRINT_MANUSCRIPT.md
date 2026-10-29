@@ -127,9 +127,9 @@ The architecture specifications are summarized in Table 2:
 | :--- | :--- | :--- |
 | **Input Dimension** | 5 features ($\lambda_1 \dots \lambda_5$) | Cayley-Hamilton scalar invariants |
 | **Hidden Layers** | 3 layers $\times$ 64 neurons | Balanced capacity without overfitting |
-| **Activation Function** | Exponential Linear Unit (ELU) | Continuous $C^1$ differentiability, avoids dead neurons |
+| **Activation Function** | Rectified Linear Unit (ReLU) | $\phi(z) = \max(0, z)$, standard piecewise linear activation |
 | **Output Dimension** | 10 coefficients ($g^{(1)} \dots g^{(10)}$) | Expansion weights for Pope bases $\mathbf{T}^{(1 \dots 10)}$ |
-| **Total Parameters** | 9,354 trainable parameters | Exact layer count:  + 4160 + 4160 + 650 = 9,354$ |
+| **Total Parameters** | 9,354 trainable parameters | Exact layer count: $384 + 4160 + 4160 + 650 = 9,354$ |
 | **Training Loss** | Root-Mean-Square Error on $\mathbf{a}$ | $\mathcal{L} = \frac{1}{N}\sum_{i=1}^N \|\mathbf{a}_{\text{pred}, i} - \mathbf{a}_{\text{DNS}, i}\|_F^2$ |
 
 *Table 2: Neural network topology and hyperparameters.*
