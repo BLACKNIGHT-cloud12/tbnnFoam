@@ -186,7 +186,7 @@ def main():
     q1_dev = [c for c in dev_cores if c['y'] > 0 and c['z'] > 0]
     if q1_dev:
         best_q1_dev = min(q1_dev, key=lambda c: np.sqrt((c['y'] - 0.577)**2 + (c['z'] - 0.847)**2))
-        d_err = np.sqrt((best_q1_dev['y'] - 0.50)**2 + (best_q1_dev['z'] - 0.82)**2)
+        d_err = np.sqrt((best_q1_dev['y'] - 0.577)**2 + (best_q1_dev['z'] - 0.847)**2)
         print(f"Q1 Downstream-Averaged Centroid (y/h, z/h) : ({best_q1_dev['y']:.3f}, {best_q1_dev['z']:.3f})  [DNS Ref: (0.577, 0.847), raw-field verified]")
         print(f"Q1 Averaged-Section Localization Error   : {d_err:.3f} h (~{d_err / dy_norm:.2f} grid cells on 40x40 mesh)")
         print(f"  (Note: Individual downstream station x/Dh=9.1 resolves centroid at (0.525, 0.875) with 0.060 h error)")

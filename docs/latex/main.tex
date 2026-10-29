@@ -364,7 +364,7 @@ All dimensional grid spacings ($\Delta y, \Delta z$) and vorticity normalization
 To prevent ambiguity regarding benchmark values across distinct Reynolds numbers, Table~\ref{tab:reynolds_benchmarks} establishes an authoritative mapping across the three DNS regimes relevant to this study:
 \begin{enumerate}
     \item \textbf{Low-$Re$ Training \& Primary Validation Baseline ($Re_\tau = 150$, $Re_b \approx 4{,}410$):} Matches the conditions of the $65 \times 65$ symmetry-mirrored DNS export of Pirozzoli et al.~\cite{pirozzoli2018turbulence} used to train the neural network and validate the $L = 20h$ developing solver.
-    \item \textbf{Intermediate Literature Regime ($Re_\tau = 220$, $Re_b \approx 6{,}600$):} Frequently referenced in canonical duct turbulence investigations (e.g., Pinelli et al.~\cite{pinelli2010reynolds}, Vinuesa et al.~\cite{vinuesa2014aspect}).
+    \item \textbf{Intermediate Literature Regime ($Re_\tau = 220$, $Re_b \approx 7{,}000$):} Frequently referenced in canonical duct turbulence investigations (e.g., Pinelli et al.~\cite{pinelli2010reynolds}, Vinuesa et al.~\cite{vinuesa2014aspect}).
     \item \textbf{High-$Re$ Asymptotic Regime ($Re_\tau \approx 519$, $Re_b = 17{,}800$):} Corresponds to the high-Reynolds-number DNS simulation of Pirozzoli et al.~\cite{pirozzoli2018turbulence} ($Re_h = 8{,}900$), utilized herein to evaluate the coupled solver under high-shear wall-function conditions.
 \end{enumerate}
 
@@ -378,14 +378,14 @@ To prevent ambiguity regarding benchmark values across distinct Reynolds numbers
 \toprule
 Regime / Case & Bulk $Re_b$ & $Re_h$ & Friction $Re_\tau$ & Fully Dev. $U_c / U_b$ & Peak $V_{\text{sec}}/U_b$ & Canonical Q1 Centroid & Benchmark Literature Source \\
 \midrule
-\textbf{Low-$Re$ Primary Baseline} & $4{,}410$ & $2{,}205$ & $150$ & $1.31$ & $1.93\%$ & $(0.500, 0.820)$ & Pirozzoli et al.~\cite{pirozzoli2018turbulence} ($65 \times 65$ export) \\
-\textbf{Intermediate Literature Baseline} & $6{,}600$ & $3{,}300$ & $220$ & $1.32$ & $2.03\% - 2.15\%$ & $(0.540, 0.835)$ & Pinelli et al.~\cite{pinelli2010reynolds}, Vinuesa et al.~\cite{vinuesa2014aspect} \\
-\textbf{High-$Re$ Asymptotic Benchmark} & $17{,}800$ & $8{,}900$ & $\approx 519$ & $1.33$ & $2.03\% - 2.30\%$ & $(0.577, 0.847)$ & Pirozzoli et al.~\cite{pirozzoli2018turbulence} (Asymptotic DNS) \\
+\textbf{Low-$Re$ Primary Baseline} & $4{,}410$ & $2{,}205$ & $150$ & $1.32$ & $1.93\%$ & $(0.577, 0.847)$ & Pirozzoli et al.~\cite{pirozzoli2018turbulence} (raw export, verified) \\
+\textbf{Intermediate Export Baseline} & $7{,}000$ & $3{,}500$ & $220$ & $1.30$ & $2.03\%$ & $(0.737, 0.896)$ & Pirozzoli et al.~\cite{pirozzoli2018turbulence} (raw export, verified) \\
+\textbf{High-$Re$ Asymptotic Benchmark} & $17{,}800$ & $8{,}900$ & $\approx 519$ & $1.33$ & $2.03\% - 2.30\%$ & not exported & literature \\
 \bottomrule
 \end{tabular}}
 \end{table}
 
-As friction Reynolds number increases from $Re_\tau = 150$ to $519$, boundary layers thin toward the walls, causing the canonical Q1 vortex core centroid to migrate outward from $(0.500, 0.820)$ to $(0.577, 0.847)$, while peak secondary velocity increases from $1.93\%$ of bulk velocity to the asymptotic range of $2.03\% - 2.30\%$. Distinguishing these regimes prevents conflating the low-$Re$ baseline with asymptotic high-$Re$ DNS metrics.
+The two raw exports bound the Reynolds-number trend: as friction Reynolds number increases from $Re_\tau = 150$ to $220$, the raw-field-verified Q1 vortex core centroid migrates outward from $(0.577, 0.847)$ toward the corner at $(0.737, 0.896)$, while the peak secondary velocity rises from $1.93\%$ to $2.03\%$ of bulk velocity. No DNS plane is exported at $Re_\tau \approx 519$; the $Re_b = 17{,}800$ comparisons in Section~8.2 therefore reference the raw-field-verified low-$Re$ centroid $(0.577, 0.847)$, and the asymptotic peak range $2.03\% - 2.30\%$ is anchored to the $Re_\tau = 220$ export and literature values. Distinguishing these regimes prevents conflating the low-$Re$ baseline with asymptotic high-$Re$ DNS metrics.
 
 \section{Independent Algorithmic Vortex Detection Pipeline}
 
@@ -562,12 +562,12 @@ Parameter / Metric & Coarse Mesh (M1) & Refined Mesh (M2) & Relative Delta & DNS
 \end{enumerate}
 
 \subsection{High-Reynolds-Number Case Study: $Re_b = 17{,}800$ ($Re_\tau \approx 519$)}
-To examine behavior at a higher Reynolds number matching the asymptotic benchmark regime of Pirozzoli et al.~\cite{pirozzoli2018turbulence}, an independent high-Reynolds-number verification simulation was conducted in a $50 \times 40 \times 40$ mesh ($80{,}000$ cells) with fluid kinematic viscosity $\nu = 5.617978 \times 10^{-6}\text{ m}^2/\text{s}$, bulk velocity $U_b = 1.0\text{ m/s}$, and hydraulic diameter $D_h = 0.10\text{ m}$ ($h = 0.05\text{ m}$), yielding:
+To examine behavior at a higher Reynolds number relevant to the benchmark DNS literature of Pirozzoli et al.~\cite{pirozzoli2018turbulence}, an independent high-Reynolds-number verification simulation was conducted in a $50 \times 40 \times 40$ mesh ($80{,}000$ cells) with fluid kinematic viscosity $\nu = 5.617978 \times 10^{-6}\text{ m}^2/\text{s}$, bulk velocity $U_b = 1.0\text{ m/s}$, and hydraulic diameter $D_h = 0.10\text{ m}$ ($h = 0.05\text{ m}$), yielding:
 \begin{equation}
 Re_b = \frac{U_b D_h}{\nu} = 17{,}800 \quad (Re_h = 8{,}900, \quad Re_\tau \approx 519)
 \end{equation}
 
-As mapped in Table~\ref{tab:reynolds_benchmarks}, the high-$Re$ benchmark is evaluated against the asymptotic DNS regime of Pirozzoli et al.~\cite{pirozzoli2018turbulence}, whose canonical Q1 core centroid is located at $(0.577, 0.847)$ and asymptotic peak secondary speed spans $2.03\% - 2.30\%$ (distinguished from the low-$Re$ benchmark of $1.93\%$ and $(0.500, 0.820)$ at $Re_\tau = 150$).
+As mapped in Table~\ref{tab:reynolds_benchmarks}, the asymptotic peak secondary speed spans $2.03\% - 2.30\%$, anchored to the $Re_\tau = 220$ export and literature values. Because no DNS plane is exported at $Re_\tau \approx 519$, the Q1 centroid reference used for Table~\ref{tab:re17800_development} is the raw-field-verified low-$Re$ value $(0.577, 0.847)$ — an approximation, applied consistently across all stations.
 
 \begin{table}[htbp]
 \centering
@@ -670,7 +670,7 @@ d_{\text{kNN}}(\mathbf{x}_{\text{CFD}}) = \min_{j} \left\| \frac{\mathbf{x}_{\te
     \item \textbf{Maximum Distance:} $1.43\,\sigma$
 \end{itemize}
 
-\textbf{Physical Interpretation:} Because the live CFD simulation is a spatially developing duct ($\partial U/\partial x \ne 0$) with interactive velocity feedback, whereas the DNS benchmark is an idealized periodic box, live CFD states experience modest joint distribution shift. However, with a median gap of $< 0.25$ standard deviations, the CFD operating points remain closely clustered around the training states, indicating limited distributional extrapolation and reducing concern about severe out-of-distribution tensor predictions, while avoiding oversimplified claims of ``zero distribution shift.'''
+\textbf{Physical Interpretation:} Because the live CFD simulation is a spatially developing duct ($\partial U/\partial x \ne 0$) with interactive velocity feedback, whereas the DNS benchmark is an idealized periodic box, live CFD states experience modest joint distribution shift. However, with a median gap of $< 0.25$ standard deviations, the CFD operating points remain closely clustered around the training states, indicating limited distributional extrapolation and reducing concern about severe out-of-distribution tensor predictions, while avoiding oversimplified claims of ``zero distribution shift.''
 
 \section{Honest Discussion of Limitations \& Model-Form Uncertainty}
 \label{sec:limitations}
@@ -680,7 +680,7 @@ Six limitations, methodological compromises, and physical discrepancies deserve 
 \subsection{Developing Duct vs. Streamwise-Periodic DNS}
 The DNS benchmark of Pirozzoli et al.~\cite{pirozzoli2018turbulence} was simulated in an idealized streamwise-periodic box driven by a uniform body force, representing an asymptotically fully developed duct of infinite length. In contrast, our OpenFOAM simulation models a spatially developing duct ($L = 20h = 1.0\text{ m}$) with a uniform velocity inlet ($U_b = 1.0\text{ m/s}$) and physical boundary layers developing along the walls.
 
-Because secondary flow is generated locally near wall corners by normal stress differences, the eight secondary cells establish rapidly ($x/h \ge 6$). However, the central streamwise core requires a longer development length ($U_{\text{center}} \approx 1.25\text{ m/s}$ in our CFD domain at $x/h=7.0$ vs. $1.31\text{ m/s}$ in the fully developed low-$Re$ periodic DNS, and $U_c/U_b = 1.132$ at $x/D_h = 9.1$ vs. $1.33$ at high $Re$). Standard linear $k\text{--}\omega$ SST exhibits lower streamwise RMSE ($6.16\%$) solely because it lacks cross-stream convective momentum transport to duct corners, yet it fails fundamentally on the secondary-flow physics ($0$ vortex cores).
+Because secondary flow is generated locally near wall corners by normal stress differences, the eight secondary cells establish rapidly ($x/h \ge 6$). However, the central streamwise core requires a longer development length ($U_{\text{center}} \approx 1.25\text{ m/s}$ in our CFD domain at $x/h=7.0$ vs. $1.31\text{ m/s}$ in the fully developed low-$Re$ periodic DNS, and $U_c/U_b = 1.132$ at $x/D_h = 9.1$ vs. $1.33$ at high $Re$). Standard linear $k\text{--}\omega$ SST exhibits lower streamwise RMSE ($6.16\%$) solely because it lacks cross-stream convective momentum transport to duct corners, yet it fails to reproduce the secondary-flow topology ($0$ vortex cores).
 
 \subsection{The Empirical $\omega$ Surrogate vs. Dynamic RANS Transport: Non-Linear Error Amplification}
 Direct numerical simulation provides exact velocity gradients $\nabla \mathbf{U}$ and Reynolds stresses $\boldsymbol{\tau}^R$, but DNS inherently lacks the specific dissipation rate $\omega$, as $\omega$ is a semi-empirical RANS modeling construct rather than a physical Navier-Stokes field.
@@ -700,7 +700,7 @@ I_1, I_2 \propto \tau^2 \propto \omega^{-2}, \quad I_3 \propto \tau^3 \propto \o
 \end{equation}
 Consequently, any local error in the transported $\omega$ field is quadratically and cubically magnified before entering the MLP. If live $\omega$ in a corner vortex is underpredicted by a factor of 2, the primary invariants $I_1$ and $I_2$ entering the network are inflated by a factor of 4.
 
-\textbf{Bandage vs. Physical Driver:} The clipping at $\tau_{\max} = 5.0\text{ s}$ serves purely as an ad-hoc numerical regularizer to prevent division-by-zero overflow near the duct centerline where $\omega \to 0$; it is not a physical closure. This structural mismatch between surrogate-derived training inputs and transport-governed live inputs is a primary driver of the vortex core localization offset ($0.447\text{--}0.567\,h$ at $Re_b = 4,410$), as distorted invariant inputs systematically bias the predicted Pope basis expansion coefficients $g^{(n)}$ in corner shear zones.
+\textbf{A Numerical Regularizer, Not a Physical Closure:} The clipping at $\tau_{\max} = 5.0\text{ s}$ serves purely as an ad-hoc numerical regularizer to prevent division-by-zero overflow near the duct centerline where $\omega \to 0$; it is not a physical closure. This structural mismatch between surrogate-derived training inputs and transport-governed live inputs is a primary driver of the vortex core localization offset ($0.447\text{--}0.567\,h$ at $Re_b = 4,410$), as distorted invariant inputs systematically bias the predicted Pope basis expansion coefficients $g^{(n)}$ in corner shear zones.
 
 \subsection{First-Order Convective Schemes \& Near-Wall Resolution}
 All convective terms in both verification cases use bounded first-order Gauss upwind, and both cross-sectional meshes are uniform without near-wall grading (first-cell $y^+ \approx 7.5$ at $Re_b \approx 4410$ and $\approx 13$ at $Re_b = 17{,}800$, both under wall functions). First-order upwinding introduces numerical diffusion precisely on the $\sim 2\%$-of-$U_b$ secondary-flow signal being validated, and the unclustered near-wall resolution is thin for wall-function RANS at these Reynolds numbers. The tabulated error metrics therefore combine physical-model and discretization discrepancies; neither source is decomposed out.
