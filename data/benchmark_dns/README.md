@@ -2,7 +2,7 @@
 
 This directory contains benchmark configuration metadata for the turbulent square duct flow studies associated with **tbnnFoam**.
 
-To maintain clean open-source licensing boundaries for the software deposit, proprietary third-party Direct Numerical Simulation (DNS) raw and converted data files are not redistributed in the release package. All solver implementations, trained neural network weights, validation algorithms, and OpenFOAM simulation cases remain 100% self-contained and reproducible.
+To maintain clean open-source licensing boundaries for the software deposit, proprietary third-party Direct Numerical Simulation (DNS) raw and converted data files are not redistributed in the release package. The shipped solvers, pretrained model weights, and OpenFOAM verification cases can be used without external DNS files. Retraining the model and reproducing DNS-dependent field comparisons and diagnostics require users to obtain the upstream datasets independently and follow their applicable terms of use.
 
 ---
 

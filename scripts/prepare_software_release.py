@@ -405,7 +405,7 @@ def generate_metadata_and_package():
     checksum_lines.insert(0, f"{manifest_sha}  MANIFEST.txt")
 
     # Write CHECKSUMS.sha256 into staging and release directory
-    # CHECKSUMS.sha256 does not hash itself (228 entries: MANIFEST.txt + 227 payload files)
+    # CHECKSUMS.sha256 does not hash itself (225 entries: MANIFEST.txt + 224 payload files)
     checksum_text = "\n".join(checksum_lines) + "\n"
     (STAGING_DIR / "CHECKSUMS.sha256").write_text(checksum_text, encoding="utf-8")
     (RELEASE_DIR / "CHECKSUMS.sha256").write_text(checksum_text, encoding="utf-8")
@@ -417,8 +417,8 @@ def generate_metadata_and_package():
         shutil.move(str(RELEASE_DIR / ".zenodo.json"), str(RELEASE_DIR / "zenodo_software.json"))
     print("Generated release/zenodo_software.json for manual Zenodo software deposit")
 
-    # Build Master ZIP directly from STAGING_DIR (atomic single pass with all 229 files)
-    print("=== [6/7] Building Master ZIP (Atomic Single Pass) ===")
+    # Build Master ZIP directly from STAGING_DIR (single-pass archive generation with all 226 files)
+    print("=== [6/7] Building Master ZIP (Single-Pass Archive Generation) ===")
     if OUTPUT_ZIP.exists():
         OUTPUT_ZIP.unlink()
     clean_caches(STAGING_DIR)
@@ -452,7 +452,7 @@ def generate_metadata_and_package():
         shutil.move(str(item), str(EXTRACT_DIR / item.name))
     shutil.rmtree(RELEASE_DIR / "temp_extract")
 
-    # Verify all 228 checksums on extracted files
+    # Verify all 225 checksums on extracted files
     with open(EXTRACT_DIR / "CHECKSUMS.sha256", "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
