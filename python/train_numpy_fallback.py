@@ -1,13 +1,3 @@
-"""LEGACY torch-free fallback trainer - not the shipped model.
-
-Fits an sklearn MLP to least-squares-projected basis coefficients so the
-C++ evaluator can be exercised on machines without PyTorch. The exported
-weights use genuinely computed inv_mean/inv_std normalization (unlike the
-shipped model, which is trained on unnormalized invariants), so these
-weights are NOT interchangeable with export_weights/weights.json. All
-outputs are written to python/legacy_exports/ to keep the audited
-shipped weights untouched.
-"""
 import json
 import sys
 from pathlib import Path
