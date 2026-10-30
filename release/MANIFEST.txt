@@ -3,24 +3,30 @@ tbnnFoam v1.0.0 Software Release Manifest
 Archive: tbnnFoam-1.0.0-source.zip
 Release Date: 2026-10-19 / Audited: 2026-10-30
 Author: Soumik Ghosh (Department of Civil Engineering, Jadavpur University)
-License: MIT (Software) / Academic Citation Required (DNS Benchmark Data)
+License: MIT (Software) / Third-Party Copyright Pirozzoli et al. (DNS Data)
 
-File & Directory Inventory:
----------------------------
+Archive Inventory & Structure:
+------------------------------
+This release archive contains 227 software source, case, benchmark, and test
+files, accompanied by 2 release verification metadata files (MANIFEST.txt and
+CHECKSUMS.sha256), totaling 229 archive entries.
+
+Payload File Inventory (227 files):
+------------------------------------
 .github\ISSUE_TEMPLATE\bug_report.md                                               703 bytes  SHA256: e69867925e26160055c5c2e8de4cfa0fe788e2d80df06d1f42552d52703072ff
 .github\ISSUE_TEMPLATE\feature_request.md                                          681 bytes  SHA256: bd8eaf67a8a6070887eba72b60605a3800f71e96295647667c2ca90e30898d4e
 .github\pull_request_template.md                                                   810 bytes  SHA256: 39ad4f78aa4303bd9db716ef65ed6bda4c0404b9ecccc6aef2407fd84dd274fa
 .github\workflows\ci.yml                                                          1703 bytes  SHA256: 0f63f2df175ef89ee2896305b926cc67af0478e9f416b8c401500aec1a4d71d1
 .gitignore                                                                        1070 bytes  SHA256: f013826f5f9bdcdbc038522850fa8c41bd67c1155a5bb6156b46bd91a7c20724
-.zenodo.json                                                                      2036 bytes  SHA256: 9968435ae2d4bea80513f1d949b5138a124fbd2723f12a3865af21a26cb9e8f6
+.zenodo.json                                                                      1857 bytes  SHA256: cf20db1d3418b8ae6f3de44058f9e9f24ba2dda621bd9d8bf9b9d4bad32a85ae
 CITATION.cff                                                                       721 bytes  SHA256: ab5e72b5a763139d7e7ae194136f6d2d0f8481cbb9a22eba15b170dd902301af
 CODE_OF_CONDUCT.md                                                                1306 bytes  SHA256: 31597ca7c15f110cfca97762c94f3e12e49829b698ceb2499458fe53bdc5d43c
 CONTRIBUTING.md                                                                   3669 bytes  SHA256: 2f2d35911cbc3fdefac55f38863719cc5af224f6d046b805f07e8f580a10593c
 createFields.H                                                                    1979 bytes  SHA256: 73b9df67762ca6e0aae6f94c5a27ed2d4451e3769348c10f8a1be1c6b0f2157f
-data\benchmark_dns\benchmark_metadata.json                                        8013 bytes  SHA256: c278c03f33b29795d5db93d6f889a2240fa898639158231d0821bf7ba0936e20
+data\benchmark_dns\benchmark_metadata.json                                        8612 bytes  SHA256: 433f7d0ea961b7ecdcf575d9c8421bd048d08fe64258d17b03dac38579429cbd
 data\benchmark_dns\raw_dns\plotyz_Retau150.dat                                  947960 bytes  SHA256: de2c9b059f065223734494c520e19534252b777da7803845796735e375da2091
 data\benchmark_dns\raw_dns\plotyz_Retau220.dat                                 1200350 bytes  SHA256: 6fc3124b064e1ab45ff062e1467dfb40171c985543ac49ebc5bb8b18cbf64d6c
-data\benchmark_dns\README.md                                                      1993 bytes  SHA256: 7a8fd76b0357d54ad2b757cda9d71ce7c27535adb5c9cd5b728189b068032863
+data\benchmark_dns\README.md                                                      2455 bytes  SHA256: 5fa9fe2f9be11365e963afcb133b410a033bb0b32423bf62545333e16005f917
 data\benchmark_dns\square_duct_dns_Reb4410_Retau150.csv                        1550717 bytes  SHA256: 126ca68c103fa73eb51e1e1dbfaf234506a3625fc3085db669f0c6baa78b71b6
 data\benchmark_dns\square_duct_dns_Reb7000_Retau220.csv                        1554212 bytes  SHA256: 7316287109d802986922bac44e8568addd6c12a45ab8a50f9e09b712c62e2f72
 docs\figures\animation_1_secondary_vortices.gif                                1050308 bytes  SHA256: d35ce2d43ef18a575a965c04e41843e3490319571eb7d99bed561baf6a5d01d5
@@ -43,7 +49,7 @@ Make\options                                                                    
 python\README.md                                                                  1118 bytes  SHA256: 99cafa208407995814503066d06b2fc80d7ef76085959ee9dd49aac67c613b4a
 python\train_numpy_fallback.py                                                    2427 bytes  SHA256: bd87f9c25a295d8372e776bd83957ba541ac9f957ff7567377849c952be939c2
 python\train_tbnn.py                                                              6205 bytes  SHA256: c94523ed48de7587851d7841cf33d8f7351ed5588c071b7de06a6d47c7a42745
-README.md                                                                        45623 bytes  SHA256: 69e72918c9bc4f679f72625b484fb438771b5fa94cc14ce843fbe4079c3a5b11
+README.md                                                                        46372 bytes  SHA256: 6b3a4a5adc2b50f4a6e15c176000b912dff78cd902f3445d9ef2ecb88e3e8ef8
 requirements.txt                                                                   413 bytes  SHA256: 6285913bd14a64973bcb9dae41b4ba8fa2686cc2bf5848d4a4a58abde6010237
 scripts\convert_real_dns.py                                                       7301 bytes  SHA256: c3985a52db3f0cb02f4c9447f51db7e2d2e4603ea23a144f209ea1c8aaca93f9
 scripts\generate_all_showcase_assets.py                                          19785 bytes  SHA256: 4307ee3c90969fddcb373dc4a51b1a61f817ec4ddc82ec76a81ae03c1e8bc337
@@ -236,6 +242,8 @@ verification_squareDuct_Re17800\tbnn_Re17800_showcase.png                      1
 verification_squareDuct_Re17800\validate_and_plot_Re17800.py                     12977 bytes  SHA256: 341ad188e147cd564d6e8b34ad2b03f2b0f33a2a63ab878b3a5636c2aa99d8c5
 
 Summary:
-  Total Files: 227
-  Total Uncompressed Size: 109.35 MB
-  Archive Size: 38.04 MB
+  Payload Files: 227
+  Release Metadata Files: 2 (MANIFEST.txt, CHECKSUMS.sha256)
+  Total Archive Entries: 229
+  Total Uncompressed Payload Size: 109.35 MB
+

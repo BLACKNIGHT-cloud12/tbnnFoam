@@ -135,5 +135,10 @@
     "gradient_provenance": "grad_U_ij are second-order finite differences of the symmetry-mirrored, bilinearly resampled 65x65 cross-section (computed by scripts/convert_real_dns.py), not raw DNS gradients; near-wall gradient noise from the mirroring/resampling is baked in. All streamwise-derivative entries (grad_U_00, grad_U_10, grad_U_20) are identically zero, inherited from the streamwise-periodic reference DNS.",
     "wall_boundary_ring": "The 256 boundary points of the 65x65 grid have k clipped to 1e-7, giving targets a_ij = uu/(2k) - delta_ij/3 = -delta_ij/3 (trace -1) that are not valid anisotropy states for the trace-free tensor basis. These points are retained in the training loss: because every admissible network output is trace-free and Frobenius-orthogonal to I, the loss decomposes into the representable deviatoric part (dev(-I/3) = 0, so the network is trained toward a = 0 there) plus a constant zero-gradient offset from the incompatible trace part. The effect is confined to the invariant-space origin and has negligible bulk influence.",
     "validation_split": "The quadrant-1 spatial validation split (y > 0, z > 0) is reflection-degenerate: all five invariants are even in the rotation tensor, so the held-out quadrant shares identical invariant inputs with the training quadrants. The split legitimately tests the tensor-basis sign structure (the odd-in-w bases T2, T5, T7, T8, T10) but not independent-flow generalization."
+  },
+  "license_and_terms_of_use": {
+    "software_license": "MIT",
+    "dns_data_copyright": "Copyright (c) 2018 Sergio Pirozzoli, Daniele Modesti, Paolo Orlandi, Francesco Grasso (Sapienza University of Rome CFD Group)",
+    "terms_of_use": "The raw and processed DNS benchmark datasets are distributed strictly for academic verification and computational reproducibility. The project MIT license applies only to tbnnFoam solver software, scripts, and utilities, and does not grant proprietary or sublicensing rights over the third-party DNS data. Users must cite Pirozzoli et al. (JFM 2018)."
   }
 }
