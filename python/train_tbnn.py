@@ -1,14 +1,4 @@
-"""LEGACY EXPERIMENT - not the shipped model.
 
-The shipped tbnnFoam network (5 -> 64 -> 64 -> 64 -> 10, unnormalized
-invariants) is trained exclusively by tbnn_train.py at the repository
-root. This script is an earlier 30-wide variant with normalized
-invariants, weight decay and a tuple-returning forward that is
-INCOMPATIBLE with the TorchScript consumer in tbnnFoam.C. All outputs
-are therefore written to python/legacy_exports/ and never to
-export_weights/ or the repository-root artifact locations, so running
-it cannot clobber the audited shipped weights.
-"""
 import json
 import sys
 from pathlib import Path
