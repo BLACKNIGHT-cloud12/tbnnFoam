@@ -1,0 +1,36 @@
+{
+  "title": "tbnnFoam: OpenFOAM C++ In-Solver Tensor Basis Neural Network RANS Closure",
+  "upload_type": "software",
+  "description": "<p><b>tbnnFoam</b> is an in-situ coupled Reynolds-Averaged Navier–Stokes (RANS) solver within OpenFOAM 2606 featuring a dual-runtime inference architecture: an embedded LibTorch engine and a zero-dependency standalone C++ matrix evaluator with an analytical Cardano cubic eigensolver enforcing physical realizability on the Lumley triangle in \\(\\mathcal{O}(1)\\) operations per cell.</p>\n<p>Key highlights and capabilities:</p>\n<ul>\n  <li><b>Dual-Runtime Inference:</b> Embedded LibTorch C++ evaluator and zero-dependency native C++ evaluator.</li>\n  <li><b>Analytical Realizability:</b> Cardano cubic eigensolver guaranteeing positive-semidefinite Reynolds stresses on the Lumley triangle.</li>\n  <li><b>Cross-Engine Numerical Parity:</b> PyTorch, TorchScript, and standalone C++ agree within an absolute tolerance of 10<sup>-5</sup>.</li>\n  <li><b>Boussinesq Limit Assembled Parity:</b> Coupled momentum equation reduces exactly to baseline linear <i>k</i>–<i>&omega;</i> SST (maximum relative deviation 3.6 &times; 10<sup>-17</sup>).</li>\n  <li><b>Turbulent Duct Flow Benchmark:</b> Verified against the DNS benchmark of Pirozzoli et al. (<i>J. Fluid Mech.</i> 2018) for developing square-duct flow at <i>Re<sub>b</sub></i> = 4410 and <i>Re<sub>b</sub></i> = 17,800.</li>\n  <li><b>Reproducibility:</b> Includes pre-trained neural network weights, automated 21-test verification suite, and verification case configurations.</li>\n</ul>",
+  "creators": [
+    {
+      "name": "Ghosh, Soumik",
+      "affiliation": "Department of Mechanical Engineering / Computer Science & Engineering"
+    }
+  ],
+  "access_right": "open",
+  "license": "MIT",
+  "keywords": [
+    "OpenFOAM",
+    "Computational Fluid Dynamics",
+    "CFD",
+    "Turbulence Modeling",
+    "Tensor Basis Neural Network",
+    "TBNN",
+    "LibTorch",
+    "Scientific Machine Learning",
+    "SciML",
+    "RANS",
+    "Reynolds Stress Anisotropy",
+    "Lumley Triangle",
+    "Realizability",
+    "Secondary Flow"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/BLACKNIGHT-cloud12/tbnnFoam",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
+}

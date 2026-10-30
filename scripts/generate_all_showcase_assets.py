@@ -371,33 +371,19 @@ def gen_barycentric(repo_root: Path, data):
 
 def gen_pipeline(repo_root: Path):
     print('--> [4/4] Generating Asset 4: In-Situ Architecture Pipeline Diagram...')
-    out_path = repo_root / 'docs' / 'figures' / 'architecture_pipeline.png'
-    fig = plt.figure(figsize=(18, 7.5), dpi=300)
-    ax = fig.add_subplot(111)
-    ax.axis('off')
-    fig.patch.set_facecolor('#0d1117')
-    steps = [
-        ('1. OpenFOAM RANS Core', 'fvc::grad(U), k, omega\nExtract velocity gradient\nand turbulence scales', '#1f6feb', (-4.0, 0.0)),
-        ('2. Invariants & Bases', '5 Invariants: tr(s²), tr(w²)...\n10 Pope (1975) Bases\nT1 ... T10 symmetric & traceless', '#8957e5', (-1.3, 0.0)),
-        ('3. Neural Network Engine', 'TBNN Multi-Layer Perceptron\n10 Scalar g_n coefficients\nReLU activations (in-situ)', '#d29922', (1.4, 0.0)),
-        ('4. Stress Assembly', 'a = sum(g_n * T_n)\nLumley Triangle Realizability\ntau_R = 2k(a + I/3)', '#da3633', (4.1, 0.0)),
-        ('5. Momentum Predictor', 'UEqn.H with fvc::div(tauDelta)\nExplicit Anisotropic Injection\nRecovers Secondary Flow', '#238636', (6.8, 0.0))
-    ]
-    for title, desc, color, (x, y) in steps:
-        box = patches.FancyBboxPatch((x - 1.1, y - 0.7), 2.2, 1.4, boxstyle='round,pad=0.1,rounding_size=0.15', edgecolor=color, facecolor='#161b22', linewidth=2.0)
-        ax.add_patch(box)
-        ax.text(x, y + 0.35, title, color='white', fontsize=11, fontweight='bold', ha='center', va='center')
-        ax.text(x, y - 0.15, desc, color='#c9d1d9', fontsize=9.5, ha='center', va='center')
-    for i in range(len(steps) - 1):
-        x1 = steps[i][3][0] + 1.15
-        x2 = steps[i+1][3][0] - 1.15
-        ax.annotate('', xy=(x2, 0.0), xytext=(x1, 0.0), arrowprops=dict(arrowstyle='->,head_width=0.4,head_length=0.6', color='#58a6ff', lw=2.5))
-    ax.text(1.4, 1.1, 'In-Situ Tensor Basis Neural Network Finite-Volume Discretization Pipeline', color='white', fontsize=14, fontweight='bold', ha='center')
-    ax.set_xlim(-5.5, 8.3)
-    ax.set_ylim(-1.5, 1.5)
-    fig.savefig(out_path, dpi=300, bbox_inches='tight')
-    plt.close(fig)
-    print(f'  -> Saved {out_path} ({out_path.stat().st_size / 1000000.0:.2f} MB)')
+    from generate_paper_aesthetic_figures import generate_fig1_architecture, generate_fig2_pipeline
+    fig1_path = repo_root / 'docs' / 'figures' / 'tbnn_network_architecture.png'
+    fig2_path = repo_root / 'docs' / 'figures' / 'architecture_pipeline.png'
+    generate_fig1_architecture(fig1_path)
+    generate_fig2_pipeline(fig2_path)
+    # Also synchronize to latex figures
+    latex_fig1 = repo_root / 'docs' / 'latex' / 'figures' / 'tbnn_network_architecture.png'
+    latex_fig2 = repo_root / 'docs' / 'latex' / 'figures' / 'architecture_pipeline.png'
+    if latex_fig1.parent.exists():
+        import shutil
+        shutil.copy2(fig1_path, latex_fig1)
+        shutil.copy2(fig2_path, latex_fig2)
+    print(f'  -> Saved {fig2_path} and synchronized Figure 1 & 2 assets')
 
 def main():
     repo = Path(__file__).resolve().parent.parent
