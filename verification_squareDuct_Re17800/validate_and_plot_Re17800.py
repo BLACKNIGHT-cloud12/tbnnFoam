@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-# Add repo root to path for vortex detector
+
 repo_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(repo_root))
 from scripts.validation.vortex_detector import detect_vortex_cores
@@ -139,7 +139,6 @@ def main():
 
     print("=" * 90)
 
-    # 2. DOWNSTREAM DEVELOPED STATION EVALUATION (averaging x/Dh in [6, 9])
     U_developed = np.mean(U_3d[:, :, 30:45, :], axis=2)
     Ux_dev = U_developed[:, :, 0]
     Uy_dev = U_developed[:, :, 1]
@@ -160,12 +159,12 @@ def main():
     interior_masked_max = float(np.max(v_sec[interior_mask]) * 100.0)
     raw_vsec_pct = float(np.max(v_sec) * 100.0)
 
-    # Find location of raw maximum
+
     raw_max_idx = np.unravel_index(np.argmax(v_sec), v_sec.shape)
     raw_y_loc = y_norm[raw_max_idx[1]]
     raw_z_loc = z_norm[raw_max_idx[0]]
 
-    # Evaluate secondary speed directly at the discrete detected vortex core centroids
+    
     core_centroid_speeds = []
     for c in dev_cores:
         iy_c = np.argmin(np.abs(y_norm - c['y']))
@@ -201,11 +200,11 @@ def main():
     print(f"    (|z/h|=0.975); this is a proposed numerical/wall-treatment artifact pending full stress divergence decomposition.")
     print("=" * 80)
 
-    # 3. 4-PANEL PUBLICATION SHOWCASE FIGURE
+
     fig = plt.figure(figsize=(15, 13), dpi=250)
     gs = gridspec.GridSpec(2, 2, hspace=0.28, wspace=0.25)
 
-    # (a) Streamwise Velocity Contours with Secondary Streamlines
+
     ax1 = fig.add_subplot(gs[0, 0])
     cf1 = ax1.contourf(Y_grid, Z_grid, u_star, levels=30, cmap='viridis')
     cb1 = plt.colorbar(cf1, ax=ax1, fraction=0.046, pad=0.04)
@@ -218,7 +217,6 @@ def main():
     ax1.set_ylim(-1, 1)
     ax1.set_aspect('equal')
 
-    # (b) In-Plane Secondary Velocity Vectors & Detected Cores
     ax2 = fig.add_subplot(gs[0, 1])
     cf2 = ax2.contourf(Y_grid, Z_grid, v_sec * 100.0, levels=np.linspace(0, 10, 31), cmap='inferno')
     cb2 = plt.colorbar(cf2, ax=ax2, fraction=0.046, pad=0.04)
@@ -231,7 +229,7 @@ def main():
         m = 'o' if c['type'] == 'acw' else 's'
         col = 'cyan' if c['type'] == 'acw' else 'lime'
         ax2.scatter(c['y'], c['z'], s=90, c=col, edgecolors='black', linewidth=1.2, marker=m, zorder=5)
-    # Reference DNS core in Q1
+
     ax2.scatter([0.577], [0.847], s=120, c='red', marker='*', edgecolors='black', linewidth=1.2, zorder=6, label='DNS Ref Core (0.577, 0.847)')
     ax2.legend(loc='lower center', framealpha=0.9, fontsize=9)
     ax2.set_title(rf'(b) Secondary Velocity Vectors & Cores (Core: {mean_core_speed:.2f}%, DNS: 2.03-2.30%)', fontsize=12, fontweight='bold')
@@ -241,7 +239,7 @@ def main():
     ax2.set_ylim(-1, 1)
     ax2.set_aspect('equal')
 
-    # (c) Streamwise Development of Secondary Speed & Centerline Velocity
+    
     ax3 = fig.add_subplot(gs[1, 0])
     x_dh_arr = [d['x_dh'] for d in station_data]
     raw_arr = [d['raw_max'] for d in station_data]
@@ -256,18 +254,18 @@ def main():
     ax3.set_title(r'(c) Streamwise Spatial Development of Secondary Flow', fontsize=12, fontweight='bold')
     ax3.grid(True, linestyle='--', alpha=0.5)
 
-    # Secondary y-axis for Uc/Ub
+
     ax3_twin = ax3.twinx()
     ax3_twin.plot(x_dh_arr, uc_arr, 'k--', linewidth=1.5, label=r'Centerline $U_c / U_b$')
     ax3_twin.set_ylabel(r'$U_c / U_b$', fontsize=11)
     ax3_twin.set_ylim(1.0, 1.25)
 
-    # Combined legend
+
     lines1, labels1 = ax3.get_legend_handles_labels()
     lines2, labels2 = ax3_twin.get_legend_handles_labels()
     ax3.legend(lines1 + lines2, labels1 + labels2, loc='center right', framealpha=0.9, fontsize=9)
 
-    # (d) Cross-Stream Profile of Vertical Velocity W across duct at y/h = 0.525
+   
     ax4 = fig.add_subplot(gs[1, 1])
     iy_slice = 30 # y/h ~ 0.525
     w_profile = Uz_dev[:, iy_slice] / Ub * 100.0
