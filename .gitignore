@@ -41,3 +41,6 @@ docs/latex/main.pdf
 publication_package/
 tbnnFoam_Publication_Package.zip
 
+
+# Release staging extraction directory
+release/tbnnFoam-1.0.0-source/
