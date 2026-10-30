@@ -1,13 +1,4 @@
-"""Verify mesh geometry reconstruction and cell ordering for the Re_b=4410
-cases against the committed `0/C` cell-centre fields.
 
-Coverage note: the Re_b=17,800 case ships no `0/C` field (to keep the
-repository lean). Its validation script
-`verification_squareDuct_Re17800/validate_and_plot_Re17800.py` derives
-cross-sectional coordinates analytically from the blockMesh geometry
-instead of reshaping committed cell-centre data, so the reshape-ordering
-hazard this file guards against does not arise there.
-"""
 import pytest
 from pathlib import Path
 import numpy as np
