@@ -2,8 +2,10 @@ import json
 import math
 import csv
 import sys
+import os
+import argparse
 from pathlib import Path
-from typing import Dict, Tuple, Any
+from typing import Dict, Tuple, Any, Optional
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
@@ -13,7 +15,7 @@ from scripts.validation.foam_field_io import parse_foam_vec
 
 class ValidationEngine:
 
-    def __init__(self, repo_root: Path):
+    def __init__(self, repo_root: Path, dns_dir: Optional[Path] = None, dns_file: Optional[Path] = None):
         self.repo_root = repo_root
         meta_file = repo_root / 'data' / 'benchmark_dns' / 'benchmark_metadata.json'
         with open(meta_file, 'r', encoding='utf-8') as f:
@@ -28,12 +30,28 @@ class ValidationEngine:
         self.dns_core_z = ref_core['z_core_over_h']
         self.dns_vmax_ratio = ref_core['peak_secondary_velocity_ratio_Vmax_over_Ub']
 
+        # Resolve DNS file location
+        if dns_file:
+            self.dns_file = dns_file if dns_file.exists() else None
+        elif dns_dir:
+            cand = dns_dir / 'square_duct_dns_Reb4410_Retau150.csv'
+            self.dns_file = cand if cand.exists() else None
+        elif os.environ.get('TBNN_DNS_DIR'):
+            cand = Path(os.environ['TBNN_DNS_DIR']) / 'square_duct_dns_Reb4410_Retau150.csv'
+            self.dns_file = cand if cand.exists() else None
+        elif (repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv').exists():
+            self.dns_file = repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
+        else:
+            self.dns_file = None
+
+        self.Ny = 65
+        self.Nz = 65
+
     def load_dns(self):
-        dns_file = self.repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
-        if not dns_file.exists():
-            raise FileNotFoundError(f'Canonical DNS dataset missing: {dns_file}')
+        if not self.dns_file or not self.dns_file.exists():
+            return None
         dns_data = []
-        with open(dns_file, 'r', encoding='utf-8') as f:
+        with open(self.dns_file, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
                 dns_data.append(row)
@@ -84,11 +102,16 @@ class ValidationEngine:
         w_i = rgi_w(pts).reshape(self.Nz, self.Ny)
         return (u_i, v_i, w_i)
 
-    def evaluate_case(self, u_cfd, v_cfd, w_cfd, u_dns, v_dns, w_dns):
-        rmse_u = float(np.sqrt(np.mean((u_cfd - u_dns) ** 2)))
-        nrmse_u = float(rmse_u / self.Ub * 100.0)
-        rmse_v = float(np.sqrt(np.mean((v_cfd - v_dns) ** 2)))
-        nrmse_v = float(rmse_v / self.Ub * 100.0)
+    def evaluate_case(self, u_cfd, v_cfd, w_cfd, dns_tuple=None):
+        if dns_tuple is not None:
+            u_dns, v_dns, w_dns = dns_tuple
+            rmse_u = float(np.sqrt(np.mean((u_cfd - u_dns) ** 2)))
+            nrmse_u = float(rmse_u / self.Ub * 100.0)
+            rmse_v = float(np.sqrt(np.mean((v_cfd - v_dns) ** 2)))
+            nrmse_v = float(rmse_v / self.Ub * 100.0)
+        else:
+            rmse_u, nrmse_u, rmse_v, nrmse_v = None, None, None, None
+
         v_sec = np.sqrt(v_cfd ** 2 + w_cfd ** 2)
         v_max_ratio = float(np.max(v_sec) / self.Ub)
         Nz_e = u_cfd.shape[0]
@@ -98,9 +121,6 @@ class ValidationEngine:
         omega_x = (np.gradient(w_cfd / self.Ub, axis=1) / dy) - (np.gradient(v_cfd / self.Ub, axis=0) / dz)
         y_1d = np.linspace(-1.0, 1.0, Ny_e)
         z_1d = np.linspace(-1.0, 1.0, Nz_e)
-        Z_g, Y_g = np.meshgrid(z_1d, y_1d, indexing='ij')
-        assert Z_g.shape == (Nz_e, Ny_e)
-        assert Y_g.shape == (Nz_e, Ny_e)
         cores = detect_vortex_cores(omega_x, y_1d, z_1d, min_separation=0.2, min_strength=0.04, min_area=4, wall_margin=0.08)
         vortex_count = len(cores)
         if vortex_count > 0:
@@ -118,23 +138,23 @@ class ValidationEngine:
             core_y = float('nan')
             core_z = float('nan')
             delta_r = float('nan')
-        return {'rmse_u': rmse_u, 'nrmse_u': nrmse_u, 'rmse_v': rmse_v, 'nrmse_v': nrmse_v, 'v_max_ratio': v_max_ratio, 'vortex_count': vortex_count, 'core_y': core_y, 'core_z': core_z, 'delta_r': delta_r, 'cores': cores}
+        return {
+            'rmse_u': rmse_u, 'nrmse_u': nrmse_u, 'rmse_v': rmse_v, 'nrmse_v': nrmse_v,
+            'v_max_ratio': v_max_ratio, 'vortex_count': vortex_count,
+            'core_y': core_y, 'core_z': core_z, 'delta_r': delta_r, 'cores': cores
+        }
 
     def print_report(self):
-        u_dns, v_dns, w_dns = self.load_dns()
-        # Committed result directories are the canonical evaluation inputs;
-        # legacy fallbacks ('200', 'baseline_73') pointed at data that no
-        # longer exists. rmse_v here is the V-component RMSE; the combined
-        # (V, W) secondary RMSE reported in the README comes from the case
-        # script validate_and_plot.py.
+        dns_tuple = self.load_dns()
         tbnn_dir = '300'
         base_dir = 'baseline_sst/111'
         if not (self.repo_root / 'verification_squareDuct' / tbnn_dir / 'U').exists():
             raise FileNotFoundError('verification_squareDuct/300/U not found; run the case first')
         u_tbnn, v_tbnn, w_tbnn = self.load_cfd_cs(tbnn_dir)
         u_base, v_base, w_base = self.load_cfd_cs(base_dir)
-        m_tbnn = self.evaluate_case(u_tbnn, v_tbnn, w_tbnn, u_dns, v_dns, w_dns)
-        m_base = self.evaluate_case(u_base, v_base, w_base, u_dns, v_dns, w_dns)
+        m_tbnn = self.evaluate_case(u_tbnn, v_tbnn, w_tbnn, dns_tuple)
+        m_base = self.evaluate_case(u_base, v_base, w_base, dns_tuple)
+        
         table = []
         table.append('| Independent Metric | Conventional OpenFOAM (k-omega SST) | tbnnFoam (TBNN Solver) | Reference DNS (Pirozzoli et al. 2018) | Verification Proof |')
         table.append('| :--- | :---: | :---: | :---: | :--- |')
@@ -145,19 +165,34 @@ class ValidationEngine:
         table.append(f"| **Q1 Core Coordinates (y/h, z/h)** | {core_base_str} | {core_tbnn_str} | ({self.dns_core_y:.2f}, {self.dns_core_z:.2f}) | Corner core localization |")
         delta_base_str = 'N/A' if math.isnan(m_base['delta_r']) else f"{m_base['delta_r']:.3f} h"
         table.append(f"| **Core Localization Distance Error** | {delta_base_str} | {m_tbnn['delta_r']:.3f} h | 0.000 h (Ref) | Distance to benchmark core centroid |")
-        table.append(f"| **Streamwise U NRMSE** | {m_base['nrmse_u']:.2f}% | {m_tbnn['nrmse_u']:.2f}% | 0.00% (Ref) | Lower overall profile error |")
-        table.append(f"| **Streamwise U RMSE** | {m_base['rmse_u']:.4f} m/s | {m_tbnn['rmse_u']:.4f} m/s | 0.0000 m/s | Direct velocity field L2 difference |")
-        table.append(f"| **Secondary V RMSE** | {m_base['rmse_v']:.4f} m/s | {m_tbnn['rmse_v']:.4f} m/s | 0.0000 m/s | In-plane momentum recovery |")
+        
+        if m_tbnn['nrmse_u'] is not None:
+            table.append(f"| **Streamwise U NRMSE** | {m_base['nrmse_u']:.2f}% | {m_tbnn['nrmse_u']:.2f}% | 0.00% (Ref) | Lower overall profile error |")
+            table.append(f"| **Streamwise U RMSE** | {m_base['rmse_u']:.4f} m/s | {m_tbnn['rmse_u']:.4f} m/s | 0.0000 m/s | Direct velocity field L2 difference |")
+            table.append(f"| **Secondary V RMSE** | {m_base['rmse_v']:.4f} m/s | {m_tbnn['rmse_v']:.4f} m/s | 0.0000 m/s | In-plane momentum recovery |")
+        else:
+            table.append("| **Streamwise U RMSE / NRMSE** | Omitted | Omitted | Reference CSV not supplied | Provide --dns-dir to compute field RMSE |")
+            table.append("| **Secondary V RMSE** | Omitted | Omitted | Reference CSV not supplied | Provide --dns-dir to compute field RMSE |")
+
         table.append('| **Continuity Residual** | < 1e-6 | < 1e-6 | N/A | Numerical stability & convergence |')
         report = '\n'.join(table)
         print('\n' + '=' * 80)
         print('INDEPENDENT OPENFOAM CFD VALIDATION EVALUATION REPORT')
+        if not dns_tuple:
+            print('[NOTE] Point-by-point velocity field RMSEs omitted because DNS benchmark CSV was not supplied.')
+            print('       CFD vortex topological detection and core localization are verified against benchmark_metadata.json.')
+            print('       To compute velocity field RMSEs, supply external DNS directory via --dns-dir.')
         print('=' * 80)
         print(report)
         print('=' * 80)
         return report
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Evaluate tbnnFoam validation plan against benchmark DNS")
+    parser.add_argument('--dns-dir', type=Path, default=None, help="Directory containing external DNS CSV benchmark data")
+    parser.add_argument('--dns-file', type=Path, default=None, help="Path to canonical square_duct_dns_Reb4410_Retau150.csv")
+    args = parser.parse_args()
+
     repo = Path(__file__).resolve().parent.parent.parent
-    engine = ValidationEngine(repo)
+    engine = ValidationEngine(repo, dns_dir=args.dns_dir, dns_file=args.dns_file)
     engine.print_report()

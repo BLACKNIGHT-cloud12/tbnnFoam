@@ -1,3 +1,4 @@
+import os
 
 import json
 import sys
@@ -28,9 +29,18 @@ class TBNN(nn.Module):
 def train():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Training on device: {device}')
-    csv_path = _REPO_ROOT / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
+    csv_path = None
+    if 'TBNN_DNS_DIR' in os.environ:
+        cand = Path(os.environ['TBNN_DNS_DIR']) / 'square_duct_dns_Reb4410_Retau150.csv'
+        csv_path = cand if cand.exists() else None
+    if not csv_path or not csv_path.exists():
+        csv_path = _REPO_ROOT / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
     if not csv_path.exists():
-        raise FileNotFoundError(f'Cannot find dataset at {csv_path}. Run from a full checkout of tbnnFoam.')
+        raise FileNotFoundError(
+            f'Cannot find dataset at {csv_path}.\n'
+            'To run this training script, obtain the benchmark dataset per data/benchmark_dns/README.md '
+            'or set TBNN_DNS_DIR.'
+        )
     df = pd.read_csv(csv_path)
     print(f'Training DNS Benchmark: Re_b = 4410 | Re_h = 2205 | Re_tau = 150 (Loaded {len(df)} points from {csv_path})')
     N = len(df)

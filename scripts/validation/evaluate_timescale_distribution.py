@@ -1,3 +1,4 @@
+import os
 import json
 import sys
 from pathlib import Path
@@ -12,10 +13,25 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from scripts.validation.foam_field_io import parse_foam_vec, parse_foam_scalar
 from tbnn_tensor_math import comp_inv_and_bases
 
-def analyze_timescale_and_invariants(repo_root: Path):
-    dns_file = repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
-    if not dns_file.exists():
-        raise FileNotFoundError(f'Canonical DNS dataset missing: {dns_file}')
+def analyze_timescale_and_invariants(repo_root: Path, dns_dir: Path = None, dns_file: Path = None):
+    resolved_dns = None
+    if dns_file:
+        resolved_dns = dns_file if dns_file.exists() else None
+    elif dns_dir:
+        cand = dns_dir / 'square_duct_dns_Reb4410_Retau150.csv'
+        resolved_dns = cand if cand.exists() else None
+    elif 'TBNN_DNS_DIR' in os.environ:
+        cand = Path(os.environ['TBNN_DNS_DIR']) / 'square_duct_dns_Reb4410_Retau150.csv'
+        resolved_dns = cand if cand.exists() else None
+    elif (repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv').exists():
+        resolved_dns = repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
+
+    if not resolved_dns or not resolved_dns.exists():
+        raise FileNotFoundError(
+            'Canonical DNS dataset missing. Obtain data per data/benchmark_dns/README.md '
+            'or supply external directory via --dns-dir / --dns-file / TBNN_DNS_DIR.'
+        )
+    dns_file = resolved_dns
     df_dns = pd.read_csv(dns_file)
     N_dns = len(df_dns)
     grad_U_dns = np.zeros((N_dns, 3, 3))
@@ -186,5 +202,11 @@ def analyze_timescale_and_invariants(repo_root: Path):
     return coverage, basis_comparison
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description="Evaluate timescale and invariant distribution against benchmark DNS")
+    parser.add_argument('--dns-dir', type=Path, default=None, help="Directory containing external DNS CSV benchmark data")
+    parser.add_argument('--dns-file', type=Path, default=None, help="Path to canonical square_duct_dns_Reb4410_Retau150.csv")
+    args = parser.parse_args()
+
     repo = Path(__file__).resolve().parent.parent.parent
-    analyze_timescale_and_invariants(repo)
+    analyze_timescale_and_invariants(repo, dns_dir=args.dns_dir, dns_file=args.dns_file)

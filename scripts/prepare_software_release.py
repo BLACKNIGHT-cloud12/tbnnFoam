@@ -73,40 +73,14 @@ The authoritative, reproducible training pipeline for the shipped 64-width produ
     (dst / "README.md").write_text(content, encoding="utf-8")
 
 def create_dns_readme(dst: Path):
-    content = """# Benchmark DNS Datasets
-
-Authoritative Direct Numerical Simulation (DNS) benchmark datasets for turbulent square duct flow from the Sapienza University of Rome CFD Group.
-
-## Primary Citations & Provenance
-* **Pirozzoli, S., Modesti, D., Orlandi, P., & Grasso, F. (2018).** *Turbulence and secondary motions in square duct flow.* Journal of Fluid Mechanics, 840, 634-655.
-* **Vinuesa, R., Noorani, A., Lozano-Durán, A., El Khoury, G. K., Schlatter, P., Fischer, P. F., & Nagib, H. M. (2014).** *Aspect ratio effects in turbulent duct flows studied through direct numerical simulation.* Journal of Turbulence, 15(10), 677-706.
-* **Database Repository:** Sapienza University of Rome CFD Group DNS Database (http://newton.dma.uniroma1.it/square_duct/).
-
-## Dataset Files
-1. **`square_duct_dns_Reb4410_Retau150.csv`**:
-   - Reb = 4,410 (Reh = 2,205, Retau = 150).
-   - 4,225 grid cells (65 x 65 cross-section).
-   - Contains: (y, z) coordinates, mean velocity gradients dUi/dxj, Reynolds stress anisotropy tensor components a_ij, and specific dissipation surrogate omega.
-2. **`square_duct_dns_Reb7000_Retau220.csv`**:
-   - Reb = 7,000 (Reh = 3,500, Retau = 220).
-   - 4,225 grid cells (65 x 65 cross-section).
-3. **`raw_dns/plotyz_Retau150.dat`** & **`raw_dns/plotyz_Retau220.dat`**:
-   - Raw exported data files from the Pirozzoli et al. database.
-4. **`benchmark_metadata.json`**:
-   - Comprehensive machine-readable specification of physical scaling, Reynolds number definitions, coordinate systems, and baseline flow parameters.
-
-## License and Terms of Use
-* **Software License Independence:** The project's MIT software license applies exclusively to the `tbnnFoam` source code, solvers, conversion routines, and verification case configurations authored by the project.
-* **Third-Party Data Ownership:** All intellectual property and copyrights for the raw and processed DNS simulation datasets belong to the original authors: Sergio Pirozzoli, Daniele Modesti, Paolo Orlandi, and Francesco Grasso (Sapienza University of Rome CFD Group).
-* **Research Use & Attribution:** These datasets are provided solely as reference inputs for benchmark verification and computational reproducibility. The inclusion of these datasets does not imply sublicensing, ownership transfer, or commercial redistribution rights. Any academic publication, report, or comparative study utilizing these datasets must cite Pirozzoli et al. (2018).
-"""
-    (dst / "README.md").write_text(content, encoding="utf-8")
+    src = REPO_ROOT / "data" / "benchmark_dns" / "README.md"
+    shutil.copy2(src, dst / "README.md")
 
 def create_zenodo_software_json(dst: Path):
     zenodo_dict = {
         "title": "tbnnFoam: OpenFOAM C++ In-Solver Tensor Basis Neural Network RANS Closure",
         "upload_type": "software",
-        "description": "<p><b>tbnnFoam</b> is an open-source in-situ coupled Reynolds-Averaged Navier–Stokes (RANS) solver within OpenFOAM featuring a dual-runtime inference architecture: an embedded LibTorch C++ engine and a zero-dependency standalone C++ matrix evaluator with an analytical Cardano cubic eigensolver that enforces physical realizability on the Lumley triangle in \\(\\mathcal{O}(1)\\) operations per cell.</p>\n<p>This software release archives the complete source code, trained neural network weights, LibTorch and native C++ inference backends, automated 21-test verification suite, canonical square duct DNS benchmark datasets (Pirozzoli et al., <i>J. Fluid Mech.</i> 2018), and full OpenFOAM verification cases for developing square duct flow at <i>Re<sub>b</sub></i> = 4,410 and <i>Re<sub>b</sub></i> = 17,800.</p>\n<p>Features cross-engine numerical parity across PyTorch, TorchScript, and standalone C++ (within 10<sup>-5</sup>), exact Boussinesq-limit momentum assembly consistency (relative deviation 3.6 &times; 10<sup>-17</sup>), and independent algorithmic vortex detection recovering Prandtl's eight secondary recirculation cells.</p>",
+        "description": "<p><b>tbnnFoam</b> is an open-source in-situ coupled Reynolds-Averaged Navier–Stokes (RANS) solver within OpenFOAM featuring a dual-runtime inference architecture: an embedded LibTorch C++ engine and a zero-dependency standalone C++ matrix evaluator with an analytical Cardano cubic eigensolver that enforces physical realizability on the Lumley triangle in \\(\\mathcal{O}(1)\\) operations per cell.</p>\n<p>This software release archives the complete source code, pre-trained neural network weights, LibTorch and native C++ inference backends, automated verification test suite with synthetic fixtures, canonical square duct benchmark specifications (Pirozzoli et al., <i>J. Fluid Mech.</i> 2018), and full OpenFOAM verification cases for developing square duct flow at <i>Re<sub>b</sub></i> = 4,410 and <i>Re<sub>b</sub></i> = 17,800.</p>\n<p>Features cross-engine numerical parity across PyTorch, TorchScript, and standalone C++ (within 10<sup>-5</sup>), exact Boussinesq-limit momentum assembly consistency (relative deviation 3.6 &times; 10<sup>-17</sup>), and independent algorithmic vortex detection recovering Prandtl's eight secondary recirculation cells.</p>",
         "creators": [
             {
                 "name": "Ghosh, Soumik",
@@ -361,7 +335,7 @@ def run_staged_tests():
     res = subprocess.run(["pytest", "tests/"], cwd=str(STAGING_DIR), capture_output=True, text=True)
     print("Pytest stdout:\n" + "\n".join(res.stdout.splitlines()[-5:]))
     assert res.returncode == 0, f"Tests failed in staging directory:\n{res.stdout}\n{res.stderr}"
-    print("All verification tests passed in staging directory (20 passed, 1 skipped)!")
+    print("All verification tests passed in staging directory (19 passed, 2 skipped)!")
 
     # Clean caches generated by pytest immediately
     clean_caches(STAGING_DIR)
@@ -371,7 +345,7 @@ def generate_metadata_and_package():
     
     clean_caches(STAGING_DIR)
     payload_files = sorted([f for f in STAGING_DIR.rglob("*") if f.is_file()])
-    assert len(payload_files) == 227, f"Expected 227 payload files in staging, found {len(payload_files)}"
+    assert len(payload_files) == 224, f"Expected 224 payload files in staging, found {len(payload_files)}"
 
     manifest_lines = [
         "tbnnFoam v1.0.0 Software Release Manifest",
@@ -379,15 +353,15 @@ def generate_metadata_and_package():
         "Archive: tbnnFoam-1.0.0-source.zip",
         "Release Date: 2026-10-19 / Audited: 2026-10-30",
         "Author: Soumik Ghosh (Department of Civil Engineering, Jadavpur University)",
-        "License: MIT (Software) / Third-Party Copyright Pirozzoli et al. (DNS Data)",
+        "License: MIT",
         "",
         "Archive Inventory & Structure:",
         "------------------------------",
-        "This release archive contains 227 software source, case, benchmark, and test",
+        f"This release archive contains {len(payload_files)} software source, case, benchmark, and test",
         "files, accompanied by 2 release verification metadata files (MANIFEST.txt and",
-        "CHECKSUMS.sha256), totaling 229 archive entries.",
+        f"CHECKSUMS.sha256), totaling {len(payload_files) + 2} archive entries.",
         "",
-        "Payload File Inventory (227 files):",
+        f"Payload File Inventory ({len(payload_files)} files):",
         "------------------------------------"
     ]
 
@@ -405,9 +379,9 @@ def generate_metadata_and_package():
     manifest_lines.extend([
         "",
         "Summary:",
-        f"  Payload Files: 227",
+        f"  Payload Files: {len(payload_files)}",
         f"  Release Metadata Files: 2 (MANIFEST.txt, CHECKSUMS.sha256)",
-        f"  Total Archive Entries: 229",
+        f"  Total Archive Entries: {len(payload_files) + 2}",
         f"  Total Uncompressed Payload Size: {total_payload_bytes / (1024*1024):.2f} MB",
         ""
     ])
@@ -427,7 +401,7 @@ def generate_metadata_and_package():
     checksum_text = "\n".join(checksum_lines) + "\n"
     (STAGING_DIR / "CHECKSUMS.sha256").write_text(checksum_text, encoding="utf-8")
     (RELEASE_DIR / "CHECKSUMS.sha256").write_text(checksum_text, encoding="utf-8")
-    print(f"Generated CHECKSUMS.sha256 with {len(checksum_lines)} hashes (227 payload files + MANIFEST.txt)")
+    print(f"Generated CHECKSUMS.sha256 with {len(checksum_lines)} hashes ({len(payload_files)} payload files + MANIFEST.txt)")
 
     # Write release/zenodo_software.json for manual upload convenience
     create_zenodo_software_json(RELEASE_DIR)
@@ -442,7 +416,7 @@ def generate_metadata_and_package():
     clean_caches(STAGING_DIR)
 
     staging_all_files = sorted([f for f in STAGING_DIR.rglob("*") if f.is_file()])
-    assert len(staging_all_files) == 229, f"Expected 229 total files in staging, found {len(staging_all_files)}"
+    assert len(staging_all_files) == 226, f"Expected 226 total files in staging, found {len(staging_all_files)}"
 
     with zipfile.ZipFile(OUTPUT_ZIP, "w", zipfile.ZIP_DEFLATED) as z:
         for f in staging_all_files:
@@ -462,7 +436,7 @@ def generate_metadata_and_package():
 
     with zipfile.ZipFile(OUTPUT_ZIP, "r") as z:
         zip_entries = z.namelist()
-        assert len(zip_entries) == 229, f"Expected 229 zip entries, found {len(zip_entries)}"
+        assert len(zip_entries) == 226, f"Expected 226 zip entries, found {len(zip_entries)}"
         z.extractall(RELEASE_DIR / "temp_extract")
 
     extracted_inner = RELEASE_DIR / "temp_extract" / "tbnnFoam-1.0.0"
@@ -483,7 +457,7 @@ def generate_metadata_and_package():
             assert calc_sha == exp_sha, f"Checksum mismatch for {rel_name}: expected {exp_sha}, got {calc_sha}"
 
     print(f"Extracted {len(zip_entries)} entries to {EXTRACT_DIR}")
-    print("Verified all 228 cryptographic checksums on extracted files successfully!")
+    print(f"Verified all {len(checksum_lines)} cryptographic checksums on extracted files successfully!")
 
     # Clean intermediate staging directory
     if (RELEASE_DIR / "staging").exists():

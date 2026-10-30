@@ -1,3 +1,4 @@
+import os
 import json
 import sys
 from pathlib import Path
@@ -10,9 +11,18 @@ sys.path.insert(0, str(_REPO_ROOT))
 from tbnn_tensor_math import comp_inv_and_bases
 
 def train_np():
-    csv_path = _REPO_ROOT / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
+    csv_path = None
+    if 'TBNN_DNS_DIR' in os.environ:
+        cand = Path(os.environ['TBNN_DNS_DIR']) / 'square_duct_dns_Reb4410_Retau150.csv'
+        csv_path = cand if cand.exists() else None
+    if not csv_path or not csv_path.exists():
+        csv_path = _REPO_ROOT / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
     if not csv_path.exists():
-        raise FileNotFoundError(f'Cannot find dataset at {csv_path}. Run from a full checkout of tbnnFoam.')
+        raise FileNotFoundError(
+            f'Cannot find dataset at {csv_path}.\n'
+            'To run this fallback training script, obtain the benchmark dataset per data/benchmark_dns/README.md '
+            'or set TBNN_DNS_DIR.'
+        )
     df = pd.read_csv(csv_path)
     N = len(df)
     grad_U = np.zeros((N, 3, 3))

@@ -85,10 +85,27 @@ def parse_log_residuals(log_path: Path):
                     continue
     return (np.array(iters), np.array(cont_locals), np.array(cont_globals))
 
-def load_dns_data(repo_root: Path):
-    dns_file = repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
-    if not dns_file.exists():
-        raise FileNotFoundError(f'Canonical DNS dataset missing: {dns_file}')
+def load_dns_data(repo_root: Path, dns_dir: Path = None, dns_file: Path = None):
+    resolved_dns = None
+    if dns_file:
+        resolved_dns = dns_file if dns_file.exists() else None
+    elif dns_dir:
+        cand = dns_dir / 'square_duct_dns_Reb4410_Retau150.csv'
+        resolved_dns = cand if cand.exists() else None
+    elif 'TBNN_DNS_DIR' in os.environ:
+        cand = Path(os.environ['TBNN_DNS_DIR']) / 'square_duct_dns_Reb4410_Retau150.csv'
+        resolved_dns = cand if cand.exists() else None
+    elif (repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv').exists():
+        resolved_dns = repo_root / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
+
+    if not resolved_dns or not resolved_dns.exists():
+        raise FileNotFoundError(
+            f"Canonical DNS dataset missing at {resolved_dns}.\n"
+            "Pre-generated showcase figures are already supplied in docs/figures/.\n"
+            "To re-generate them from scratch, obtain the DNS data per data/benchmark_dns/README.md\n"
+            "or specify --dns-dir / --dns-file / TBNN_DNS_DIR."
+        )
+    dns_file = resolved_dns
     meta_file = repo_root / 'data' / 'benchmark_dns' / 'benchmark_metadata.json'
     with open(meta_file, 'r', encoding='utf-8') as f:
         meta = json.load(f)

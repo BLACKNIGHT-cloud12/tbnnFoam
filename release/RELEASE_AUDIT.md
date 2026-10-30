@@ -17,10 +17,10 @@ This document serves as the formal release audit, technical verification report,
 
 **Readiness Verdict: READY FOR ZENODO MANUAL DEPOSIT (APPROVED)**  
 The software package has been fully audited, verified against internal numerical parity and external DNS benchmarks, stripped of preprint-only duplicates and build caches, and packaged into a self-contained, atomic archive:
-* **Release Archive:** `release/tbnnFoam-1.0.0-source.zip` (38.06 MB compressed, 109.35 MB uncompressed payload, exactly 229 archive entries)
-* **Clean Extracted Staging Tree:** `release/tbnnFoam-1.0.0-source/` (229 files verified)
-* **Cryptographic Checksums:** `release/CHECKSUMS.sha256` (228 verified SHA-256 digests covering `MANIFEST.txt` and all 227 payload files)
-* **Release Manifest:** `release/MANIFEST.txt` (itemized inventory covering all 227 software and data payload files)
+* **Release Archive:** `release/tbnnFoam-1.0.0-source.zip` (36.45 MB compressed, 104.34 MB uncompressed payload, exactly 226 archive entries)
+* **Clean Extracted Staging Tree:** `release/tbnnFoam-1.0.0-source/` (226 files verified)
+* **Cryptographic Checksums:** `release/CHECKSUMS.sha256` (225 verified SHA-256 digests covering `MANIFEST.txt` and all 224 payload files)
+* **Release Manifest:** `release/MANIFEST.txt` (itemized inventory covering all 224 software and benchmark metadata payload files)
 * **Software Zenodo Metadata:** `release/zenodo_software.json` (prepared for manual deposit)
 
 ---
@@ -28,11 +28,11 @@ The software package has been fully audited, verified against internal numerical
 ## 2. Manifest, Checksums, and ZIP Finalization Sequence
 
 To resolve metadata synchronization issues where release manifests describe an archive before finalization:
-1. **Payload Staging (227 files):** All 227 source code, build configuration, Python pipeline, benchmark dataset, test suite, and case files are assembled in `staging/tbnnFoam-1.0.0/`.
-2. **Manifest Generation (`MANIFEST.txt`):** The release inventory is generated first, cataloging every payload file with its exact byte count and SHA-256 checksum, and summarizing the structure (227 payload files + 2 release metadata files = 229 total archive entries).
-3. **Checksum Compilation (`CHECKSUMS.sha256`):** The SHA-256 hash of `MANIFEST.txt` is computed and inserted as the first entry of `CHECKSUMS.sha256`, followed by the 227 payload files (228 hashes total). `CHECKSUMS.sha256` naturally avoids hashing itself, preventing circular dependency.
-4. **Atomic Master ZIP Packaging:** The final archive `tbnnFoam-1.0.0-source.zip` is built directly in a single pass containing all 229 files. No post-hoc file appending occurs. The final archive size (38.06 MB) and entry count (229 entries) are reported accurately.
-5. **Round-Trip Validation:** The final ZIP is extracted into `release/tbnnFoam-1.0.0-source/`, and all 228 SHA-256 hashes are verified against the extracted files on disk with zero discrepancies.
+1. **Payload Staging (224 files):** All 224 source code, build configuration, Python pipeline, benchmark metadata, synthetic test fixture, test suite, and case files are assembled in `staging/tbnnFoam-1.0.0/`.
+2. **Manifest Generation (`MANIFEST.txt`):** The release inventory is generated first, cataloging every payload file with its exact byte count and SHA-256 checksum, and summarizing the structure (224 payload files + 2 release metadata files = 226 total archive entries).
+3. **Checksum Compilation (`CHECKSUMS.sha256`):** The SHA-256 hash of `MANIFEST.txt` is computed and inserted as the first entry of `CHECKSUMS.sha256`, followed by the 224 payload files (225 hashes total). `CHECKSUMS.sha256` naturally avoids hashing itself, preventing circular dependency.
+4. **Atomic Master ZIP Packaging:** The final archive `tbnnFoam-1.0.0-source.zip` is built directly in a single pass containing all 226 files. No post-hoc file appending occurs. The final archive size (36.45 MB) and entry count (226 entries) are reported accurately.
+5. **Round-Trip Validation:** The final ZIP is extracted into `release/tbnnFoam-1.0.0-source/`, and all 225 SHA-256 hashes are verified against the extracted files on disk with zero discrepancies.
 
 ---
 
@@ -71,13 +71,18 @@ In `release/MANIFEST.txt`, `tbnn_model.pt` has size 52,516 bytes while the case-
 
 ---
 
-## 4. Licensing Boundary & Third-Party Dataset Terms
+## 4. Licensing Boundary & Third-Party Dataset Decoupling (Option 1)
 
-The software release strictly decouples the project's open-source software license from third-party research dataset ownership:
+The software release strictly decouples the project's open-source software license from third-party research dataset redistribution:
 
-* **MIT Software License:** Applies exclusively to the `tbnnFoam` software authored by the project, including C++ solver code (`tbnnFoam.C`, `tbnnSimpleFoam/`), evaluator headers (`src/tbnnEvaluator.H`), Python training and export pipelines (`tbnn_train.py`, `tbnn_export.py`, `tbnn_tensor_math.py`), automated verification test suites (`tests/`), validation post-processing utilities (`scripts/validation/`), and OpenFOAM simulation case dictionaries (`verification_squareDuct/`, `verification_squareDuct_Re17800/`).
-* **Third-Party DNS Benchmark Data Ownership:** All intellectual property and copyrights for the raw and processed Direct Numerical Simulation (DNS) datasets located in `data/benchmark_dns/` (`square_duct_dns_Reb4410_Retau150.csv`, `square_duct_dns_Reb7000_Retau220.csv`, and `raw_dns/*`) belong to the original authors: **Sergio Pirozzoli, Daniele Modesti, Paolo Orlandi, and Francesco Grasso (Sapienza University of Rome CFD Group, 2018)**.
-* **Redistribution Terms & Attribution:** These benchmark datasets are included strictly as external reference data to enable computational verification and scientific reproducibility. The project MIT license does not grant proprietary, commercial, or sublicensing rights over the upstream DNS data. Any academic study, technical report, or publication utilizing these datasets must cite the primary reference:
+* **MIT Software License:** Applies exclusively to the `tbnnFoam` software authored by the project, including C++ solver code (`tbnnFoam.C`, `tbnnSimpleFoam/`), evaluator headers (`src/tbnnEvaluator.H`), Python training and export pipelines (`tbnn_train.py`, `tbnn_export.py`, `tbnn_tensor_math.py`), synthetic test fixtures (`tests/fixtures/synthetic_dns_grid.csv`), automated verification test suites (`tests/`), validation post-processing utilities (`scripts/validation/`), and OpenFOAM simulation case setups (`verification_squareDuct/`, `verification_squareDuct_Re17800/`).
+* **Decoupling of Upstream DNS Data:** In accordance with scientific software archival best practices and to avoid redistributing third-party data whose redistribution rights have not been formally established:
+  - Upstream DNS simulation files (`plotyz_Retau150.dat`, `plotyz_Retau220.dat`, `square_duct_dns_Reb4410_Retau150.csv`, `square_duct_dns_Reb7000_Retau220.csv`) are **not bundled** in the release archive.
+  - Complete provenance, source URLs from the Sapienza University of Rome CFD Group database (Pirozzoli et al., *J. Fluid Mech.*, 2018; Vinuesa et al., 2014), physical scaling, and conversion instructions are documented in [`data/benchmark_dns/README.md`](data/benchmark_dns/README.md).
+  - The repository includes automated data-conversion tooling (`scripts/convert_real_dns.py`) so users can independently download the raw files and generate the benchmark CSV files in seconds.
+* **Non-Failing Validation & External DNS Injection:** All validation post-processing scripts (`scripts/validation/evaluate_validation_plan.py`, `scripts/validation/evaluate_mesh_sensitivity.py`, `scripts/validation/evaluate_timescale_distribution.py`, `verification_squareDuct/validate_and_plot.py`) accept an external DNS location via `--dns-dir`, `--dns-file`, or the `TBNN_DNS_DIR` environment variable. When DNS data is absent, the scripts evaluate CFD topological metrics against literature reference values in `benchmark_metadata.json` without failing.
+* **Synthetic Test Fixtures:** The test suite includes a project-authored synthetic benchmark grid (`tests/fixtures/synthetic_dns_grid.csv`) guaranteeing that coordinate convention, interpolation, and geometry tests pass without external data dependencies.
+* **Attribution:** Any academic study, technical report, or publication utilizing the upstream benchmark datasets must cite the primary reference:
   > Pirozzoli, S., Modesti, D., Orlandi, P., & Grasso, F. (2018). *Turbulence and secondary motions in square duct flow.* Journal of Fluid Mechanics, 840, 634–655.
 
 ---
@@ -86,8 +91,10 @@ The software release strictly decouples the project's open-source software licen
 
 The automated test suite in `tests/` verifies mathematical foundations, cross-runtime parity, realizability, and post-processing algorithms:
 
-* **Test Execution Summary:** **20 passed, 1 skipped** (0 failures, 2 warnings) in 43.38s.
-* **Explanation of Skipped Test:** `tests/test_parity.py::test_cpp_evaluator_parity` tests cross-language binary parity between Python and the compiled C++ standalone evaluator binary (`tests/cpp_parity/test_evaluator_parity`). In standard Python test environments without a live OpenFOAM installation or compiled C++ binary, this test is gracefully skipped with a `UserWarning`. When the OpenFOAM environment and compiled binary are present, all 21 tests pass with zero failures.
+* **Test Execution Summary:** **19 passed, 2 skipped** (0 failures, 1 warning) in 10.32s in standard Python environments.
+* **Explanation of Skipped Tests:**
+  1. `tests/test_timescale_distribution.py` (2 tests: invariant envelope & basis norms bounds): These tests evaluate CFD invariants against the 4,225 DNS training points. When third-party benchmark DNS data is not locally supplied, the tests skip gracefully with an informative message. Both pass when external DNS data is supplied via `--dns-dir` or `TBNN_DNS_DIR`.
+  2. `tests/test_parity.py::test_cpp_evaluator_parity`: Tests cross-language parity between Python and the compiled C++ standalone evaluator binary (`tests/cpp_parity/test_evaluator_parity`). On platforms without a compiled OpenFOAM C++ test binary, this test gracefully self-skips with a `UserWarning`. On systems with OpenFOAM and the compiled binary present (e.g. via WSL / native Linux), it executes and verifies cross-language parity.
 * **Verified Verification Assertions:**
   1. Pope 10-tensor integrity basis tracelessness: $\max |\operatorname{tr}(\mathbf{T}^{(k)})| \le 10^{-12}$.
   2. Pope 10-tensor basis symmetry: $\max \|\mathbf{T}^{(k)} - (\mathbf{T}^{(k)})^T\|_F \le 10^{-12}$.

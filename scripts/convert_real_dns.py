@@ -138,8 +138,24 @@ def process_dat_file(dat_path, out_csv_path, h=0.5, Ub=1.0, nu=0.000226757, targ
     print(f'Full-duct DNS: {dat_path} -> {out_csv_path} ({len(df)} points, y in [{df["y"].min():.2f}, {df["y"].max():.2f}])')
 
 if __name__ == '__main__':
-    raw_dir = Path('data/benchmark_dns/raw_dns')
-    out_dir = Path('data/benchmark_dns')
-    process_dat_file(raw_dir / 'plotyz_Retau150.dat', out_dir / 'square_duct_dns_Reb4410_Retau150.csv', h=0.5, Ub=1.0, nu=0.000226757, target_grid=65)
-    process_dat_file(raw_dir / 'plotyz_Retau220.dat', out_dir / 'square_duct_dns_Reb7000_Retau220.csv', h=0.5, Ub=1.0, nu=0.000142857, target_grid=65)
+    import argparse
+    parser = argparse.ArgumentParser(description="Convert raw DNS plotyz_Retau*.dat files to standardized CSV")
+    parser.add_argument('--raw-dir', type=Path, default=Path('data/benchmark_dns/raw_dns'), help="Directory containing raw .dat files")
+    parser.add_argument('--out-dir', type=Path, default=Path('data/benchmark_dns'), help="Output directory for generated CSVs")
+    args = parser.parse_args()
+
+    f1 = args.raw_dir / 'plotyz_Retau150.dat'
+    f2 = args.raw_dir / 'plotyz_Retau220.dat'
+
+    if not f1.exists() and not f2.exists():
+        print(f"[ERROR] Raw DNS files not found in {args.raw_dir}")
+        print("Please download plotyz_Retau150.dat and plotyz_Retau220.dat from:")
+        print("  Sapienza University of Rome CFD Group DNS Database (http://newton.dma.uniroma1.it/square_duct/)")
+        print("as documented in data/benchmark_dns/README.md.")
+        sys.exit(1)
+
+    if f1.exists():
+        process_dat_file(f1, args.out_dir / 'square_duct_dns_Reb4410_Retau150.csv', h=0.5, Ub=1.0, nu=0.000226757, target_grid=65)
+    if f2.exists():
+        process_dat_file(f2, args.out_dir / 'square_duct_dns_Reb7000_Retau220.csv', h=0.5, Ub=1.0, nu=0.000142857, target_grid=65)
 

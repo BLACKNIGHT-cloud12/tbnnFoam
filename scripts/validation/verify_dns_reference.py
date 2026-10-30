@@ -66,9 +66,18 @@ def masked_cores(omx, y_1d, z_1d, inner=0.2, outer=0.9):
             float(-y_1d[l]), float(-z_1d[k]), float(f[k, l]))
 
 
-def main():
+def main(raw_dir: Path = None, dns_dir: Path = None):
+    if raw_dir is None:
+        raw_dir = RAW
+    if not (raw_dir / 'plotyz_Retau150.dat').exists():
+        print(f"[NOTE] Raw DNS benchmark data not found at {raw_dir}")
+        print("To run raw DNS verification, download plotyz_Retau150.dat and plotyz_Retau220.dat")
+        print("from the Sapienza CFD Group database (http://newton.dma.uniroma1.it/square_duct/)")
+        print("as described in data/benchmark_dns/README.md or specify --raw-dir.")
+        return
+
     print('=== 1. raw DNS vorticity discretization check (Re_b = 4410 plane) ===')
-    z_1d, y_1d, V, W, omx = load_dat(RAW / 'plotyz_Retau150.dat')
+    z_1d, y_1d, V, W, omx = load_dat(raw_dir / 'plotyz_Retau150.dat')
     print('raw grid: %dx%d quadrant, y/h in [%.3f, %.3f], z/h in [%.3f, %.3f]'
           % (len(z_1d), len(y_1d), y_1d.min(), y_1d.max(), z_1d.min(), z_1d.max()))
     omx_rec = np.gradient(W, y_1d, axis=1) - np.gradient(V, z_1d, axis=0)
@@ -92,7 +101,11 @@ def main():
     print()
     print('=== 3. repository detector on the mirrored 65x65 grid ===')
     import csv as _csv
-    rows = list(_csv.DictReader(open(REPO / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv')))
+    dns_csv = (dns_dir / 'square_duct_dns_Reb4410_Retau150.csv') if dns_dir else (REPO / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv')
+    if not dns_csv.exists():
+        print('[NOTE] square_duct_dns_Reb4410_Retau150.csv not found; skipping step 3.')
+        return
+    rows = list(_csv.DictReader(open(dns_csv)))
     n = len(rows)
     ny = int(round(np.sqrt(n)))
     y_g = np.array([float(r['y']) for r in rows]).reshape(ny, ny) / 0.5
@@ -138,4 +151,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    import argparse
+    parser = argparse.ArgumentParser(description="Verify vortex core coordinates and sign conventions against raw DNS")
+    parser.add_argument('--raw-dir', type=Path, default=RAW, help="Directory containing raw plotyz_Retau*.dat files")
+    parser.add_argument('--dns-dir', type=Path, default=REPO / 'data' / 'benchmark_dns', help="Directory containing converted DNS CSV files")
+    args = parser.parse_args()
+    main(raw_dir=args.raw_dir, dns_dir=args.dns_dir)

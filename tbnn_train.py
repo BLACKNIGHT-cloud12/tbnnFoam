@@ -43,9 +43,23 @@ def train():
     # The shipped model is trained on the canonical Re_b=4410 benchmark only;
     # no fallback dataset resolution. Legacy dataset names (Re1500/Re2200)
     # were removed with the re-audited benchmark.
-    csv_file = Path(__file__).resolve().parent / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
+    # Resolve DNS training dataset
+    csv_file = None
+    if 'TBNN_DNS_DIR' in os.environ:
+        cand = Path(os.environ['TBNN_DNS_DIR']) / 'square_duct_dns_Reb4410_Retau150.csv'
+        csv_file = cand if cand.exists() else None
+    if not csv_file or not csv_file.exists():
+        csv_file = Path(__file__).resolve().parent / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
     if not csv_file.exists():
         csv_file = Path('data/benchmark_dns/square_duct_dns_Reb4410_Retau150.csv')
+
+    if not csv_file.exists():
+        raise FileNotFoundError(
+            f"DNS benchmark training file missing: {csv_file}\n"
+            "Pre-trained production weights are already provided (tbnn_model.pt, export_weights/weights.json).\n"
+            "To re-train from scratch, download the benchmark dataset from the Sapienza CFD Group database\n"
+            "as documented in data/benchmark_dns/README.md or set TBNN_DNS_DIR."
+        )
     data = []
     with open(csv_file, 'r') as f:
         reader = csv.DictReader(f)

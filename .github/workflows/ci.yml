@@ -29,7 +29,7 @@ jobs:
         pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu
         pip install -r requirements.txt
 
-    - name: Verify DNS Benchmark Data & Metadata
+    - name: Verify Benchmark Metadata & Synthetic Test Fixture
       run: |
         python -c "
         import json, csv
@@ -37,11 +37,11 @@ jobs:
             meta = json.load(f)
             assert meta['flow_parameters']['bulk_reynolds_number_Re_b'] == 4410
             assert meta['flow_parameters']['friction_reynolds_number_Re_tau'] == 150.0
-        with open('data/benchmark_dns/square_duct_dns_Reb4410_Retau150.csv') as f:
+        with open('tests/fixtures/synthetic_dns_grid.csv') as f:
             reader = csv.DictReader(f)
             rows = list(reader)
-            assert len(rows) > 4000
-        print('DNS Benchmark verified: 4225 cells @ Re_b=4410, Re_tau=150')
+            assert len(rows) == 25
+        print('Benchmark metadata & synthetic test fixture verified.')
         "
 
     - name: Run Automated Verification Suite (pytest)

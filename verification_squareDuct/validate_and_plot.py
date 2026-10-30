@@ -55,11 +55,26 @@ def draw_circle_arrow(ax, center, radius, direction='anticlockwise', color='blue
         arrow = patches.RegularPolygon((x_head, y_head), 3, radius=0.04, orientation=np.pi, color=color)
         ax.add_patch(arrow)
 
-def validate():
+def validate(dns_dir: Path = None, dns_file: Path = None):
     case_dir = Path(__file__).resolve().parent
-    dns_file = case_dir.parent / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
-    if not dns_file.exists():
-        raise FileNotFoundError(f'Canonical DNS dataset missing: {dns_file}')
+    resolved_dns = None
+    if dns_file:
+        resolved_dns = dns_file if dns_file.exists() else None
+    elif dns_dir:
+        cand = dns_dir / 'square_duct_dns_Reb4410_Retau150.csv'
+        resolved_dns = cand if cand.exists() else None
+    elif 'TBNN_DNS_DIR' in os.environ:
+        cand = Path(os.environ['TBNN_DNS_DIR']) / 'square_duct_dns_Reb4410_Retau150.csv'
+        resolved_dns = cand if cand.exists() else None
+    elif (case_dir.parent / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv').exists():
+        resolved_dns = case_dir.parent / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
+
+    if not resolved_dns or not resolved_dns.exists():
+        print('[NOTE] Benchmark DNS dataset not found in data/benchmark_dns/.')
+        print('       To run full validation against DNS, obtain data per data/benchmark_dns/README.md')
+        print('       or pass --dns-dir / --dns-file.')
+        return
+    dns_file = resolved_dns
     meta_file = case_dir.parent / 'data' / 'benchmark_dns' / 'benchmark_metadata.json'
     with open(meta_file, 'r') as f:
         meta = json.load(f)
@@ -247,4 +262,10 @@ def validate():
     plt.savefig(docs_fig, bbox_inches='tight')
     print(f'[+] Mirrored to: {docs_fig}')
 if __name__ == '__main__':
-    validate()
+    import argparse
+    parser = argparse.ArgumentParser(description="Validate tbnnFoam square duct simulation against DNS")
+    parser.add_argument('--dns-dir', type=Path, default=None, help="Directory containing external DNS CSV benchmark data")
+    parser.add_argument('--dns-file', type=Path, default=None, help="Path to canonical square_duct_dns_Reb4410_Retau150.csv")
+    args = parser.parse_args()
+
+    validate(dns_dir=args.dns_dir, dns_file=args.dns_file)
