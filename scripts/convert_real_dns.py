@@ -87,10 +87,7 @@ def process_dat_file(dat_path, out_csv_path, h=0.5, Ub=1.0, nu=0.000226757, targ
     uw_g = interp_uw(pts_eval).reshape(target_grid, target_grid)
     vw_g = interp_vw(pts_eval).reshape(target_grid, target_grid)
     k_g = 0.5 * (uu_g + vv_g + ww_g)
-    # The 1e-7 floor makes the wall-boundary ring (256 points) degenerate:
-    # a_ij = uu/(2k) - delta_ij/3 collapses to -delta_ij/3 (trace -1), which
-    # the trace-free tensor basis cannot represent. See README limitation 5
-    # and benchmark_metadata.json "training_data_caveats".
+    
     k_g = np.clip(k_g, 1e-7, None)
     a_11 = uu_g / (2.0 * k_g) - (1.0 / 3.0)
     a_22 = vv_g / (2.0 * k_g) - (1.0 / 3.0)
