@@ -1,18 +1,5 @@
 #!/usr/bin/env python3
-"""
-tbnnFoam Publication Package Generator
-Assembles the complete publication package:
-- Main PDF (docs/tbnnFoam_preprint.pdf)
-- README.md
-- LICENSE
-- Complete clean source code ZIP (via git archive)
-- Supplementary materials:
-    - High-resolution figures & animations
-    - Comprehensive publication tables (CSV + Markdown)
-    - Technical reports & project summary
-    - Canonical DNS benchmark datasets & metadata
-Packages everything into: tbnnFoam_Publication_Package.zip
-"""
+
 
 import os
 import shutil
