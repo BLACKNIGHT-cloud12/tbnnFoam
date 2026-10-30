@@ -1,15 +1,16 @@
 {
-  "title": "tbnnFoam: OpenFOAM C++ In-Solver Tensor Basis Neural Network RANS Closure",
-  "upload_type": "software",
-  "description": "<p><b>tbnnFoam</b> is an in-situ coupled Reynolds-Averaged Navier–Stokes (RANS) solver within OpenFOAM 2606 featuring a dual-runtime inference architecture: an embedded LibTorch engine and a zero-dependency standalone C++ matrix evaluator with an analytical Cardano cubic eigensolver enforcing physical realizability on the Lumley triangle in \\(\\mathcal{O}(1)\\) operations per cell.</p>\n<p>Key highlights and capabilities:</p>\n<ul>\n  <li><b>Dual-Runtime Inference:</b> Embedded LibTorch C++ evaluator and zero-dependency native C++ evaluator.</li>\n  <li><b>Analytical Realizability:</b> Cardano cubic eigensolver guaranteeing positive-semidefinite Reynolds stresses on the Lumley triangle.</li>\n  <li><b>Cross-Engine Numerical Parity:</b> PyTorch, TorchScript, and standalone C++ agree within an absolute tolerance of 10<sup>-5</sup>.</li>\n  <li><b>Boussinesq Limit Assembled Parity:</b> Coupled momentum equation reduces exactly to baseline linear <i>k</i>–<i>&omega;</i> SST (maximum relative deviation 3.6 &times; 10<sup>-17</sup>).</li>\n  <li><b>Turbulent Duct Flow Benchmark:</b> Verified against the DNS benchmark of Pirozzoli et al. (<i>J. Fluid Mech.</i> 2018) for developing square-duct flow at <i>Re<sub>b</sub></i> = 4410 and <i>Re<sub>b</sub></i> = 17,800.</li>\n  <li><b>Reproducibility:</b> Includes pre-trained neural network weights, automated 21-test verification suite, and verification case configurations.</li>\n</ul>",
+  "title": "In-Situ Coupling of Tensor Basis Neural Networks for Turbulence Modeling in OpenFOAM: A Critical Verification, Validation, and Reproducibility Study",
+  "upload_type": "publication",
+  "publication_type": "preprint",
+  "description": "<p>Linear eddy viscosity models based on the Boussinesq hypothesis remain the workhorse of industrial Computational Fluid Dynamics (CFD). However, they fundamentally fail to predict turbulence-driven secondary flows of Prandtl's second kind due to their enforced alignment between the Reynolds stress anisotropy tensor and the mean strain rate tensor. Data-driven turbulence closures utilizing Tensor Basis Neural Networks (TBNN; Ling et al., <i>J. Fluid Mech.</i>, 2016) provide a mathematically rigorous, frame-invariant methodology to represent Reynolds stress anisotropy by projecting onto Pope's ten symmetric integrity basis tensors.</p>\n<p>In this work, we present an in-situ coupled CFD solver, <code>tbnnFoam</code>, implemented within OpenFOAM 2606. The solver features a dual-runtime inference architecture: an embedded LibTorch C++ engine and a zero-dependency standalone C++ matrix evaluator incorporating an analytical Cardano cubic eigensolver that enforces physical realizability on the Lumley triangle in \\(\\mathcal{O}(1)\\) operations. Cross-engine numerical parity across PyTorch, TorchScript, and the standalone C++ matrix evaluator is verified within an absolute tolerance of 10<sup>-5</sup> across synthetic test cases spanning shear, rotational, and complex 3D strain states, with the standalone C++ comparison executed when the OpenFOAM environment and compiled test binary are present. Beyond evaluator parity, the momentum-equation coupling itself is verified by an assembled-matrix test: in the Boussinesq limit the coupled equation reduces exactly to the baseline linear model (maximum relative deviation 3.6 &times; 10<sup>-17</sup>).</p>\n<p>We validate the coupled solver on developing turbulent flow in a square duct at bulk Reynolds number <i>Re<sub>b</sub></i> &approx; 4410 (<i>Re<sub>&tau;</sub></i> = 150) against high-fidelity Direct Numerical Simulation (DNS; Pirozzoli et al., <i>J. Fluid Mech.</i>, 2018). An independent algorithmic vortex detector employing connected-component labeling on non-dimensional axial vorticity confirms that <code>tbnnFoam</code> structurally recovers the secondary-flow mechanism by identifying all eight counter-rotating secondary recirculation cells where the standard linear <i>k</i>&ndash;<i>&omega;</i> SST closure tested here fails to reproduce the secondary-flow topology (detecting zero vortex cores).</p>\n<p>The outcome is a <b>partial validation</b>: while secondary circulation topology is recovered, vortex core localization exhibits notable offset (0.567 <i>h</i> error on the coarse mesh and 0.447 <i>h</i> on the refined mesh against the raw-field-verified DNS reference (0.577, 0.847)), and peak secondary speed exhibits strong discretization sensitivity, decreasing from 7.99% to 2.62% under 4&times; cross-stream grid refinement (relative to the raw-field DNS peak of 1.93%). We analyze the sources of these discrepancies, including the empirical &omega; surrogate whose invariants scale as &tau;<sup>2</sup> through &tau;<sup>4</sup>, first-order upwinding, wall-target degeneracy, and the developing-flow versus periodic-DNS mismatch, and quantify distribution shift between training and live states (median <i>k</i>-NN distance 0.21 &sigma;). All solver sources, evaluation scripts, raw DNS benchmark data, and an automated 21-test verification suite are openly distributed under the MIT license.</p>",
   "creators": [
     {
       "name": "Ghosh, Soumik",
-      "affiliation": "Department of Mechanical Engineering / Computer Science & Engineering"
+      "affiliation": "Department of Civil Engineering, Jadavpur University"
     }
   ],
   "access_right": "open",
-  "license": "MIT",
+  "license": "cc-by-4.0",
   "keywords": [
     "OpenFOAM",
     "Computational Fluid Dynamics",
@@ -24,7 +25,8 @@
     "Reynolds Stress Anisotropy",
     "Lumley Triangle",
     "Realizability",
-    "Secondary Flow"
+    "Secondary Flow",
+    "Verification and Validation"
   ],
   "related_identifiers": [
     {

@@ -3,7 +3,7 @@ message: "If you use tbnnFoam in your scientific research or engineering simulat
 authors:
   - family-names: "Ghosh"
     given-names: "Soumik"
-    affiliation: "Department of Mechanical Engineering / Computer Science & Engineering"
+    affiliation: "Department of Civil Engineering, Jadavpur University"
 title: "tbnnFoam: OpenFOAM C++ In-Solver Tensor Basis Neural Network RANS Closure"
 version: 1.0.0
 date-released: 2026-10-19

@@ -36,3 +36,8 @@ docs/latex/*.log
 docs/latex/*.out
 docs/latex/*.toc
 docs/latex/main.pdf
+
+# Publication packaging
+publication_package/
+tbnnFoam_Publication_Package.zip
+

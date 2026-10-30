@@ -27,7 +27,7 @@ In non-circular ducts, however, turbulent secondary flows of the second kind (Pr
 
 $$\mathbf{U} \cdot \nabla \omega_x \approx \frac{\partial^2}{\partial y \partial z}\left(\overline{w'^2} - \overline{v'^2}\right) + \left(\frac{\partial^2}{\partial z^2} - \frac{\partial^2}{\partial y^2}\right)\overline{v'w'}$$
 
-Because linear models force $\overline{w'^2} - \overline{v'^2} = 0$, the production of axial vorticity is identically zero. As a result, standard OpenFOAM predicts completely flat, unidirectional axial flow ($V = W = 0$), missing the 8 corner counter-rotating vortex pairs that transport momentum and heat into duct corners.
+Because linear models force $\overline{w'^2} - \overline{v'^2} = 0$, the production of axial vorticity from normal-stress anisotropy is identically zero. As a result, the baseline linear $k\text{--}\omega$ SST closure in standard OpenFOAM tested in this study predicts an essentially unidirectional axial flow ($V \approx 0, W \approx 0$), failing to reproduce the eight corner counter-rotating secondary recirculation cells that transport momentum and heat into duct corners.
 
 **`tbnnFoam`** embeds the Tensor Basis Neural Network (TBNN) architecture of Ling et al. (2016) directly into OpenFOAM's C++ finite volume solver loop. During every SIMPLE iteration, it extracts local velocity gradients, evaluates non-dimensional flow invariants, evaluates the neural network weights, enforces physical realizability, and injects the anisotropic stress divergence directly into the momentum equation.
 
