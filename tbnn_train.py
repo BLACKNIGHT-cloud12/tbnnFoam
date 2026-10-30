@@ -1,10 +1,11 @@
+import os
+import argparse
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import csv
 import numpy as np
 from pathlib import Path
-
 
 from tbnn_tensor_math import comp_inv_and_bases, cardano_eigvals, project_realizable
 
@@ -32,7 +33,7 @@ class TensorBasisNeuralNetwork(nn.Module):
         anisotropy = torch.sum(g_expanded * tensor_bases, dim=1)
         return anisotropy
 
-def train():
+def train(dns_dir=None, dns_file=None):
     # Fixed seeds: the shipped weights are reproducible from this script on
     # the pinned dependency versions in requirements.txt (CPU determinism;
     # exact bit-equality across CUDA/platforms is not guaranteed).
@@ -45,9 +46,18 @@ def train():
     # were removed with the re-audited benchmark.
     # Resolve DNS training dataset
     csv_file = None
-    if 'TBNN_DNS_DIR' in os.environ:
+    if dns_file:
+        cand = Path(dns_file)
+        if cand.exists():
+            csv_file = cand
+    if not csv_file and dns_dir:
+        cand = Path(dns_dir) / 'square_duct_dns_Reb4410_Retau150.csv'
+        if cand.exists():
+            csv_file = cand
+    if not csv_file and 'TBNN_DNS_DIR' in os.environ:
         cand = Path(os.environ['TBNN_DNS_DIR']) / 'square_duct_dns_Reb4410_Retau150.csv'
-        csv_file = cand if cand.exists() else None
+        if cand.exists():
+            csv_file = cand
     if not csv_file or not csv_file.exists():
         csv_file = Path(__file__).resolve().parent / 'data' / 'benchmark_dns' / 'square_duct_dns_Reb4410_Retau150.csv'
     if not csv_file.exists():
@@ -58,7 +68,7 @@ def train():
             f"DNS benchmark training file missing: {csv_file}\n"
             "Pre-trained production weights are already provided (tbnn_model.pt, export_weights/weights.json).\n"
             "To re-train from scratch, download the benchmark dataset from the Sapienza CFD Group database\n"
-            "as documented in data/benchmark_dns/README.md or set TBNN_DNS_DIR."
+            "as documented in data/benchmark_dns/README.md, or pass --dns-dir / --dns-file, or set TBNN_DNS_DIR."
         )
     data = []
     with open(csv_file, 'r') as f:
@@ -169,4 +179,8 @@ def train():
     export_cpp_weights(model_cpu)
 
 if __name__ == '__main__':
-    train()
+    parser = argparse.ArgumentParser(description="Train TBNN model on DNS benchmark data")
+    parser.add_argument('--dns-dir', type=str, default=None, help="Directory containing square_duct_dns_Reb4410_Retau150.csv")
+    parser.add_argument('--dns-file', type=str, default=None, help="Path to square_duct_dns_Reb4410_Retau150.csv")
+    args = parser.parse_args()
+    train(dns_dir=args.dns_dir, dns_file=args.dns_file)

@@ -7,7 +7,9 @@ Developed by **Soumik Ghosh**
 <div align="left">
 
 [![OpenFOAM](https://img.shields.io/badge/OpenFOAM-v2012%20--%20v2606-004C87.svg?logo=openfoam&logoColor=white)](https://www.openfoam.com)
-[![Pytest](https://img.shields.io/badge/Tests-19%20passed%2C%202%20skipped-2ea44f.svg)](tests/)
+[![CI](https://github.com/BLACKNIGHT-cloud12/tbnnFoam/actions/workflows/ci.yml/badge.svg)](https://github.com/BLACKNIGHT-cloud12/tbnnFoam/actions/workflows/ci.yml)
+[![CI Tests](https://img.shields.io/badge/CI%20Tests-17%20passed%2C%204%20skipped-2ea44f.svg)](tests/)
+[![Local Tests](https://img.shields.io/badge/Local%2FWSL%20Tests-19%20passed%2C%202%20skipped-2ea44f.svg)](tests/)
 [![Python](https://img.shields.io/badge/Python-3.9%20--%203.12-3776AB.svg?logo=python&logoColor=white)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -292,44 +294,49 @@ This establishes that live CFD operating points remain closely clustered around 
 
 ---
 
-## Automated Verification Suite (19 Passed, 2 Skipped)
+## Automated Verification Suite
 
-The repository includes a pytest test suite verifying numerical accuracy, coordinate conventions, mesh geometry reconstruction, and parity across all components. The suite runs automatically on GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml), ubuntu-latest) together with a DNS-metadata integrity check and the quantitative validation scripts; OpenFOAM C++ binary tests self-skip on platforms without a compiled solver binary, and DNS-dependent invariant envelope tests self-skip cleanly when third-party benchmark data is not locally supplied:
+The repository includes a comprehensive 21-test `pytest` verification suite covering tensor mathematical foundations, coordinate conventions, mesh geometry reconstruction, cross-engine numerical parity, and independent vortex detection algorithms.
+
+The test results reflect the execution environment and available optional dependencies:
+
+1. **GitHub-Hosted CI Runner (`ubuntu-latest`): 17 passed, 4 skipped (0 failures)**
+   * **2 tests skipped (OpenFOAM C++ toolchain absent):** Cross-language compiled binary tests (`test_standalone_cpp_numerical_parity` and `test_momentum_coupling_parity`) self-skip on hosted runners where OpenFOAM is not installed.
+   * **2 tests skipped (External DNS data absent):** Invariant bounding tests (`test_cfd_invariants_within_training_envelope` and `test_basis_norms_bounded_by_training_distribution`) self-skip cleanly when upstream benchmark DNS data is not locally supplied.
+2. **Local Development Environment (Windows + OpenFOAM-enabled WSL): 19 passed, 2 skipped (0 failures)**
+   * The 2 OpenFOAM C++ parity tests execute and pass via the local WSL toolchain.
+   * The 2 DNS invariant tests skip cleanly unless external DNS data is supplied via `--dns-dir` or `TBNN_DNS_DIR`.
+3. **Full Integration Environment (OpenFOAM + External DNS data supplied): 21 passed, 0 skipped**
 
 ```bash
 pytest -v
 ```
 
 ```text
-tests/test_coordinate_convention.py::test_non_square_gradient_ordering PASSED [  4%]
-tests/test_coordinate_convention.py::test_non_square_interpolation_ordering PASSED [  9%]
-tests/test_coordinate_convention.py::test_benchmark_dns_grid_convention PASSED [ 14%]
+tests/test_coordinate_convention.py::test_non_square_gradient_ordering PASSED            [  4%]
+tests/test_coordinate_convention.py::test_non_square_interpolation_ordering PASSED        [  9%]
+tests/test_coordinate_convention.py::test_benchmark_dns_grid_convention PASSED            [ 14%]
 tests/test_mesh_reconstruction_verification.py::test_coarse_mesh_geometry_and_ordering PASSED [ 19%]
 tests/test_mesh_reconstruction_verification.py::test_fine_mesh_geometry_and_ordering PASSED [ 23%]
-tests/test_mesh_sensitivity.py::test_mesh_sensitivity_core_and_velocity PASSED [ 28%]
-tests/test_parity.py::test_basis_trace_freedom PASSED                    [ 33%]
-tests/test_parity.py::test_basis_symmetry PASSED                         [ 38%]
-tests/test_parity.py::test_cardano_eigenvalue_accuracy PASSED            [ 42%]
-tests/test_parity.py::test_realizability_bounds PASSED                   [ 47%]
-tests/test_parity.py::test_evaluator_parity PASSED                       [ 52%]
-tests/test_parity.py::test_torchscript_parity PASSED                     [ 57%]
-tests/test_parity.py::test_json_weights_parity PASSED                    [ 61%]
-tests/test_parity.py::test_standalone_cpp_numerical_parity PASSED        [ 66%]
-tests/test_parity.py::test_solver_momentum_assembly_consistency PASSED   [ 71%]
-tests/test_parity.py::test_momentum_coupling_parity PASSED               [ 76%]
-tests/test_parity.py::test_cpp_evaluator_parity SKIPPED                   [ 80%]
-tests/test_timescale_distribution.py::test_timescale_distribution SKIPPED [ 85%]
-tests/test_vortex_detection.py::test_zero_vorticity_field PASSED         [ 90%]
-tests/test_vortex_detection.py::test_known_four_vortex_field PASSED      [ 95%]
-tests/test_vortex_detection.py::test_known_eight_vortex_field PASSED     [100%]
+tests/test_mesh_sensitivity.py::test_mesh_sensitivity_core_and_velocity PASSED            [ 28%]
+tests/test_parity.py::test_basis_trace_freedom PASSED                                      [ 33%]
+tests/test_parity.py::test_basis_symmetry PASSED                                           [ 38%]
+tests/test_parity.py::test_cardano_eigenvalue_accuracy PASSED                              [ 42%]
+tests/test_parity.py::test_realizability_bounds PASSED                                     [ 47%]
+tests/test_parity.py::test_evaluator_parity PASSED                                         [ 52%]
+tests/test_parity.py::test_torchscript_parity PASSED                                       [ 57%]
+tests/test_parity.py::test_json_weights_parity PASSED                                      [ 61%]
+tests/test_parity.py::test_standalone_cpp_numerical_parity PASSED (or SKIPPED on CI)       [ 66%]
+tests/test_parity.py::test_solver_momentum_assembly_consistency PASSED                     [ 71%]
+tests/test_parity.py::test_momentum_coupling_parity PASSED (or SKIPPED on CI)              [ 76%]
+tests/test_timescale_distribution.py::test_cfd_invariants_within_training_envelope SKIPPED [ 80%]
+tests/test_timescale_distribution.py::test_basis_norms_bounded_by_training_distribution SKIPPED [ 85%]
+tests/test_vortex_detection.py::test_zero_vorticity_field PASSED                           [ 90%]
+tests/test_vortex_detection.py::test_known_four_vortex_field PASSED                        [ 95%]
+tests/test_vortex_detection.py::test_known_eight_vortex_field PASSED                       [100%]
 
-================= 19 passed, 2 skipped, 1 warning in 13.80s ==================
-# Note:
-# 1. test_cpp_evaluator_parity is SKIPPED when the OpenFOAM environment or
-#    compiled C++ test binary is absent.
-# 2. test_timescale_distribution is SKIPPED when third-party benchmark DNS data
-#    is not supplied locally (see data/benchmark_dns/README.md). All 21 tests pass
-#    when both external DNS data and compiled C++ binary are available.
+================== 17 passed, 4 skipped in GitHub Actions CI ==================
+================ 19 passed, 2 skipped in Local WSL/OpenFOAM ===================
 ```
 
 ### Mesh Geometry Reconstruction & Cell Ordering Verification
@@ -358,9 +365,15 @@ pytest
 ```
 
 ### 3. Model Training & Export
-To re-train the model on the primary DNS benchmark (`square_duct_dns_Reb4410_Retau150.csv`) and export the TorchScript weights:
+Pre-trained model weights are bundled (`tbnn_model.pt`, `export_weights/weights.json`). To re-train from scratch using external DNS data:
 ```bash
+# Pass external DNS directory or file:
+python tbnn_train.py --dns-dir /path/to/dns_data
+# Or set TBNN_DNS_DIR environment variable:
+export TBNN_DNS_DIR="/path/to/dns_data"
 python tbnn_train.py
+
+# Export standalone weights:
 python tbnn_export.py
 ```
 

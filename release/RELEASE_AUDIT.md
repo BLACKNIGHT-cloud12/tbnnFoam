@@ -71,18 +71,21 @@ In `release/MANIFEST.txt`, `tbnn_model.pt` has size 52,516 bytes while the case-
 
 ---
 
-## 4. Licensing Boundary & Third-Party Dataset Decoupling (Option 1)
+## 4. Licensing Boundary, Complete Git History Purge & Third-Party Dataset Decoupling (Option 1)
 
 The software release strictly decouples the project's open-source software license from third-party research dataset redistribution:
 
 * **MIT Software License:** Applies exclusively to the `tbnnFoam` software authored by the project, including C++ solver code (`tbnnFoam.C`, `tbnnSimpleFoam/`), evaluator headers (`src/tbnnEvaluator.H`), Python training and export pipelines (`tbnn_train.py`, `tbnn_export.py`, `tbnn_tensor_math.py`), synthetic test fixtures (`tests/fixtures/synthetic_dns_grid.csv`), automated verification test suites (`tests/`), validation post-processing utilities (`scripts/validation/`), and OpenFOAM simulation case setups (`verification_squareDuct/`, `verification_squareDuct_Re17800/`).
-* **Decoupling of Upstream DNS Data:** In accordance with scientific software archival best practices and to avoid redistributing third-party data whose redistribution rights have not been formally established:
-  - Upstream DNS simulation files (`plotyz_Retau150.dat`, `plotyz_Retau220.dat`, `square_duct_dns_Reb4410_Retau150.csv`, `square_duct_dns_Reb7000_Retau220.csv`) are **not bundled** in the release archive.
-  - Complete provenance, source URLs from the Sapienza University of Rome CFD Group database (Pirozzoli et al., *J. Fluid Mech.*, 2018; Vinuesa et al., 2014), physical scaling, and conversion instructions are documented in [`data/benchmark_dns/README.md`](data/benchmark_dns/README.md).
-  - The repository includes automated data-conversion tooling (`scripts/convert_real_dns.py`) so users can independently download the raw files and generate the benchmark CSV files in seconds.
-* **Non-Failing Validation & External DNS Injection:** All validation post-processing scripts (`scripts/validation/evaluate_validation_plan.py`, `scripts/validation/evaluate_mesh_sensitivity.py`, `scripts/validation/evaluate_timescale_distribution.py`, `verification_squareDuct/validate_and_plot.py`) accept an external DNS location via `--dns-dir`, `--dns-file`, or the `TBNN_DNS_DIR` environment variable. When DNS data is absent, the scripts evaluate CFD topological metrics against literature reference values in `benchmark_metadata.json` without failing.
+* **Complete Git History Purge (git-filter-repo):** In accordance with scientific software archival requirements and intellectual property stewardship, all historical versions of upstream DNS data (`data/benchmark_dns/raw_dns/*`, `data/benchmark_dns/square_duct_dns_Reb4410_Retau150.csv`, `data/benchmark_dns/square_duct_dns_Reb7000_Retau220.csv`, `data/benchmark_dns/square_duct_dns_Re1500.csv`, `data/benchmark_dns/square_duct_dns_Re2200.csv`) and historical release ZIP archives containing those files were permanently purged from Git history using `git-filter-repo`. Neither the working tree nor earlier public commits contain upstream data files.
+* **External DNS Provenance & Acquisition:** Complete provenance, source URLs from the Sapienza University of Rome CFD Group database (Pirozzoli et al., *J. Fluid Mech.*, 2018; Vinuesa et al., 2014), physical scaling, and conversion instructions are documented in [`data/benchmark_dns/README.md`](data/benchmark_dns/README.md).
+* **Data Conversion Utility:** The repository includes a conversion utility (`scripts/convert_real_dns.py`) to process downloaded raw ASCII files into the benchmark CSV format. *(Note: this is a local processing utility; it does not download files over the network).*
+* **Accurate Script Behaviors With/Without DNS:**
+  - `scripts/validation/evaluate_validation_plan.py` & `evaluate_mesh_sensitivity.py`: evaluate secondary flow topological metrics (8 corner recirculation cells, vortex core positions, and peak speeds) against stored reference values in `benchmark_metadata.json`, omitting point-by-point DNS velocity RMSEs when DNS is absent.
+  - `scripts/validation/evaluate_timescale_distribution.py`: requires the DNS dataset (raises `FileNotFoundError` without it, as it evaluates joint/marginal distances specifically against DNS points; its unit tests skip cleanly).
+  - `verification_squareDuct/validate_and_plot.py`: requires the DNS dataset for contour overlays; prints an informative notice and returns cleanly when absent.
+  - `tbnn_train.py`: requires the DNS dataset via `--dns-dir`, `--dns-file`, or `TBNN_DNS_DIR` (pre-trained model weights are bundled).
 * **Synthetic Test Fixtures:** The test suite includes a project-authored synthetic benchmark grid (`tests/fixtures/synthetic_dns_grid.csv`) guaranteeing that coordinate convention, interpolation, and geometry tests pass without external data dependencies.
-* **Attribution:** Any academic study, technical report, or publication utilizing the upstream benchmark datasets must cite the primary reference:
+* **Attribution & Terms of Use:** The `license_and_terms_of_use` block in `data/benchmark_dns/benchmark_metadata.json` formally confirms that upstream data copyright remains with the original authors and is not covered by the MIT software license. Any academic study utilizing the upstream benchmark datasets must cite the primary reference:
   > Pirozzoli, S., Modesti, D., Orlandi, P., & Grasso, F. (2018). *Turbulence and secondary motions in square duct flow.* Journal of Fluid Mechanics, 840, 634–655.
 
 ---
@@ -91,10 +94,16 @@ The software release strictly decouples the project's open-source software licen
 
 The automated test suite in `tests/` verifies mathematical foundations, cross-runtime parity, realizability, and post-processing algorithms:
 
-* **Test Execution Summary:** **19 passed, 2 skipped** (0 failures, 1 warning) in 10.32s in standard Python environments.
-* **Explanation of Skipped Tests:**
-  1. `tests/test_timescale_distribution.py` (2 tests: invariant envelope & basis norms bounds): These tests evaluate CFD invariants against the 4,225 DNS training points. When third-party benchmark DNS data is not locally supplied, the tests skip gracefully with an informative message. Both pass when external DNS data is supplied via `--dns-dir` or `TBNN_DNS_DIR`.
-  2. `tests/test_parity.py::test_cpp_evaluator_parity`: Tests cross-language parity between Python and the compiled C++ standalone evaluator binary (`tests/cpp_parity/test_evaluator_parity`). On platforms without a compiled OpenFOAM C++ test binary, this test gracefully self-skips with a `UserWarning`. On systems with OpenFOAM and the compiled binary present (e.g. via WSL / native Linux), it executes and verifies cross-language parity.
+* **Dual-Environment Test Execution Results:**
+  1. **GitHub-Hosted CI Runner (`ubuntu-latest` without OpenFOAM / without DNS):**
+     * **Result:** **17 passed, 4 skipped (0 failures)** in 26.5s.
+     * **Skipped (2 tests - missing OpenFOAM C++ toolchain):** `test_standalone_cpp_numerical_parity` and `test_momentum_coupling_parity` gracefully self-skip when compiled C++ OpenFOAM binaries are unavailable in the runner environment.
+     * **Skipped (2 tests - external DNS data not supplied):** `test_cfd_invariants_within_training_envelope` and `test_basis_norms_bounded_by_training_distribution` in `tests/test_timescale_distribution.py` gracefully self-skip when external DNS benchmark data is not locally present.
+  2. **Local Development Environment (Windows + OpenFOAM-enabled WSL):**
+     * **Result:** **19 passed, 2 skipped (0 failures)** in 11.9s.
+     * The 2 OpenFOAM C++ parity tests execute and pass via the local WSL toolchain. The 2 DNS invariant tests skip cleanly.
+  3. **Full Integration Environment (OpenFOAM + External DNS data supplied):**
+     * **Result:** **21 passed, 0 skipped (0 failures)**.
 * **Verified Verification Assertions:**
   1. Pope 10-tensor integrity basis tracelessness: $\max |\operatorname{tr}(\mathbf{T}^{(k)})| \le 10^{-12}$.
   2. Pope 10-tensor basis symmetry: $\max \|\mathbf{T}^{(k)} - (\mathbf{T}^{(k)})^T\|_F \le 10^{-12}$.

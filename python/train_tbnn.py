@@ -1,5 +1,5 @@
 import os
-
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -26,11 +26,19 @@ class TBNN(nn.Module):
         a_pred = torch.einsum('bn,bnij->bij', g, basis_tensors)
         return (a_pred, g)
 
-def train():
+def train(dns_dir=None, dns_file=None):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Training on device: {device}')
     csv_path = None
-    if 'TBNN_DNS_DIR' in os.environ:
+    if dns_file:
+        cand = Path(dns_file)
+        if cand.exists():
+            csv_path = cand
+    if not csv_path and dns_dir:
+        cand = Path(dns_dir) / 'square_duct_dns_Reb4410_Retau150.csv'
+        if cand.exists():
+            csv_path = cand
+    if not csv_path and 'TBNN_DNS_DIR' in os.environ:
         cand = Path(os.environ['TBNN_DNS_DIR']) / 'square_duct_dns_Reb4410_Retau150.csv'
         csv_path = cand if cand.exists() else None
     if not csv_path or not csv_path.exists():
@@ -38,8 +46,8 @@ def train():
     if not csv_path.exists():
         raise FileNotFoundError(
             f'Cannot find dataset at {csv_path}.\n'
-            'To run this training script, obtain the benchmark dataset per data/benchmark_dns/README.md '
-            'or set TBNN_DNS_DIR.'
+            'To run this training script, obtain the benchmark dataset per data/benchmark_dns/README.md, '
+            'or pass --dns-dir / --dns-file, or set TBNN_DNS_DIR.'
         )
     df = pd.read_csv(csv_path)
     print(f'Training DNS Benchmark: Re_b = 4410 | Re_h = 2205 | Re_tau = 150 (Loaded {len(df)} points from {csv_path})')
@@ -133,4 +141,8 @@ def train():
     traced_model.save(str(pt_path))
     print(f'[+] Saved legacy TorchScript model to {pt_path}')
 if __name__ == '__main__':
-    train()
+    parser = argparse.ArgumentParser(description="Train prototype TBNN model")
+    parser.add_argument('--dns-dir', type=str, default=None, help="Directory containing square_duct_dns_Reb4410_Retau150.csv")
+    parser.add_argument('--dns-file', type=str, default=None, help="Path to square_duct_dns_Reb4410_Retau150.csv")
+    args = parser.parse_args()
+    train(dns_dir=args.dns_dir, dns_file=args.dns_file)

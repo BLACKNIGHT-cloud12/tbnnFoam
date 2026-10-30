@@ -25,9 +25,11 @@ The benchmark DNS data for turbulent square duct flow was produced by the Sapien
 * **NOT needed for running OpenFOAM simulations:** The shipped solvers (`tbnnFoam`, `tbnnSimpleFoam`) and verification cases (`verification_squareDuct`, `verification_squareDuct_Re17800`) run out-of-the-box using the pre-trained production model weights (`tbnn_model.pt`, `export_weights/weights.json`).
 * **NOT needed for automated test suites:** The test suite (`pytest tests/`) validates tensor mathematical properties, realizability bounds, cross-engine numerical parity, and vortex topological core recovery using project-authored synthetic fixtures and `benchmark_metadata.json`.
 * **ONLY needed if you want to:**
-  1. Re-train the Tensor Basis Neural Network from scratch (`tbnn_train.py`).
-  2. Compute direct point-by-point velocity field RMSEs ($L_2$ differences against DNS fields).
-  3. Re-run raw discretization verification checks (`scripts/validation/verify_dns_reference.py`).
+  1. Re-train the Tensor Basis Neural Network from scratch (`tbnn_train.py --dns-dir ...`).
+  2. Evaluate 5D invariant distribution shift and 1D marginal bounding (`scripts/validation/evaluate_timescale_distribution.py`).
+  3. Compute direct point-by-point velocity field RMSEs ($L_2$ differences against DNS fields) in `evaluate_validation_plan.py` and `evaluate_mesh_sensitivity.py`.
+  4. Generate overlay contour plots in `verification_squareDuct/validate_and_plot.py`.
+  5. Re-run raw discretization verification checks (`scripts/validation/verify_dns_reference.py`).
 
 ---
 
@@ -43,11 +45,13 @@ Place the downloaded files into:
 data/benchmark_dns/raw_dns/
 ```
 
-### Step B: Run the Conversion Pipeline
-Run the included preprocessing script to symmetry-mirror, bilinearly resample to a $65 \times 65$ cross-section, compute mean strain and rotation rate tensors, and generate standardized CSV files:
+### Step B: Run the Conversion Utility
+Run the included data conversion utility (`scripts/convert_real_dns.py`) to process the downloaded raw ASCII files. The utility symmetry-mirrors the cross-section, bilinearly resamples to $65 \times 65$, evaluates finite-difference velocity gradients and surrogate dissipation, and formats the standardized CSV files:
 ```bash
+# Convert raw files in data/benchmark_dns/raw_dns/ (or pass --raw-dir / --out-dir):
 python scripts/convert_real_dns.py
 ```
+*(Note: `scripts/convert_real_dns.py` is a conversion utility for already-downloaded raw files; it does not download upstream files over the network.)*
 This automatically produces:
 * `data/benchmark_dns/square_duct_dns_Reb4410_Retau150.csv`
 * `data/benchmark_dns/square_duct_dns_Reb7000_Retau220.csv`
@@ -58,8 +62,21 @@ This automatically produces:
 
 All validation, testing, and training scripts accept an externally supplied DNS directory or file path without requiring files to be placed inside the repository tree.
 
+### Script Behavior With and Without External DNS:
+
+| Script / Tool | Without External DNS Data | With External DNS Data (`--dns-dir`) |
+| :--- | :--- | :--- |
+| `scripts/validation/evaluate_validation_plan.py` | Evaluates 8 secondary vortex cores, core centroids, and peak speeds against `benchmark_metadata.json` (omits field RMSE). | Evaluates all topological metrics **plus** full-field $U$ and $(V, W)$ RMSEs against DNS. |
+| `scripts/validation/evaluate_mesh_sensitivity.py` | Evaluates grid refinement vortex properties and peak circulation trends against `benchmark_metadata.json`. | Evaluates grid metrics **plus** cross-mesh streamwise RMSE against DNS. |
+| `scripts/validation/evaluate_timescale_distribution.py` | **Requires DNS dataset** (raises `FileNotFoundError` because diagnostic evaluates distance to DNS training points; its unit test skips). | Evaluates 1D marginal bounding and 5D invariant nearest-neighbor distribution shift. |
+| `verification_squareDuct/validate_and_plot.py` | **Requires DNS dataset** for contour overlays; prints an informative notice and returns cleanly. | Generates comprehensive 4-panel DNS-overlaid validation figures. |
+| `tbnn_train.py` | **Requires DNS dataset** (raises `FileNotFoundError`; pre-trained weights are bundled). | Trains the neural network closure from scratch. |
+
 ### Using Command-Line Arguments:
 ```bash
+# Model training from scratch:
+python tbnn_train.py --dns-dir /path/to/external_dns_data
+
 # Quantitative physics validation report:
 python scripts/validation/evaluate_validation_plan.py --dns-dir /path/to/external_dns_data
 

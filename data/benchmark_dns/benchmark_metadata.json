@@ -138,7 +138,7 @@
   },
   "license_and_terms_of_use": {
     "software_license": "MIT",
-    "dns_data_copyright": "Copyright (c) 2018 Sergio Pirozzoli, Daniele Modesti, Paolo Orlandi, Francesco Grasso (Sapienza University of Rome CFD Group)",
-    "terms_of_use": "The raw and processed DNS benchmark datasets are distributed strictly for academic verification and computational reproducibility. The project MIT license applies only to tbnnFoam solver software, scripts, and utilities, and does not grant proprietary or sublicensing rights over the third-party DNS data. Users must cite Pirozzoli et al. (JFM 2018)."
+    "dns_data_copyright": "Copyright and ownership remain with the respective upstream data rights holders.",
+    "terms_of_use": "The upstream DNS benchmark datasets are not included in this software release. Users must obtain the data independently from the original source and comply with its applicable terms of use. The MIT license applies only to the tbnnFoam software and does not grant rights over third-party DNS data."
   }
 }
