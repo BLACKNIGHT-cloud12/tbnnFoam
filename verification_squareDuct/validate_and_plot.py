@@ -84,10 +84,7 @@ def validate():
     U_dns_2d = dns_u.reshape(Nz, Ny)
     V_dns_2d = dns_v.reshape(Nz, Ny)
     W_dns_2d = dns_w.reshape(Nz, Ny)
-    # Committed result directories are the canonical evaluation inputs; the
-    # legacy fallbacks ('200', 'baseline_73') pointed at data that no longer
-    # exists. This script reports the combined (V, W) secondary RMSE that the
-    # README quotes; evaluate_validation_plan.py reports the V component only.
+     
     tbnn_file = case_dir / '300' / 'U'
     base_file = case_dir / 'baseline_sst' / '111' / 'U'
     if not tbnn_file.exists():
