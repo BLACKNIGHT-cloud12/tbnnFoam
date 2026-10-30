@@ -1,12 +1,3 @@
-"""Shared TBNN tensor algebra (numpy-only, torch-free).
-
-Single source of truth for the invariant/basis construction and the
-Cardano realizability projection, used by the training script
-(tbnn_train.py), the legacy experiments under python/, and the
-validation scripts under scripts/validation/. The C++ counterpart of
-this math lives in src/tbnnEvaluator.H and is kept in lockstep by
-tests/test_parity.py.
-"""
 import numpy as np
 
 
