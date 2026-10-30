@@ -188,13 +188,7 @@ def test_standalone_cpp_numerical_parity():
         assert np.allclose(case['a'], py_res['a'], atol=1e-5)
 
 def test_solver_momentum_assembly_consistency():
-    # Both solvers must couple the TBNN stress identically: the baseline
-    # linear stress comes from turbulence->divDevReff(U), and the explicit
-    # source carries the full 2*k*a + 2*nut*S stress whose 2*nut*S part
-    # cancels the linear stress inside divDevReff. A bare
-    # -fvm::laplacian(nuEff, U) drops the transpose divergence
-    # -fvc::div(nuEff*gradU.T()) and does not reduce to the Boussinesq
-    # equation in the linear limit.
+
     repo_root = Path(__file__).resolve().parent.parent
     root_solver = (repo_root / 'tbnnFoam.C').read_text()
     standalone_ueqn = (repo_root / 'src' / 'tbnnSimpleFoam' / 'UEqn.H').read_text()
