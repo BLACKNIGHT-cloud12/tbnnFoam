@@ -5,9 +5,7 @@ import csv
 import numpy as np
 from pathlib import Path
 
-# Single source of truth for the tensor algebra lives in tbnn_tensor_math;
-# these re-exports keep the historical import path (tests/test_parity.py)
-# working.
+
 from tbnn_tensor_math import comp_inv_and_bases, cardano_eigvals, project_realizable
 
 __all__ = ['TensorBasisNeuralNetwork', 'comp_inv_and_bases', 'cardano_eigvals',
@@ -74,10 +72,7 @@ def train():
         a_true[idx, 0, 2] = a_true[idx, 2, 0] = float(row['a_13'])
         a_true[idx, 1, 2] = a_true[idx, 2, 1] = float(row['a_23'])
     inv, T = comp_inv_and_bases(grad_U, omega)
-    # Reflection-degenerate split: all five invariants are even in the
-    # rotation tensor, so quadrant 1 shares identical inputs with the
-    # training quadrants; it tests the odd-in-w basis sign structure
-    # (T2, T5, T7, T8, T10), not independent-flow generalization.
+ 
     val_mask = (y_coords > 0.0) & (z_coords > 0.0)
     train_mask = ~val_mask
     print(f'Spatial split: {np.sum(train_mask)} training points, {np.sum(val_mask)} validation points')
