@@ -436,6 +436,12 @@ def generate_metadata_and_package():
     final_zip_size_mb = final_zip_size / (1024 * 1024)
     print(f"Created: {OUTPUT_ZIP} ({final_zip_size_mb:.2f} MB, {len(staging_all_files)} entries)")
 
+    # Calculate and save external SHA-256 digest for the outer ZIP itself
+    zip_sha = compute_sha256(OUTPUT_ZIP)
+    zip_sha_file = RELEASE_DIR / f"{OUTPUT_ZIP.name}.sha256"
+    zip_sha_file.write_text(f"{zip_sha}  {OUTPUT_ZIP.name}\n", encoding="utf-8")
+    print(f"Generated external ZIP checksum: {zip_sha_file} (SHA256: {zip_sha})")
+
     # Extract and validate round-trip extraction & checksums
     print("=== [7/7] Validating Clean Extraction & Checksums ===")
     if EXTRACT_DIR.exists():

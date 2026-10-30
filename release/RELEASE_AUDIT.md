@@ -18,6 +18,7 @@ This document serves as the formal release audit, technical verification report,
 **Readiness Verdict: READY FOR ZENODO MANUAL DEPOSIT (APPROVED)**  
 The software package has been fully audited, verified against internal numerical parity and external DNS benchmarks, stripped of preprint-only duplicates and build caches, and packaged into a self-contained, single-pass release archive:
 * **Release Archive:** `release/tbnnFoam-1.0.0-source.zip` (36.45 MB compressed, 104.34 MB uncompressed payload, exactly 226 archive entries)
+* **External Archive Digest:** `release/tbnnFoam-1.0.0-source.zip.sha256` (`c0f520aa031f7c6cc90cca11952d33d50792d67f0a99648593645fae2f947dc4`)
 * **Clean Extracted Staging Tree:** `release/tbnnFoam-1.0.0-source/` (226 files verified)
 * **Cryptographic Checksums:** `release/CHECKSUMS.sha256` (225 verified SHA-256 digests covering `MANIFEST.txt` and all 224 payload files)
 * **Release Manifest:** `release/MANIFEST.txt` (itemized inventory covering all 224 software and benchmark metadata payload files)
@@ -33,6 +34,7 @@ To resolve metadata synchronization issues where release manifests describe an a
 3. **Checksum Compilation (`CHECKSUMS.sha256`):** The SHA-256 hash of `MANIFEST.txt` is computed and inserted as the first entry of `CHECKSUMS.sha256`, followed by the 224 payload files (225 hashes total). `CHECKSUMS.sha256` naturally avoids hashing itself, preventing circular dependency.
 4. **Single-Pass Master ZIP Packaging:** The final archive `tbnnFoam-1.0.0-source.zip` is built directly in a single pass containing all 226 files. No post-hoc file appending occurs. The final archive size (36.45 MB) and entry count (226 entries) are reported accurately.
 5. **Round-Trip Validation:** The final ZIP is extracted into `release/tbnnFoam-1.0.0-source/`, and all 225 SHA-256 hashes are verified against the extracted files on disk with zero discrepancies.
+6. **External Archive Digest (`release/tbnnFoam-1.0.0-source.zip.sha256`):** An independent SHA-256 digest is calculated and recorded for the outer ZIP file itself (`c0f520aa031f7c6cc90cca11952d33d50792d67f0a99648593645fae2f947dc4`), enabling pre-extraction verification of the downloaded archive file.
 
 ---
 
