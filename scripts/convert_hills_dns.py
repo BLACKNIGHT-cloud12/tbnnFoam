@@ -294,6 +294,10 @@ def process_hills_data(raw_parser, raw_path, out_csv_path, h_ref=1.0, u_ref=1.0,
 
     # Local channel height at that x: channel height at that x minus y_wall(x) computed from contour
     y_top = np.max(y_over_h, axis=0, keepdims=True)
+    # Wall distance must consider BOTH walls: the flat top wall sits at the
+    # grid's maximum y — without this, top-wall cells get d_w ~ full channel
+    # height, the surrogate omega collapses there, and the timescale explodes.
+    d_w = np.minimum(d_w, y_top - y_over_h)
     y_wall = np.interp(x_over_h, cx_norm, cy_norm)
     D_h = y_top - y_wall
     D_h = np.maximum(D_h, 1e-12)
