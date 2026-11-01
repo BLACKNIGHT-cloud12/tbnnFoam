@@ -94,9 +94,11 @@ def main(raw_dir: Path = None, dns_dir: Path = None):
           % (-ay, -az, aom, ay, az))
     print('companion CW core  : raw (%.3f, %.3f) omx* %+.3f -> Q1 (%.3f, %.3f)'
           % (-cy, -cz, com, cy, cz))
-    print('canonical metadata reference        : Q1 ACW (0.500, 0.820), companion (0.820, 0.500)')
-    print('raw-field vs canonical offset       : ACW d(r) = %.3f h, CW d(r) = %.3f h'
-          % (np.hypot(ay - 0.50, az - 0.82), np.hypot(cy - 0.82, cz - 0.50)))
+    print('metadata reference (verified)       : Q1 ACW (0.577, 0.847), companion (0.847, 0.577)')
+    print('raw-field vs metadata reference     : ACW d(r) = %.3f h, CW d(r) = %.3f h'
+          % (np.hypot(ay - 0.577, az - 0.847), np.hypot(cy - 0.847, cz - 0.577)))
+    print('raw-field vs retired pre-verification reference (0.500, 0.820): ACW d(r) = %.3f h'
+          % (np.hypot(ay - 0.50, az - 0.82),))
 
     print()
     print('=== 3. repository detector on the mirrored 65x65 grid ===')
@@ -125,11 +127,11 @@ def main(raw_dir: Path = None, dns_dir: Path = None):
           % (len(cores), len(acw), len(cw)))
     q1 = [c for c in acw if c['y'] > 0 and c['z'] > 0]
     if q1:
-        best = min(q1, key=lambda c: (c['y'] - 0.50) ** 2 + (c['z'] - 0.82) ** 2)
-        print('Q1 ACW core (65x65): (%.3f, %.3f) strength %+.3f  [canonical (0.500, 0.820)]'
+        best = min(q1, key=lambda c: (c['y'] - 0.577) ** 2 + (c['z'] - 0.847) ** 2)
+        print('Q1 ACW core (65x65): (%.3f, %.3f) strength %+.3f  [metadata reference (0.577, 0.847)]'
               % (best['y'], best['z'], best['strength']))
-        print('Q1 ACW offset vs canonical: %.3f h; vs raw-field peak: %.3f h'
-              % (np.hypot(best['y'] - 0.50, best['z'] - 0.82),
+        print('Q1 ACW offset vs metadata reference: %.3f h; vs raw-field peak: %.3f h'
+              % (np.hypot(best['y'] - 0.577, best['z'] - 0.847),
                  np.hypot(best['y'] - ay, best['z'] - az)))
 
     print()
@@ -137,14 +139,15 @@ def main(raw_dir: Path = None, dns_dir: Path = None):
     print('raw Re_b=4410 export : %.2f%% of Ub' % (100.0 * float(np.sqrt(V ** 2 + W ** 2).max())))
     print('65x65 resampled grid : %.2f%% of Ub' % (100.0 * float(np.sqrt(V_g ** 2 + W_g ** 2).max())))
     print('metadata stated target for Re_b=4410: 2.03%')
-    z2, y2, V2, W2, _ = load_dat(RAW / 'plotyz_Retau220.dat')
+    z2, y2, V2, W2, _ = load_dat(raw_dir / 'plotyz_Retau220.dat')  # honor --raw-dir for both datasets
     print('raw Re_b=7000 export : %.2f%% of Ub  <-- the 2.03%% figure matches THIS plane'
           % (100.0 * float(np.sqrt(V2 ** 2 + W2 ** 2).max())))
     print()
     print('CONCLUSION: core positions are grid- and threshold-dependent; the raw-field')
-    print('peak (0.577, 0.847) lies ~0.08 h from the canonical (0.500, 0.820) reference,')
-    print('which is the value detected on the coarser 65x65 grid used by the validation')
-    print('chain. Signs are consistent everywhere: primary omx* > 0 (ACW) at (0.50, 0.82),')
+    print('peak (0.577, 0.847) is the current metadata reference (verified on the raw'),
+    print('export). The retired pre-verification reference (0.500, 0.820) - the value')
+    print('detected on the coarser grid used by the early validation chain - lies ~0.08 h')
+    print('away. Signs are consistent everywhere: primary omx* > 0 (ACW),')
     print('companion omx* < 0 (CW) across the corner bisector. The 2.03% secondary-')
     print('velocity target matches the Re_b=7000 export exactly; the Re_b=4410 plane')
     print('peaks at 1.93% raw / 1.92% resampled (~5% below the stated target).')

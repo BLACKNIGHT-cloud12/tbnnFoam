@@ -66,7 +66,7 @@ All validation, testing, and training scripts accept an externally supplied DNS 
 
 | Script / Tool | Without External DNS Data | With External DNS Data (`--dns-dir`) |
 | :--- | :--- | :--- |
-| `scripts/validation/evaluate_validation_plan.py` | Evaluates 8 secondary vortex cores, core centroids, and peak speeds against `benchmark_metadata.json` (omits field RMSE). | Evaluates all topological metrics **plus** full-field $U$ and $(V, W)$ RMSEs against DNS. |
+| `scripts/validation/evaluate_validation_plan.py` | Evaluates 8 secondary vortex cores, core peak locations, and peak speeds against `benchmark_metadata.json` (omits field RMSE). | Evaluates all topological metrics **plus** full-field $U$ and $(V, W)$ RMSEs against DNS. |
 | `scripts/validation/evaluate_mesh_sensitivity.py` | Evaluates grid refinement vortex properties and peak circulation trends against `benchmark_metadata.json`. | Evaluates grid metrics **plus** cross-mesh streamwise RMSE against DNS. |
 | `scripts/validation/evaluate_timescale_distribution.py` | **Requires DNS dataset** (raises `FileNotFoundError` because diagnostic evaluates distance to DNS training points; its unit test skips). | Evaluates 1D marginal bounding and 5D invariant nearest-neighbor distribution shift. |
 | `verification_squareDuct/validate_and_plot.py` | **Requires DNS dataset** for contour overlays; prints an informative notice and returns cleanly. | Generates comprehensive 4-panel DNS-overlaid validation figures. |

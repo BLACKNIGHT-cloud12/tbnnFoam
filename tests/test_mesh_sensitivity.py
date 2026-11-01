@@ -5,9 +5,9 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from scripts.validation.evaluate_mesh_sensitivity import run_mesh_sensitivity_study
 
-def test_mesh_sensitivity_core_and_velocity():
+def test_mesh_sensitivity_core_and_velocity(tmp_path):
     repo_root = Path(__file__).resolve().parent.parent
-    results = run_mesh_sensitivity_study(repo_root)
+    results = run_mesh_sensitivity_study(repo_root, figure_out_dir=tmp_path)
 
     assert results['coarse']['cores_detected'] == 8
     assert results['fine']['cores_detected'] == 8

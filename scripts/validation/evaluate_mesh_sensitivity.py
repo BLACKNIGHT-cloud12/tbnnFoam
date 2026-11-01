@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from scripts.validation.vortex_detector import detect_vortex_cores
 from scripts.validation.foam_field_io import parse_foam_vec
 
-def run_mesh_sensitivity_study(repo_root: Path, dns_dir: Optional[Path] = None, dns_file: Optional[Path] = None):
+def run_mesh_sensitivity_study(repo_root: Path, dns_dir: Optional[Path] = None, dns_file: Optional[Path] = None, figure_out_dir: Optional[Path] = None):
     case_dir = repo_root / 'verification_squareDuct'
     coarse_u_file = case_dir / '300' / 'U'
     fine_u_file = case_dir / 'fine_mesh' / '300' / 'U'
@@ -245,7 +245,8 @@ def run_mesh_sensitivity_study(repo_root: Path, dns_dir: Optional[Path] = None, 
     ax4.legend(fontsize=9, framealpha=0.8)
 
     plt.tight_layout()
-    fig_path = repo_root / 'docs' / 'figures' / 'mesh_sensitivity_study.png'
+    fig_path = (figure_out_dir or (repo_root / 'docs' / 'figures')) / 'mesh_sensitivity_study.png'
+    fig_path.parent.mkdir(parents=True, exist_ok=True)
     fig_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(fig_path, dpi=300)
     plt.close()

@@ -92,7 +92,7 @@ def main():
     print("\n" + "=" * 90)
     print("      Streamwise Spatial Development Analysis (x/Dh = 1.1 to 9.1)")
     print("=" * 90)
-    print(f"{'Station':<8} {'x/Dh':<7} {'Uc/Ub':<8} {'RawMax(%)':<11} {'CoreMax(%)':<12} {'Cores':<7} {'Q1 Centroid':<16} {'Dist Err':<10}")
+    print(f"{'Station':<8} {'x/Dh':<7} {'Uc/Ub':<8} {'RawMax(%)':<11} {'CoreMax(%)':<12} {'Cores':<7} {'Q1 Peak Location':<16} {'Dist Err':<10}")
     print("-" * 90)
 
     for s_idx, ix in enumerate(station_indices):
@@ -165,19 +165,19 @@ def main():
     raw_z_loc = z_norm[raw_max_idx[0]]
 
     
-    core_centroid_speeds = []
+    core_peak_speeds = []
     for c in dev_cores:
         iy_c = np.argmin(np.abs(y_norm - c['y']))
         iz_c = np.argmin(np.abs(z_norm - c['z']))
-        core_centroid_speeds.append(v_sec[iz_c, iy_c] * 100.0)
-    mean_core_speed = float(np.mean(core_centroid_speeds)) if core_centroid_speeds else 0.0
+        core_peak_speeds.append(v_sec[iz_c, iy_c] * 100.0)
+    mean_core_speed = float(np.mean(core_peak_speeds)) if core_peak_speeds else 0.0
 
     print("\n" + "=" * 80)
     print("      TBNN-OpenFOAM High-Reynolds Number Quantitative Reconciliation")
     print("=" * 80)
     print(f"Bulk Reynolds Number (Re_b)          : {Re_b:.1f}")
     print(f"Friction Reynolds Number (Re_tau)    : ~{Re_tau_ref:.0f} (Pirozzoli et al. 2018)")
-    print(f"Detected Vortex Core Centroid Speed  : {mean_core_speed:.2f}%  (Evaluated at detected core centers)")
+    print(f"Detected Core Peak Speed  : {mean_core_speed:.2f}%  (Evaluated at detected vorticity-peak locations)")
     print(f"Interior-Masked Domain Max (|y|,|z|<=0.85h): {interior_masked_max:.2f}%  (Geometric exclusion zone)")
     print(f"Raw Unmasked Domain Max V_sec / U_b  : {raw_vsec_pct:.2f}%  (Wall-adjacent cell at y/h={raw_y_loc:.3f}, z/h={raw_z_loc:.3f})")
     print(f"Vortex Cores Detected                : {len(dev_cores)} / 8 canonical cores")
@@ -186,15 +186,15 @@ def main():
     if q1_dev:
         best_q1_dev = min(q1_dev, key=lambda c: np.sqrt((c['y'] - 0.577)**2 + (c['z'] - 0.847)**2))
         d_err = np.sqrt((best_q1_dev['y'] - 0.577)**2 + (best_q1_dev['z'] - 0.847)**2)
-        print(f"Q1 Downstream-Averaged Centroid (y/h, z/h) : ({best_q1_dev['y']:.3f}, {best_q1_dev['z']:.3f})  [DNS Ref: (0.577, 0.847), raw-field verified]")
+        print(f"Q1 Downstream-Averaged Peak Location (y/h, z/h) : ({best_q1_dev['y']:.3f}, {best_q1_dev['z']:.3f})  [Substituted low-Re DNS Ref: (0.577, 0.847), raw-field verified]")
         print(f"Q1 Averaged-Section Localization Error   : {d_err:.3f} h (~{d_err / dy_norm:.2f} grid cells on 40x40 mesh)")
-        print(f"  (Note: Individual downstream station x/Dh=9.1 resolves centroid at (0.525, 0.875) with 0.060 h error)")
+        print(f"  (Note: Individual downstream station x/Dh=9.1 resolves the peak at (0.525, 0.875) with 0.060 h error)")
 
     print("\n[Technical Note - DNS Benchmark Comparison]:")
     print(f"  * Asymptotic Fully Developed Periodic DNS Reference : 2.03% - 2.30% (Pirozzoli et al. 2018)")
-    print(f"  * Downstream Developing Centroid Mean (x/Dh=6.1-9.1) : {mean_core_speed:.2f}% (Interior-masked range: 1.67% - 1.84%)")
+    print(f"  * Downstream Developing Core-Peak Mean (x/Dh=6.1-9.1) : {mean_core_speed:.2f}% (Interior-masked range: 1.67% - 1.84%)")
     print(f"  * Assessment: Downstream station interior maxima are 9.4% - 17.7% below the DNS lower bound (2.03%),")
-    print(f"    with the centroid mean underpredicting by 15.8%, consistent with an incompletely developed spatial")
+    print(f"    with the peak-location mean underpredicting by 15.8%, consistent with an incompletely developed spatial")
     print(f"    duct (Uc/Ub = 1.132 at x/Dh=9.1 vs asymptotic periodic DNS Uc/Ub ~ 1.33).")
     print(f"  * Proposed Near-Wall Mechanism: The raw 9.40% maximum occurs strictly in the single wall cell")
     print(f"    (|z/h|=0.975); this is a proposed numerical/wall-treatment artifact pending full stress divergence decomposition.")
@@ -271,14 +271,14 @@ def main():
     w_profile = Uz_dev[:, iy_slice] / Ub * 100.0
     ax4.plot(z_norm, w_profile, 'b-o', linewidth=2, markersize=4, label=r'CFD $W / U_b$ at $y/h = 0.525$')
     ax4.axvspan(-0.85, 0.85, color='green', alpha=0.10, label=r'Core Domain Region ($|z/h| \leq 0.85$)')
-    ax4.axvline(0.847, color='red', linestyle='--', alpha=0.7, label=r'DNS Core Centroid $z/h = 0.847$')
+    ax4.axvline(0.847, color='red', linestyle='--', alpha=0.7, label=r'DNS Core Peak $z/h = 0.847$')
     ax4.set_xlabel(r'Wall-Normal Coordinate $z / h$', fontsize=11)
     ax4.set_ylabel(r'Vertical Velocity $W / U_b$ (%)', fontsize=11)
     ax4.set_title(r'(d) Cross-Stream Secondary Velocity Profile Across Vortex Core', fontsize=12, fontweight='bold')
     ax4.grid(True, linestyle='--', alpha=0.5)
     ax4.legend(loc='lower center', framealpha=0.9, fontsize=9)
 
-    fig.suptitle(r'$\mathbf{tbnnFoam}$ High-Reynolds Number Validation ($Re_b = 17{,}800$, $Re_\tau \approx 519$)',
+    fig.suptitle(r'$\mathbf{tbnnFoam}$ High-Reynolds-Number Case Study ($Re_b = 17{,}800$, $Re_\tau \approx 519$)',
                  fontsize=15, fontweight='bold', y=0.98)
 
     save_path = case_dir / 'tbnn_Re17800_showcase.png'

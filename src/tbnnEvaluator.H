@@ -167,7 +167,7 @@ public:
         {
             scalar mean = (inv_mean_.size() == 5 ? inv_mean_[i] : 0.0);
             scalar std = (inv_std_.size() == 5 ? inv_std_[i] : 1.0);
-            x0[i] = std::clamp((I[i] - mean) / (std + 1e-6), -50.0, 50.0);
+            x0[i] = std::max(-50.0, std::min((I[i] - mean) / (std + 1e-6), 50.0)); // C++11-compatible clamp
         }
 
         const size_t H0 = W0_.size();
@@ -257,7 +257,7 @@ public:
         if (pVal > 1e-14)
         {
             scalar mVal = 2.0 * sqrt(pVal / 3.0);
-            scalar arg = std::clamp(3.0 * qVal / (pVal * mVal), -1.0, 1.0);
+            scalar arg = std::max(-1.0, std::min(3.0 * qVal / (pVal * mVal), 1.0)); // C++11-compatible clamp
             scalar theta = (1.0 / 3.0) * acos(arg);
             scalar l1 = mVal * cos(theta);
             scalar l2 = mVal * cos(theta - 2.0 * M_PI / 3.0);

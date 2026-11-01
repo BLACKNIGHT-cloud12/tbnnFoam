@@ -164,7 +164,7 @@ class ValidationEngine:
         core_tbnn_str = f"({m_tbnn['core_y']:.2f}, {m_tbnn['core_z']:.2f})"
         table.append(f"| **Q1 Core Coordinates (y/h, z/h)** | {core_base_str} | {core_tbnn_str} | ({self.dns_core_y:.2f}, {self.dns_core_z:.2f}) | Corner core localization |")
         delta_base_str = 'N/A' if math.isnan(m_base['delta_r']) else f"{m_base['delta_r']:.3f} h"
-        table.append(f"| **Core Localization Distance Error** | {delta_base_str} | {m_tbnn['delta_r']:.3f} h | 0.000 h (Ref) | Distance to benchmark core centroid |")
+        table.append(f"| **Core Localization Distance Error** | {delta_base_str} | {m_tbnn['delta_r']:.3f} h | 0.000 h (Ref) | Distance to benchmark core location |")
         
         if m_tbnn['nrmse_u'] is not None:
             table.append(f"| **Streamwise U NRMSE** | {m_base['nrmse_u']:.2f}% | {m_tbnn['nrmse_u']:.2f}% | 0.00% (Ref) | Lower overall profile error |")

@@ -13,7 +13,7 @@ def detect_vortex_cores(omega_x, y_1d, z_1d, min_separation=0.2, min_strength=0.
     for sign, factor in [('acw', 1.0), ('cw', -1.0)]:
         vort_field = factor * omega_x
         binary_mask = (vort_field > min_strength) & interior_mask
-        labeled, num_features = ndimage.label(binary_mask)
+        labeled, num_features = ndimage.label(binary_mask, structure=ndimage.generate_binary_structure(2, 1))  # explicit 4-connectivity (documented behavior)
         candidates = []
         for feat_id in range(1, num_features + 1):
             comp_mask = (labeled == feat_id)
