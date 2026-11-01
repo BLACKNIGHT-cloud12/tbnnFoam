@@ -11,6 +11,7 @@ document it in the module docstring verbatim.
 from pathlib import Path
 import re
 import sys
+import zipfile
 import numpy as np
 import pandas as pd
 
@@ -330,6 +331,78 @@ def process_hills_data(raw_parser, raw_path, out_csv_path, h_ref=1.0, u_ref=1.0,
     return df
 
 
+def voet_case_parser(raw_path):
+    """Parser for the Voet & Laizet / Xiao et al. (2020) periodic-hills DNS archives.
+
+    raw_path format: "<archive.zip>::<member.dat>" — e.g.
+        "voet_raw/DNS Data/Case 2/Archive.zip::mean_files.dat"
+    (subdirectory members work, e.g. "::BIG_XYZ/mean_files.dat").
+
+    Column mapping (verified on the reference case by the turbulent-kinetic-energy
+    identity k = 0.5*(uu+vv+ww), all coordinates in hill-height units, velocities
+    normalized by the bulk velocity):
+      mean_files.dat: x y U V W (column 6 unused here)
+      rms_files1.dat: x y uu vv ww uv
+      rms_files2.dat: x y uw vw (column 5 unused here)
+
+    Returns the standard 11-key dict of (n_y, n_x) arrays consumed by
+    process_hills_data. Rows are x-fastest within each y, matching the
+    reshape(n_y, n_x) convention of default_parser.
+    """
+    if "::" not in str(raw_path):
+        raise ValueError(
+            "voet_case_parser expects '<archive.zip>::<member.dat>', got: %s" % raw_path
+        )
+    archive_str, member = str(raw_path).split("::", 1)
+    archive = Path(archive_str)
+    if not archive.exists():
+        raise FileNotFoundError(f"Voet/Laizet archive not found: {archive}")
+
+    with zipfile.ZipFile(archive) as zf:
+        if member not in zf.namelist():
+            raise FileNotFoundError(f"Member '{member}' not in archive {archive}")
+
+        def load(shape_cols, name):
+            with zf.open(name) as f:
+                return np.loadtxt(f)
+
+        mean = load(6, member)
+        folder, stem = member.rsplit("/", 1) if "/" in member else ("", member)
+        tag = stem[len("mean_files"):-len(".dat")]  # "" or e.g. "_DNS2"
+        prefix = f"{folder}/" if folder else ""
+        r1_name = f"{prefix}rms_files1{tag}.dat"
+        r2_name = f"{prefix}rms_files2{tag}.dat"
+        rms1 = load(6, r1_name)
+        rms2 = load(5, r2_name)
+
+    if mean.shape[0] != rms1.shape[0] or mean.shape[0] != rms2.shape[0]:
+        raise ValueError(
+            f"Row-count mismatch: mean={mean.shape[0]}, rms1={rms1.shape[0]}, rms2={rms2.shape[0]}"
+        )
+
+    n_x = len(np.unique(mean[:, 0]))
+    if mean.shape[0] % n_x != 0:
+        raise ValueError(f"Row count {mean.shape[0]} not divisible by n_x={n_x}")
+    n_y = mean.shape[0] // n_x
+
+    def plane(col):
+        return col.reshape(n_y, n_x)
+
+    return {
+        "x": plane(mean[:, 0]),
+        "y": plane(mean[:, 1]),
+        "U": plane(mean[:, 2]),
+        "V": plane(mean[:, 3]),
+        "W": plane(mean[:, 4]),
+        "uu": plane(rms1[:, 2]),
+        "vv": plane(rms1[:, 3]),
+        "ww": plane(rms1[:, 4]),
+        "uv": plane(rms1[:, 5]),
+        "uw": plane(rms2[:, 2]),
+        "vw": plane(rms2[:, 3]),
+    }
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -340,6 +413,13 @@ if __name__ == "__main__":
     parser.add_argument("--out", type=Path, required=True, help="Path to output CSV file")
     parser.add_argument(
         "--contour", type=Path, default=None, help="Path to hill contour file (optional)"
+    )
+    parser.add_argument(
+        "--format",
+        choices=["default", "voet"],
+        default="default",
+        help="Raw format: 'default' (documented plain format) or 'voet' "
+        "(Voet & Laizet / Xiao et al. 2020 archive, raw_path = '<zip>::<member>')",
     )
     parser.add_argument(
         "--href",
@@ -360,7 +440,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     process_hills_data(
-        raw_parser=default_parser,
+        raw_parser=voet_case_parser if args.format == "voet" else default_parser,
         raw_path=args.raw,
         out_csv_path=args.out,
         h_ref=args.href,

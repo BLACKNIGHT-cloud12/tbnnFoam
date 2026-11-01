@@ -1,0 +1,18 @@
+#!/bin/sh
+cd "${0%/*}" || exit
+set -e
+
+if [ -n "$WM_PROJECT_DIR" ] && [ -f "$WM_PROJECT_DIR/bin/tools/RunFunctions" ]; then
+    . "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+fi
+
+rm -rf [1-9]* log.*
+find constant/polyMesh -mindepth 1 ! -name '.gitkeep' -delete 2>/dev/null || true
+
+echo "--> Running blockMesh..."
+blockMesh > log.blockMesh 2>&1
+
+echo "--> Running simpleFoam..."
+simpleFoam > log.simpleFoam 2>&1
+
+echo "--> Simulation completed! Check log.simpleFoam."

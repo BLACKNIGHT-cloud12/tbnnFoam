@@ -1,0 +1,5 @@
+#!/bin/sh
+cd "${0%/*}" || exit
+
+rm -rf [1-9]* log.*
+find constant/polyMesh -mindepth 1 ! -name '.gitkeep' -delete 2>/dev/null || true

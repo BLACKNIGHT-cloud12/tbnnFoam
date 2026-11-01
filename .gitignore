@@ -48,3 +48,9 @@ release/tbnnFoam-1.0.0-source/
 # v2 periodic-hills third-party DNS data (same posture as v1 duct DNS)
 data/benchmark_dns/periodic_hills/tum_raw/
 data/benchmark_dns/periodic_hills/voet_raw/
+
+# converted training CSVs stay local (v2 posture)
+data/benchmark_dns/periodic_hills/*.csv
+
+# extracted v1.0.1 verification tree (regenerable from the zip; not source)
+release/tbnnFoam-1.0.1-source/
