@@ -8,7 +8,7 @@ Developed by **Soumik Ghosh**
 
 [![OpenFOAM](https://img.shields.io/badge/OpenFOAM-v2012%20--%20v2606-004C87.svg?logo=openfoam&logoColor=white)](https://www.openfoam.com)
 [![CI](https://github.com/BLACKNIGHT-cloud12/tbnnFoam/actions/workflows/ci.yml/badge.svg)](https://github.com/BLACKNIGHT-cloud12/tbnnFoam/actions/workflows/ci.yml)
-[![CI Tests](https://img.shields.io/badge/CI%20Tests-17%20passed%2C%204%20skipped-2ea44f.svg)](tests/)
+[![CI Tests](https://img.shields.io/badge/CI%20Tests-18%20passed%2C%203%20skipped-2ea44f.svg)](tests/)
 [![Local Tests](https://img.shields.io/badge/Local%2FWSL%20Tests-19%20passed%2C%202%20skipped-2ea44f.svg)](tests/)
 [![Python](https://img.shields.io/badge/Python-3.12%20%28tested%29-3776AB.svg?logo=python&logoColor=white)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -303,11 +303,11 @@ The repository includes a comprehensive 21-test `pytest` verification suite cove
 
 The test results reflect the execution environment and available optional dependencies:
 
-1. **GitHub-Hosted CI Runner (`ubuntu-latest`): 17 passed, 4 skipped (0 failures)**
-   * **2 tests skipped (OpenFOAM C++ toolchain absent):** Cross-language compiled binary tests (`test_standalone_cpp_numerical_parity` and `test_momentum_coupling_parity`) self-skip on hosted runners where OpenFOAM is not installed.
+1. **GitHub-Hosted CI Runner (`ubuntu-latest`): 18 passed, 3 skipped (0 failures)**
+   * **1 test skipped (OpenFOAM C++ toolchain absent):** the compiled-binary test `test_standalone_cpp_numerical_parity` self-skips on hosted runners where OpenFOAM is not installed. Since the v1.0.1 verification-script correction, `test_momentum_coupling_parity` runs in pure Python and no longer requires the toolchain.
    * **2 tests skipped (External DNS data absent):** Invariant bounding tests (`test_cfd_invariants_within_training_envelope` and `test_basis_norms_bounded_by_training_distribution`) self-skip cleanly when upstream benchmark DNS data is not locally supplied.
 2. **Local Development Environment (Windows + OpenFOAM-enabled WSL): 19 passed, 2 skipped (0 failures)**
-   * The 2 OpenFOAM C++ parity tests execute and pass via the local WSL toolchain.
+   * The OpenFOAM C++ parity test executes and passes via the local WSL toolchain.
    * The 2 DNS invariant tests skip cleanly unless external DNS data is supplied via `--dns-dir` or `TBNN_DNS_DIR`.
 3. **Full Integration Environment (OpenFOAM + External DNS data supplied): 21 passed, 0 skipped**
 
@@ -331,14 +331,14 @@ tests/test_parity.py::test_torchscript_parity PASSED                            
 tests/test_parity.py::test_json_weights_parity PASSED                                      [ 61%]
 tests/test_parity.py::test_standalone_cpp_numerical_parity PASSED (or SKIPPED on CI)       [ 66%]
 tests/test_parity.py::test_solver_momentum_assembly_consistency PASSED                     [ 71%]
-tests/test_parity.py::test_momentum_coupling_parity PASSED (or SKIPPED on CI)              [ 76%]
+tests/test_parity.py::test_momentum_coupling_parity PASSED                                 [ 76%]
 tests/test_timescale_distribution.py::test_cfd_invariants_within_training_envelope SKIPPED [ 80%]
 tests/test_timescale_distribution.py::test_basis_norms_bounded_by_training_distribution SKIPPED [ 85%]
 tests/test_vortex_detection.py::test_zero_vorticity_field PASSED                           [ 90%]
 tests/test_vortex_detection.py::test_known_four_vortex_field PASSED                        [ 95%]
 tests/test_vortex_detection.py::test_known_eight_vortex_field PASSED                       [100%]
 
-================== 17 passed, 4 skipped in GitHub Actions CI ==================
+================== 18 passed, 3 skipped in GitHub Actions CI ==================
 ================ 19 passed, 2 skipped in Local WSL/OpenFOAM ===================
 ```
 
@@ -356,6 +356,8 @@ This ensures that field reshaping introduces no detectable distortion at floatin
 ---
 
 ## Quick Start: How to Build and Run
+
+> A detailed step-by-step installation and usage guide — prerequisites, both solver build paths, the validation workflow, retraining, and troubleshooting — is in [INSTALL.md](INSTALL.md).
 
 ### 1. Python Environment
 ```bash

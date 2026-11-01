@@ -50,7 +50,7 @@ This directory contains exported model weight artifacts consumed by the zero-dep
   - **Note:** Historical 30-neuron prototype model (2,350 parameters). Retained strictly for provenance and historical reference.
   - **Active Model:** The authoritative 64-neuron production model is located at the repository root (`tbnn_model.pt`) and in the verification cases (`verification_squareDuct/constant/tbnn_model.pt`).
 """
-    (dst / "README.md").write_text(content, encoding="utf-8")
+    (dst / "README.md").write_text(content, encoding="utf-8", newline="\n")
 
 def create_python_readme(dst: Path):
     content = """# Python Training & Experimental Pipelines
@@ -70,7 +70,7 @@ The authoritative, reproducible training pipeline for the shipped 64-width produ
 * **`tbnn_export.py`**: Exports weights to TorchScript (`tbnn_model.pt`) and JSON (`export_weights/weights.json`).
 * **`tbnn_tensor_math.py`**: Canonical implementation of Pope's 10-tensor integrity basis, Cayley-Hamilton invariants, and Cardano cubic realizability limiter.
 """
-    (dst / "README.md").write_text(content, encoding="utf-8")
+    (dst / "README.md").write_text(content, encoding="utf-8", newline="\n")
 
 def create_dns_readme(dst: Path):
     src = REPO_ROOT / "data" / "benchmark_dns" / "README.md"
@@ -107,7 +107,7 @@ def create_zenodo_software_json(dst: Path):
             "Secondary Flow"
         ]
     }
-    (dst / ".zenodo.json").write_text(json.dumps(zenodo_dict, indent=2), encoding="utf-8")
+    (dst / ".zenodo.json").write_text(json.dumps(zenodo_dict, indent=2), encoding="utf-8", newline="\n")
 
 def create_citation_cff(dst: Path):
     cff = """cff-version: 1.2.0
@@ -134,7 +134,7 @@ keywords:
   - "RANS"
 license: MIT
 """
-    (dst / "CITATION.cff").write_text(cff, encoding="utf-8")
+    (dst / "CITATION.cff").write_text(cff, encoding="utf-8", newline="\n")
 
 def clean_caches(base_dir: Path):
     for p in list(base_dir.rglob("__pycache__")):
@@ -172,7 +172,7 @@ def stage_release():
         "tbnnFoam.C", "createFields.H",
         "tbnn_train.py", "tbnn_export.py", "tbnn_tensor_math.py",
         "tbnn_model.pt", "tbnn_weights.pth",
-        "requirements.txt", "LICENSE",
+        "requirements.txt", "INSTALL.md", "LICENSE",
         "CODE_OF_CONDUCT.md", "CONTRIBUTING.md"
     ]
     for rf in root_files:
@@ -354,13 +354,13 @@ def generate_metadata_and_package():
     
     clean_caches(STAGING_DIR)
     payload_files = sorted([f for f in STAGING_DIR.rglob("*") if f.is_file()])
-    assert len(payload_files) == 224, f"Expected 224 payload files in staging, found {len(payload_files)}"
+    assert len(payload_files) == 225, f"Expected 225 payload files in staging, found {len(payload_files)}"
 
     manifest_lines = [
-        "tbnnFoam v1.0.0 Software Release Manifest",
+        "tbnnFoam v1.0.1 Software Release Manifest",
         "========================================",
         "Archive: tbnnFoam-1.0.1-source.zip",
-        "Release Date: 2026-10-19 / Audited: 2026-10-30",
+        "Release Date: 2026-11-01 / Audited: 2026-11-01",
         "Author: Soumik Ghosh (Department of Civil Engineering, Jadavpur University)",
         "License: MIT",
         "",
@@ -379,11 +379,12 @@ def generate_metadata_and_package():
 
     for f in payload_files:
         rel_p = f.relative_to(STAGING_DIR)
+        rel_p_str = str(rel_p).replace(chr(92), "/")
         sha = compute_sha256(f)
         size = f.stat().st_size
         total_payload_bytes += size
-        manifest_lines.append(f"{str(rel_p):<75} {size:>10} bytes  SHA256: {sha}")
-        checksum_lines.append(f"{sha}  {str(rel_p).replace(chr(92), '/')}")
+        manifest_lines.append(f"{rel_p_str:<75} {size:>10} bytes  SHA256: {sha}")
+        checksum_lines.append(f"{sha}  {rel_p_str}")
 
     manifest_lines.extend([
         "",
@@ -397,8 +398,8 @@ def generate_metadata_and_package():
 
     # Write MANIFEST.txt into staging and release directory
     manifest_text = "\n".join(manifest_lines) + "\n"
-    (STAGING_DIR / "MANIFEST.txt").write_text(manifest_text, encoding="utf-8")
-    (RELEASE_DIR / "MANIFEST.txt").write_text(manifest_text, encoding="utf-8")
+    (STAGING_DIR / "MANIFEST.txt").write_text(manifest_text, encoding="utf-8", newline="\n")
+    (RELEASE_DIR / "MANIFEST.txt").write_text(manifest_text, encoding="utf-8", newline="\n")
     print(f"Generated MANIFEST.txt covering {len(payload_files)} payload files ({total_payload_bytes / (1024*1024):.2f} MB)")
 
     # Compute checksum of MANIFEST.txt itself and add to CHECKSUMS.sha256
@@ -406,10 +407,10 @@ def generate_metadata_and_package():
     checksum_lines.insert(0, f"{manifest_sha}  MANIFEST.txt")
 
     # Write CHECKSUMS.sha256 into staging and release directory
-    # CHECKSUMS.sha256 does not hash itself (225 entries: MANIFEST.txt + 224 payload files)
+    # CHECKSUMS.sha256 does not hash itself (226 entries: MANIFEST.txt + 225 payload files)
     checksum_text = "\n".join(checksum_lines) + "\n"
-    (STAGING_DIR / "CHECKSUMS.sha256").write_text(checksum_text, encoding="utf-8")
-    (RELEASE_DIR / "CHECKSUMS.sha256").write_text(checksum_text, encoding="utf-8")
+    (STAGING_DIR / "CHECKSUMS.sha256").write_text(checksum_text, encoding="utf-8", newline="\n")
+    (RELEASE_DIR / "CHECKSUMS.sha256").write_text(checksum_text, encoding="utf-8", newline="\n")
     print(f"Generated CHECKSUMS.sha256 with {len(checksum_lines)} hashes ({len(payload_files)} payload files + MANIFEST.txt)")
 
     # Write release/zenodo_software.json for manual upload convenience
@@ -425,7 +426,7 @@ def generate_metadata_and_package():
     clean_caches(STAGING_DIR)
 
     staging_all_files = sorted([f for f in STAGING_DIR.rglob("*") if f.is_file()])
-    assert len(staging_all_files) == 226, f"Expected 226 total files in staging, found {len(staging_all_files)}"
+    assert len(staging_all_files) == 227, f"Expected 227 total files in staging, found {len(staging_all_files)}"
 
     with zipfile.ZipFile(OUTPUT_ZIP, "w", zipfile.ZIP_DEFLATED) as z:
         for f in staging_all_files:
@@ -440,7 +441,7 @@ def generate_metadata_and_package():
     # Calculate and save external SHA-256 digest for the outer ZIP itself
     zip_sha = compute_sha256(OUTPUT_ZIP)
     zip_sha_file = RELEASE_DIR / f"{OUTPUT_ZIP.name}.sha256"
-    zip_sha_file.write_text(f"{zip_sha}  {OUTPUT_ZIP.name}\n", encoding="utf-8")
+    zip_sha_file.write_text(f"{zip_sha}  {OUTPUT_ZIP.name}\n", encoding="utf-8", newline="\n")
     print(f"Generated external ZIP checksum: {zip_sha_file} (SHA256: {zip_sha})")
 
     # Extract and validate round-trip extraction & checksums
@@ -451,7 +452,7 @@ def generate_metadata_and_package():
 
     with zipfile.ZipFile(OUTPUT_ZIP, "r") as z:
         zip_entries = z.namelist()
-        assert len(zip_entries) == 226, f"Expected 226 zip entries, found {len(zip_entries)}"
+        assert len(zip_entries) == 227, f"Expected 227 zip entries, found {len(zip_entries)}"
         z.extractall(RELEASE_DIR / "temp_extract")
 
     extracted_inner = RELEASE_DIR / "temp_extract" / "tbnnFoam-1.0.1"
