@@ -1,0 +1,114 @@
+# Benchmark DNS Data Reference Guide
+
+This directory contains benchmark configuration metadata for the turbulent square duct flow studies associated with **tbnnFoam**.
+
+To maintain clean open-source licensing boundaries for the software deposit, proprietary third-party Direct Numerical Simulation (DNS) raw and converted data files are not redistributed in the release package. The shipped solvers, pretrained model weights, and OpenFOAM verification cases can be used without external DNS files. Retraining the model and reproducing DNS-dependent field comparisons and diagnostics require users to obtain the upstream datasets independently and follow their applicable terms of use.
+
+---
+
+## 1. Provenance & Citations
+
+The benchmark DNS data for turbulent square duct flow was produced by the Sapienza University of Rome CFD Group:
+
+* **Primary Citation (Re_tau = 150 & Re_tau = 220):**
+  > Pirozzoli, S., Modesti, D., Orlandi, P., & Grasso, F. (2018). *Turbulence and secondary motions in square duct flow.* **Journal of Fluid Mechanics**, 840, 634–655.
+* **Secondary Citation (Aspect Ratio DNS):**
+  > Vinuesa, R., Noorani, A., Lozano-Durán, A., El Khoury, G. K., Schlatter, P., Fischer, P. F., & Nagib, H. M. (2014). *Aspect ratio effects in turbulent duct flows studied through direct numerical simulation.* **Journal of Turbulence**, 15(10), 677–706.
+* **Upstream Online Repository:**
+  Sapienza University of Rome CFD Group DNS Database:  
+  [http://newton.dma.uniroma1.it/square_duct/](http://newton.dma.uniroma1.it/square_duct/)
+
+---
+
+## 2. When Do You Need the DNS Data?
+
+* **NOT needed for running OpenFOAM simulations:** The shipped solvers (`tbnnFoam`, `tbnnSimpleFoam`) and verification cases (`verification_squareDuct`, `verification_squareDuct_Re17800`) run out-of-the-box using the pre-trained production model weights (`tbnn_model.pt`, `export_weights/weights.json`).
+* **NOT needed for automated test suites:** The test suite (`pytest tests/`) validates tensor mathematical properties, realizability bounds, cross-engine numerical parity, and vortex topological core recovery using project-authored synthetic fixtures and `benchmark_metadata.json`.
+* **ONLY needed if you want to:**
+  1. Re-train the Tensor Basis Neural Network from scratch (`tbnn_train.py --dns-dir ...`).
+  2. Evaluate 5D invariant distribution shift and 1D marginal bounding (`scripts/validation/evaluate_timescale_distribution.py`).
+  3. Compute direct point-by-point velocity field RMSEs ($L_2$ differences against DNS fields) in `evaluate_validation_plan.py` and `evaluate_mesh_sensitivity.py`.
+  4. Generate overlay contour plots in `verification_squareDuct/validate_and_plot.py`.
+  5. Re-run raw discretization verification checks (`scripts/validation/verify_dns_reference.py`).
+
+---
+
+## 3. How to Obtain and Prepare the Benchmark Datasets
+
+### Step A: Download the Raw DNS Exports
+Download the raw ASCII slice exports from the Sapienza University CFD Group repository:
+1. `plotyz_Retau150.dat` ($Re_b = 4,410$, $Re_\tau = 150$)
+2. `plotyz_Retau220.dat` ($Re_b = 7,000$, $Re_\tau = 220$)
+
+Place the downloaded files into:
+```
+data/benchmark_dns/raw_dns/
+```
+
+### Step B: Run the Conversion Utility
+Run the included data conversion utility (`scripts/convert_real_dns.py`) to process the downloaded raw ASCII files. The utility symmetry-mirrors the cross-section, bilinearly resamples to $65 \times 65$, evaluates finite-difference velocity gradients and surrogate dissipation, and formats the standardized CSV files:
+```bash
+# Convert raw files in data/benchmark_dns/raw_dns/ (or pass --raw-dir / --out-dir):
+python scripts/convert_real_dns.py
+```
+*(Note: `scripts/convert_real_dns.py` is a conversion utility for already-downloaded raw files; it does not download upstream files over the network.)*
+This automatically produces:
+* `data/benchmark_dns/square_duct_dns_Reb4410_Retau150.csv`
+* `data/benchmark_dns/square_duct_dns_Reb7000_Retau220.csv`
+
+---
+
+## 4. Supplying an External DNS Directory
+
+All validation, testing, and training scripts accept an externally supplied DNS directory or file path without requiring files to be placed inside the repository tree.
+
+### Script Behavior With and Without External DNS:
+
+| Script / Tool | Without External DNS Data | With External DNS Data (`--dns-dir`) |
+| :--- | :--- | :--- |
+| `scripts/validation/evaluate_validation_plan.py` | Evaluates 8 secondary vortex cores, core peak locations, and peak speeds against `benchmark_metadata.json` (omits field RMSE). | Evaluates all topological metrics **plus** full-field $U$ and $(V, W)$ RMSEs against DNS. |
+| `scripts/validation/evaluate_mesh_sensitivity.py` | Evaluates grid refinement vortex properties and peak circulation trends against `benchmark_metadata.json`. | Evaluates grid metrics **plus** cross-mesh streamwise RMSE against DNS. |
+| `scripts/validation/evaluate_timescale_distribution.py` | **Requires DNS dataset** (raises `FileNotFoundError` because diagnostic evaluates distance to DNS training points; its unit test skips). | Evaluates 1D marginal bounding and 5D invariant nearest-neighbor distribution shift. |
+| `verification_squareDuct/validate_and_plot.py` | **Requires DNS dataset** for contour overlays; prints an informative notice and returns cleanly. | Generates comprehensive 4-panel DNS-overlaid validation figures. |
+| `tbnn_train.py` | **Requires DNS dataset** (raises `FileNotFoundError`; pre-trained weights are bundled). | Trains the neural network closure from scratch. |
+
+### Using Command-Line Arguments:
+```bash
+# Model training from scratch:
+python tbnn_train.py --dns-dir /path/to/external_dns_data
+
+# Quantitative physics validation report:
+python scripts/validation/evaluate_validation_plan.py --dns-dir /path/to/external_dns_data
+
+# Cross-sectional mesh sensitivity study:
+python scripts/validation/evaluate_mesh_sensitivity.py --dns-dir /path/to/external_dns_data
+
+# Time-scale and invariant distribution shift diagnostic:
+python scripts/validation/evaluate_timescale_distribution.py --dns-dir /path/to/external_dns_data
+
+# Raw DNS reference discretization check:
+python scripts/validation/verify_dns_reference.py --raw-dir /path/to/raw_dns_data
+
+# Verification case validation and plotting:
+python verification_squareDuct/validate_and_plot.py --dns-dir /path/to/external_dns_data
+```
+
+### Using an Environment Variable:
+Alternatively, set the `TBNN_DNS_DIR` environment variable:
+```bash
+# Linux / macOS / WSL:
+export TBNN_DNS_DIR="/path/to/external_dns_data"
+
+# Windows PowerShell:
+$env:TBNN_DNS_DIR = "C:\path\to\external_dns_data"
+```
+When `TBNN_DNS_DIR` is set, all validation scripts and test suites automatically detect and load the benchmark files.
+
+---
+
+## 5. Machine-Readable Metadata
+
+The canonical physical constants, scaling relationships, Reynolds number definitions, and literature target vortex coordinates are formally defined in:
+* [`benchmark_metadata.json`](benchmark_metadata.json)
+
+Validation scripts use `benchmark_metadata.json` to verify topological secondary recirculation and corner vortex core locations even when external DNS raw CSVs are not present.

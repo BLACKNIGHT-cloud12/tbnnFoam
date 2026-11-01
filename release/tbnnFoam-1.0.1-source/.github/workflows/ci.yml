@@ -1,0 +1,52 @@
+name: CI & Physics Verification
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v5
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.12"
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        # CPU-only torch wheel: matches the pinned local environment
+        # (2.14.1+cpu), avoids the ~2.5 GB of CUDA/triton wheels that the
+        # default Linux wheel pulls in, and is flaky-download-free on
+        # runners. No GPU is used anywhere in the test suite.
+        pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu
+        pip install -r requirements.txt
+
+    - name: Verify Benchmark Metadata & Synthetic Test Fixture
+      run: |
+        python -c "
+        import json, csv
+        with open('data/benchmark_dns/benchmark_metadata.json') as f:
+            meta = json.load(f)
+            assert meta['flow_parameters']['bulk_reynolds_number_Re_b'] == 4410
+            assert meta['flow_parameters']['friction_reynolds_number_Re_tau'] == 150.0
+        with open('tests/fixtures/synthetic_dns_grid.csv') as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+            assert len(rows) == 25
+        print('Benchmark metadata & synthetic test fixture verified.')
+        "
+
+    - name: Run Automated Verification Suite (pytest)
+      run: python -m pytest -v
+
+    - name: Execute 5-Step Quantitative Physics Validation
+      run: |
+        python scripts/validation/evaluate_validation_plan.py

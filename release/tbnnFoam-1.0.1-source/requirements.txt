@@ -1,0 +1,12 @@
+# Python dependencies for tbnnFoam training, validation, and visualization.
+# Versions are pinned to the environment that produced the shipped model
+# weights and all committed validation metrics; changing a pin invalidates
+# bit-level reproducibility of the training pipeline.
+torch==2.14.1
+numpy==2.5.3
+matplotlib==3.11.2
+scipy==1.18.1
+pillow==12.3.0
+pandas==3.0.6
+pytest==9.1.1
+scikit-learn==1.9.1

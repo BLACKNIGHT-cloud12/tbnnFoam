@@ -1,0 +1,53 @@
+{
+  "title": "In-Situ Coupling of Tensor Basis Neural Networks for Turbulence Modeling in OpenFOAM: A Critical Verification, Validation, and Reproducibility Study",
+  "upload_type": "publication",
+  "publication_type": "preprint",
+  "publication_date": "2026-11-01",
+  "creators": [
+    {
+      "name": "Ghosh, Soumik",
+      "affiliation": "Department of Civil Engineering, Jadavpur University, India"
+    }
+  ],
+  "description": "<p>Linear eddy-viscosity closures cannot reproduce the normal-stress anisotropy that drives Prandtl's second-kind secondary flows in square ducts. Tensor Basis Neural Networks (TBNN; Ling et al., J. Fluid Mech., 2016) represent Reynolds-stress anisotropy by projection onto Pope's ten-term integrity basis, but their in-situ coupling into live CFD solvers remains challenging. We present <code>tbnnFoam</code>, an in-situ coupled solver within OpenFOAM 2606 featuring a dual-runtime inference architecture: an embedded LibTorch engine and a zero-dependency standalone C++ evaluator with an analytical Cardano cubic eigensolver that enforces realizability on the Lumley triangle in O(1) operations per cell. Cross-engine parity across PyTorch, TorchScript, and the standalone evaluator is verified within an absolute tolerance of 10^-5, and in the Boussinesq limit the coupled momentum equation reduces exactly to the baseline linear model (maximum relative deviation 3.6 × 10^-17). Validation on developing square-duct flow at Re_b = 4410 against the DNS of Pirozzoli et al. (J. Fluid Mech., 2018) yields a <b>partial validation</b>: the coupled solver recovers all eight secondary-flow cells that the tested linear k–ω SST closure fails to reproduce, but detected core locations are offset by 0.447–0.567 h from the raw-field-verified DNS reference (0.577, 0.847), the streamwise-velocity NRMSE is 9.34%, and peak secondary speed decreases from 7.99% to 2.62% of U_b under 4× cross-stream refinement against the 1.93% DNS benchmark. We analyze the sources of these discrepancies—the empirical ω surrogate, first-order upwinding, wall-target degeneracy, and the developing-flow versus periodic-DNS mismatch—and quantify distribution shift between training and live states (median k-NN distance 0.21 σ). All solver sources, trained weights, and an automated 21-test verification suite are openly available under the MIT license, with a documented workflow for obtaining the third-party DNS benchmark data.</p>",
+  "access_right": "open",
+  "license": "cc-by-4.0",
+  "version": "1.0",
+  "keywords": [
+    "Turbulence Modeling",
+    "Machine Learning",
+    "Tensor Basis Neural Network",
+    "OpenFOAM",
+    "Secondary Flow of the Second Kind",
+    "Computational Fluid Dynamics"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "10.5281/zenodo.23799524",
+      "relation": "isSupplementedBy",
+      "resource_type": "software"
+    },
+    {
+      "identifier": "https://github.com/BLACKNIGHT-cloud12/tbnnFoam",
+      "relation": "isSupplementedBy",
+      "resource_type": "software"
+    }
+  ],
+  "references": [
+    "Ling, Julia; Kurzawski, Andrew; Templeton, Jeremy (2016). Reynolds-averaged turbulence modelling using deep neural networks with embedded invariance. Journal of Fluid Mechanics, 807, 155–166.",
+    "Pirozzoli, Sergio; Modesti, Davide; Orlandi, Paolo; Grasso, Francesco (2018). Turbulence and secondary motions in square duct flow. Journal of Fluid Mechanics, 840, 631–655.",
+    "Pope, Stephen B (1975). A more general effective-viscosity hypothesis. Journal of Fluid Mechanics, 72(2), 331–340.",
+    "Prandtl, Ludwig (1926). Über die ausgebildete Turbulenz. In Proceedings of the 2nd International Congress for Applied Mechanics, Zurich, 62–74.",
+    "Brundrett, E; Baines, W D (1964). The production and diffusion of vorticity in duct flow. Journal of Fluid Mechanics, 19(3), 375–394.",
+    "Gessner, F B (1973). The origin of secondary flow in turbulent flow along a corner. Journal of Fluid Mechanics, 58(1), 1–25.",
+    "Speziale, Charles G (1991). Analytical methods for the development of Reynolds-stress closures in turbulence. Annual Review of Fluid Mechanics, 23(1), 107–157.",
+    "Craft, T J; Launder, B E; Suga, K (1996). Development and application of a cubic eddy-viscosity model of turbulence. International Journal of Heat and Fluid Flow, 17(2), 108–115.",
+    "Wallin, Stefan; Johansson, Arne V (2000). An explicit algebraic Reynolds stress model for incompressible and compressible turbulent flows. Journal of Fluid Mechanics, 403, 89–132.",
+    "Banerjee, S; Krahl, R; Durst, F; Zenger, C (2007). Presentation of anisotropy properties of turbulence, invariants versus eigenvalue approaches. Journal of Turbulence, 8, N32.",
+    "Vinuesa, Ricardo; Noorani, Azad; Lozano-Durán, Adrián; El Khoury, George K; Schlatter, Philipp; Fischer, Paul F; Nagib, Hassan M (2014). Aspect ratio effects in turbulent duct flows studied through direct numerical simulation. Journal of Turbulence, 15(10), 677–706.",
+    "Roache, Patrick J (1998). Verification and Validation in Computational Science and Engineering. Hermosa Publishers, Albuquerque, NM.",
+    "ASME (2009). Standard for Verification and Validation in Computational Fluid Dynamics and Heat Transfer. American Society of Mechanical Engineers, New York, NY.",
+    "Pinelli, Alfredo; Uhlmann, Markus; Sekimoto, Atsushi; Kawahara, Genta (2010). Reynolds number dependence of mean flow structure in square duct turbulence. Journal of Fluid Mechanics, 644, 107–122."
+  ],
+  "notes": "This record is the research preprint. The companion software record (DOI: 10.5281/zenodo.23799524) archives the tbnnFoam v1.0.0 solver release under an MIT license. The third-party benchmark DNS data is not redistributed with either record; the acquisition and conversion workflow is documented in the repository (data/benchmark_dns/README.md)."
+}

@@ -1,0 +1,148 @@
+{
+  "benchmark_name": "Turbulent Flow in a Straight Square Duct",
+  "primary_reference": {
+    "citation": "Pirozzoli, S., Modesti, D., Orlandi, P., & Grasso, F. (2018). Turbulence and secondary motions in square duct flow. Journal of Fluid Mechanics, 840, 631-655.",
+    "secondary_reference": "Vinuesa, R., Noorani, A., Lozano-Duran, A., El Khoury, G. K., Schlatter, P., Fischer, P. F., & Nagib, H. M. (2014). Aspect ratio effects in turbulent duct flows studied through direct numerical simulation. Journal of Turbulence, 15(10), 677-706.",
+    "database_repository": "Sapienza University CFD Group DNS Database (http://newton.dma.uniroma1.it/square_duct/)",
+    "raw_source_file": "plotyz_Retau150.dat",
+    "dataset_file": "square_duct_dns_Reb4410_Retau150.csv",
+    "legacy_dataset_file": "square_duct_dns_Re1500.csv"
+  },
+  "reynolds_number_definitions": {
+    "bulk_reynolds_number_Re_b": "Re_b = U_b * D_h / nu = U_b * (2*h) / nu",
+    "half_width_reynolds_number_Re_h": "Re_h = U_b * h / nu = 0.5 * Re_b",
+    "friction_reynolds_number_Re_tau": "Re_tau = u_tau * h / nu",
+    "naming_convention_note": "Canonical dataset filenames square_duct_dns_Reb{Re_b}_Retau{Re_tau}.csv explicitly specify both bulk Reynolds number Re_b and friction Reynolds number Re_tau to eliminate ambiguity between bulk (Re_b) and half-width (Re_h) definitions. The legacy labels Re1500 and Re2200 reflected earlier arithmetic miscalculations in the initial repo draft."
+  },
+  "physical_scaling_conventions": {
+    "canonical_dimensionless_space": {
+      "description": "Authoritative dimensionless representation used across all comparisons, scripts, and validation metrics",
+      "normalized_cross_stream_coordinates": "y/h in [-1.0, 1.0], z/h in [-1.0, 1.0]",
+      "normalized_velocities": "U/U_b, V/U_b, W/U_b",
+      "normalized_vorticity": "omega_x / (U_b / h) = d(W/U_b)/d(y/h) - d(V/U_b)/d(z/h)",
+      "target_bulk_reynolds_number_Re_b": 4410
+    },
+    "dns_reference_physical_scale": {
+      "description": "Direct numerical simulation database scaling (Pirozzoli et al. 2018)",
+      "duct_half_width_h_m": 0.5,
+      "hydraulic_diameter_Dh_m": 1.0,
+      "bulk_velocity_Ub_m_s": 1.0,
+      "kinematic_viscosity_nu_m2_s": 0.000226757,
+      "bulk_reynolds_number_Re_b": 4410,
+      "half_width_reynolds_number_Re_h": 2205,
+      "friction_velocity_u_tau_m_s": 0.0675,
+      "friction_reynolds_number_Re_tau": 150.0
+    },
+    "openfoam_cfd_physical_scale": {
+      "description": "Dimensional laboratory duct scale simulated in OpenFOAM (verification_squareDuct case)",
+      "duct_half_width_h_m": 0.05,
+      "hydraulic_diameter_Dh_m": 0.1,
+      "duct_length_L_m": 1.0,
+      "bulk_velocity_Ub_m_s": 1.0,
+      "kinematic_viscosity_nu_m2_s": 2.25e-05,
+      "bulk_reynolds_number_Re_b": 4444,
+      "half_width_reynolds_number_Re_h": 2222
+    }
+  },
+  "flow_parameters": {
+    "bulk_reynolds_number_Re_b": 4410,
+    "half_width_reynolds_number_Re_h": 2205,
+    "friction_reynolds_number_Re_tau": 150.0,
+    "duct_half_width_h_m": 0.05,
+    "dns_half_width_h_m": 0.5,
+    "hydraulic_diameter_Dh_m": 0.1,
+    "dns_hydraulic_diameter_Dh_m": 1.0,
+    "bulk_velocity_Ub_m_s": 1.0,
+    "kinematic_viscosity_nu_m2_s": 2.25e-05,
+    "dns_kinematic_viscosity_nu_m2_s": 0.000226757,
+    "friction_velocity_u_tau_m_s": 0.0675
+  },
+  "geometry_and_domain": {
+    "cross_section": "2h x 2h square",
+    "canonical_normalized_y_range": [
+      -1.0,
+      1.0
+    ],
+    "canonical_normalized_z_range": [
+      -1.0,
+      1.0
+    ],
+    "dns_physical_y_range_m": [
+      -0.5,
+      0.5
+    ],
+    "dns_physical_z_range_m": [
+      -0.5,
+      0.5
+    ],
+    "cfd_physical_y_range_m": [
+      -0.05,
+      0.05
+    ],
+    "cfd_physical_z_range_m": [
+      -0.05,
+      0.05
+    ],
+    "streamwise_length_Lx": "4 * pi * h (DNS periodic) / 20 * h (CFD developing)",
+    "symmetry": "8-fold octant symmetry"
+  },
+  "reference_vortex_cores_quadrant1": {
+    "description": "Normalized Q1 primary-vortex reference in quadrant y/h in [0, 1], z/h in [0, 1]. VERIFIED against the raw DNS export's own vorticity column (omx/(ub/h)) by scripts/validation/verify_dns_reference.py.",
+    "y_core_over_h": 0.577,
+    "z_core_over_h": 0.847,
+    "peak_secondary_velocity_ratio_Vmax_over_Ub": 0.0193,
+    "verification_provenance": {
+      "raw_field_acw_core_y_z_over_h": [
+        0.577,
+        0.847
+      ],
+      "raw_field_acw_omx_star": 0.254,
+      "detector_on_65x65_grid_y_z_over_h": [
+        0.594,
+        0.844
+      ],
+      "detector_offset_from_raw_field_h": 0.017,
+      "raw_secondary_peak_ratio": 0.0193,
+      "resampled_65x65_peak_ratio": 0.0192,
+      "legacy_reference_y_z_over_h": [
+        0.5,
+        0.82
+      ],
+      "legacy_reference_offset_from_raw_field_h": 0.081,
+      "legacy_peak_ratio_note": "The legacy 2.03% target matches the raw Re_b=7000 (Re_tau=220) export peak exactly, not the Re_b=4410 plane (1.93% raw / 1.92% resampled); it was retained as a literature-style target. Tables now quote the raw-verified 1.93%.",
+      "vorticity_discretization_check": "Recomputed omega_x* from raw velocities agrees with the DNS-provided vorticity column to 0.43% of field max in the interior."
+    }
+  },
+  "held_out_benchmark": {
+    "case_name": "Square Duct DNS at Re_tau = 220 (Re_b = 7000, Re_h = 3500)",
+    "citation": "Pirozzoli, S., Modesti, D., Orlandi, P., & Grasso, F. (2018). Turbulence and secondary motions in square duct flow. Journal of Fluid Mechanics, 840, 631-655.",
+    "database_repository": "Sapienza University CFD Group DNS Database (http://newton.dma.uniroma1.it/square_duct/)",
+    "raw_source_file": "plotyz_Retau220.dat",
+    "dataset_file": "square_duct_dns_Reb7000_Retau220.csv",
+    "legacy_dataset_file": "square_duct_dns_Re2200.csv",
+    "bulk_reynolds_number_Re_b": 7000,
+    "half_width_reynolds_number_Re_h": 3500,
+    "friction_reynolds_number_Re_tau": 220.0,
+    "duct_half_width_h_m": 0.5,
+    "hydraulic_diameter_Dh_m": 1.0,
+    "bulk_velocity_Ub_m_s": 1.0,
+    "kinematic_viscosity_nu_m2_s": 0.000142857,
+    "friction_velocity_u_tau_m_s": 0.0628,
+    "peak_secondary_velocity_ratio_Vmax_over_Ub": 0.0203,
+    "verification_provenance": {
+      "raw_secondary_peak_ratio": 0.0203,
+      "note": "Peak verified against the raw plotyz_Retau220.dat export (72x72 grid) during the raw-field reference verification (scripts/validation/verify_dns_reference.py), using the same methodology as the primary reference verification. The raw export is not redistributed; re-verify after re-obtaining it per data/benchmark_dns/README.md. The earlier 0.0215 value was a stale pre-verification number with no recorded basis."
+    }
+  },
+  "training_data_caveats": {
+    "description": "Known provenance subtleties of the primary training dataset (square_duct_dns_Reb4410_Retau150.csv). Documented in detail in the README 'Honest Technical Discussion' section (limitation item 5).",
+    "gradient_provenance": "grad_U_ij are second-order finite differences of the symmetry-mirrored, bilinearly resampled 65x65 cross-section (computed by scripts/convert_real_dns.py), not raw DNS gradients; near-wall gradient noise from the mirroring/resampling is baked in. All streamwise-derivative entries (grad_U_00, grad_U_10, grad_U_20) are identically zero, inherited from the streamwise-periodic reference DNS.",
+    "wall_boundary_ring": "The 256 boundary points of the 65x65 grid have k clipped to 1e-7, giving targets a_ij = uu/(2k) - delta_ij/3 = -delta_ij/3 (trace -1) that are not valid anisotropy states for the trace-free tensor basis. These points are retained in the training loss: because every admissible network output is trace-free and Frobenius-orthogonal to I, the loss decomposes into the representable deviatoric part (dev(-I/3) = 0, so the network is trained toward a = 0 there) plus a constant zero-gradient offset from the incompatible trace part. The effect is confined to the invariant-space origin and has negligible bulk influence.",
+    "validation_split": "The quadrant-1 spatial validation split (y > 0, z > 0) is reflection-degenerate: all five invariants are even in the rotation tensor, so the held-out quadrant shares identical invariant inputs with the training quadrants. The split legitimately tests the tensor-basis sign structure (the odd-in-w bases T2, T5, T7, T8, T10) but not independent-flow generalization."
+  },
+  "license_and_terms_of_use": {
+    "software_license": "MIT",
+    "dns_data_copyright": "Copyright and ownership remain with the respective upstream data rights holders.",
+    "terms_of_use": "The upstream DNS benchmark datasets are not included in this software release. Users must obtain the data independently from the original source and comply with its applicable terms of use. The MIT license applies only to the tbnnFoam software and does not grant rights over third-party DNS data."
+  }
+}

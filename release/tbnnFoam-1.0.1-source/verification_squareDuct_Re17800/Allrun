@@ -1,0 +1,28 @@
+#!/bin/sh
+cd "${0%/*}" || exit
+set -e
+
+if [ -n "$WM_PROJECT_DIR" ] && [ -f "$WM_PROJECT_DIR/bin/tools/RunFunctions" ]; then
+    . "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+fi
+
+rm -rf [1-9]* log.* constant/polyMesh
+
+echo "--> Running blockMesh..."
+blockMesh > log.blockMesh 2>&1
+
+if [ ! -f "constant/tbnn_model.pt" ]; then
+    if [ -f "../tbnn_model.pt" ]; then
+        echo "--> Copying tbnn_model.pt to constant/..."
+        cp ../tbnn_model.pt constant/
+    elif [ -f "../../tbnn_model.pt" ]; then
+        echo "--> Copying tbnn_model.pt to constant/..."
+        cp ../../tbnn_model.pt constant/
+    fi
+fi
+
+echo "--> Running tbnnFoam (Re_b = 17,800)..."
+tbnnFoam > log.tbnnFoam 2>&1
+
+echo "--> Simulation completed! Check log.tbnnFoam."
+
