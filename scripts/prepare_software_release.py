@@ -3,8 +3,8 @@
 tbnnFoam Software Release Manager
 Packages the complete, self-contained, archival-ready software release of tbnnFoam for Zenodo.
 Produces:
-- release/tbnnFoam-1.0.0-source.zip
-- release/tbnnFoam-1.0.0-source/ (clean extracted staging directory)
+- release/tbnnFoam-1.0.1-source.zip
+- release/tbnnFoam-1.0.1-source/ (clean extracted staging directory)
 - release/MANIFEST.txt
 - release/CHECKSUMS.sha256
 - release/zenodo_software.json
@@ -21,9 +21,9 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RELEASE_DIR = REPO_ROOT / "release"
-STAGING_DIR = RELEASE_DIR / "staging" / "tbnnFoam-1.0.0"
-OUTPUT_ZIP = RELEASE_DIR / "tbnnFoam-1.0.0-source.zip"
-EXTRACT_DIR = RELEASE_DIR / "tbnnFoam-1.0.0-source"
+STAGING_DIR = RELEASE_DIR / "staging" / "tbnnFoam-1.0.1"
+OUTPUT_ZIP = RELEASE_DIR / "tbnnFoam-1.0.1-source.zip"
+EXTRACT_DIR = RELEASE_DIR / "tbnnFoam-1.0.1-source"
 
 def compute_sha256(file_path: Path) -> str:
     h = hashlib.sha256()
@@ -87,7 +87,7 @@ def create_zenodo_software_json(dst: Path):
                 "affiliation": "Department of Civil Engineering, Jadavpur University"
             }
         ],
-        "version": "1.0.0",
+        "version": "1.0.1",
         "access_right": "open",
         "license": "MIT",
         "keywords": [
@@ -117,8 +117,9 @@ authors:
     given-names: "Soumik"
     affiliation: "Department of Civil Engineering, Jadavpur University"
 title: "tbnnFoam: OpenFOAM C++ In-Solver Tensor Basis Neural Network RANS Closure"
-version: 1.0.0
-date-released: 2026-10-19
+version: 1.0.1
+date-released: 2026-11-01
+doi: 10.5281/zenodo.23799524
 url: "https://github.com/BLACKNIGHT-cloud12/tbnnFoam"
 repository-code: "https://github.com/BLACKNIGHT-cloud12/tbnnFoam"
 keywords:
@@ -358,7 +359,7 @@ def generate_metadata_and_package():
     manifest_lines = [
         "tbnnFoam v1.0.0 Software Release Manifest",
         "========================================",
-        "Archive: tbnnFoam-1.0.0-source.zip",
+        "Archive: tbnnFoam-1.0.1-source.zip",
         "Release Date: 2026-10-19 / Audited: 2026-10-30",
         "Author: Soumik Ghosh (Department of Civil Engineering, Jadavpur University)",
         "License: MIT",
@@ -429,7 +430,7 @@ def generate_metadata_and_package():
     with zipfile.ZipFile(OUTPUT_ZIP, "w", zipfile.ZIP_DEFLATED) as z:
         for f in staging_all_files:
             rel_p = f.relative_to(STAGING_DIR)
-            arcname = Path("tbnnFoam-1.0.0") / rel_p
+            arcname = Path("tbnnFoam-1.0.1") / rel_p
             z.write(f, arcname)
 
     final_zip_size = OUTPUT_ZIP.stat().st_size
@@ -453,7 +454,7 @@ def generate_metadata_and_package():
         assert len(zip_entries) == 226, f"Expected 226 zip entries, found {len(zip_entries)}"
         z.extractall(RELEASE_DIR / "temp_extract")
 
-    extracted_inner = RELEASE_DIR / "temp_extract" / "tbnnFoam-1.0.0"
+    extracted_inner = RELEASE_DIR / "temp_extract" / "tbnnFoam-1.0.1"
     for item in extracted_inner.iterdir():
         shutil.move(str(item), str(EXTRACT_DIR / item.name))
     shutil.rmtree(RELEASE_DIR / "temp_extract")
