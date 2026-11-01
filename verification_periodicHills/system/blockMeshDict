@@ -15,7 +15,7 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-convertToMeters 0.028;
+convertToMeters 1; // vertices are already written in meters (h = 0.028 m applied)
 
 vertices
 (

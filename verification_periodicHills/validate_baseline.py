@@ -28,10 +28,10 @@ NX, NY = 300, 120
 
 def read_scalar_field(path):
     txt = path.read_text()
-    m = re.search(r"internalField\s+nonuniform\s+List<scalar>\s*\n?(\d+)\s*\((.*?)\);",
+    m = re.search(r"internalField\s+nonuniform\s+List<scalar>\s*\n?(\d+)\s*\((.*?)\)\s*;",
                   txt, re.S)
     if not m:
-        m = re.search(r"internalField\s+uniform\s+([\S]+);", txt)
+        m = re.search(r"internalField\s+uniform\s+([\S]+)\s*;", txt)
         return np.array([float(m.group(1))])
     vals = re.findall(r"([-\d.eE+]+)", m.group(2))
     return np.array([float(v) for v in vals])
@@ -39,7 +39,7 @@ def read_scalar_field(path):
 
 def read_vector_field(path):
     txt = path.read_text()
-    m = re.search(r"internalField\s+nonuniform\s+List<vector>\s*\n?(\d+)\s*\((.*?)\);",
+    m = re.search(r"internalField\s+nonuniform\s+List<vector>\s*\n?(\d+)\s*\((.*?)\)\s*;",
                   txt, re.S)
     assert m, f"no nonuniform vector field in {path}"
     nums = re.findall(r"\(([-\d.eE+\s]+)\)", m.group(2))
@@ -51,9 +51,9 @@ def patch_vectors(path, patch):
     m = re.search(patch + r"\s*\{(.*?)\n\s*\}", txt, re.S)
     assert m, f"patch {patch} not found in {path}"
     body = m.group(1)
-    mv = re.search(r"value\s+nonuniform\s+List<vector>\s*\n?(\d+)\s*\((.*?)\);", body, re.S)
+    mv = re.search(r"value\s+nonuniform\s+List<vector>\s*\n?(\d+)\s*\((.*?)\)\s*;", body, re.S)
     if not mv:
-        mv = re.search(r"value\s+uniform\s+\(([-\d.eE+\s]+)\);", body)
+        mv = re.search(r"value\s+uniform\s+\(([-\d.eE+\s]+)\)\s*;", body)
         assert mv, f"no value list for {patch} in {path}"
         return np.array([[float(x) for x in mv.group(1).split()]])
     nums = re.findall(r"\(([-\d.eE+\s]+)\)", mv.group(2))
@@ -78,9 +78,11 @@ face_xh = ccx[0]                  # bottom-row cell centres approximate face x
 slope = np.interp(face_xh, contour[:, 0], contour[:, 1])
 t_hat = np.column_stack([np.ones_like(slope), slope])
 t_hat /= np.linalg.norm(t_hat, axis=1, keepdims=True)
-tau_t = np.einsum("ij,ij->i", tau, t_hat)   # wall-tangential component (downstream +)
+# OpenFOAM's wallShearStress is the stress exerted ON the wall (outward snGrad),
+# so forward flow reads NEGATIVE along the downstream tangent — flip the sign.
+tau_t = -(tau[:, 0] * t_hat[:, 0] + tau[:, 1] * t_hat[:, 1])
 
-x_face_h = face_xh
+x_face_h = face_xh / H            # face positions in hill-height units
 bubbles = separation_bubbles(tau_t, x_face_h, min_persistence=3)
 
 q = 0.5 * RHO * UB ** 2
