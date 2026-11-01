@@ -7,7 +7,7 @@ authors:
 title: "tbnnFoam: OpenFOAM C++ In-Solver Tensor Basis Neural Network RANS Closure"
 version: 1.0.1
 date-released: 2026-11-01
-doi: 10.5281/zenodo.23799524
+doi: 10.5281/zenodo.23799523
 url: "https://github.com/BLACKNIGHT-cloud12/tbnnFoam"
 repository-code: "https://github.com/BLACKNIGHT-cloud12/tbnnFoam"
 keywords:

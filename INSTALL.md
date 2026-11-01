@@ -256,6 +256,7 @@ beyond the verification cases. Key points:
 
 ## 12. Citation & License
 
-* Cite: [`CITATION.cff`](CITATION.cff) — Zenodo software DOI `10.5281/zenodo.23799524`.
+* Cite: [`CITATION.cff`](CITATION.cff) — Zenodo **concept DOI** `10.5281/zenodo.23799523`
+  (resolves to the latest release; the version-specific DOI for v1.0.1 is assigned at publish time).
 * Software: MIT License ([`LICENSE`](LICENSE)). Third-party DNS data remains under its
   upstream terms and must be obtained separately (Section 6).

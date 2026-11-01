@@ -22,7 +22,7 @@ external DNS benchmarks, stripped of preprint-only duplicates and build caches, 
 into a self-contained, single-pass release archive:
 
 * **Release Archive:** `release/tbnnFoam-1.0.1-source.zip` (36.46 MB compressed, 104.35 MB uncompressed payload, exactly 227 archive entries)
-* **External Archive Digest:** `release/tbnnFoam-1.0.1-source.zip.sha256` — `638c2593570c9aa084e45a48336518376730dcb56d0ed63a0b4b80d259089e1a`
+* **External Archive Digest:** `release/tbnnFoam-1.0.1-source.zip.sha256` — `f2459da25e104cc846f9d0e2c83db4ac5a7395aa84b92d7fa6e8a47358446235`
 * **Clean Extracted Staging Tree:** `release/tbnnFoam-1.0.1-source/` (227 files verified)
 * **Cryptographic Checksums:** `release/CHECKSUMS.sha256` (226 verified SHA-256 digests covering `MANIFEST.txt` and all 225 payload files) — **LF line endings**
 * **Release Manifest:** `release/MANIFEST.txt` (itemized inventory of all 225 software, benchmark metadata, documentation, and case payload files; header corrected to v1.0.1)
@@ -59,6 +59,17 @@ into a self-contained, single-pass release archive:
    the post-correction matrix (see §6); CI badge updated to 18 passed / 3 skipped.
 5. **Packager hardened:** hardcoded file-count assertions raised to 225 payload / 227 archive
    entries; version and date strings centralized in the manifest header.
+6. **Citation DOI corrected to the concept DOI (`10.5281/zenodo.23799523`).** The live record
+   exposes version DOI `…23799524` (pinned to the v1.0.0 artifact, verified via the Zenodo
+   public API) and concept DOI `…23799523` (all versions). CITATION.cff, README.md, and
+   INSTALL.md previously cited the version DOI while declaring version 1.0.1 — that citation
+   would have resolved to the v1.0.0 zip. All now cite the concept DOI, which resolves to the
+   latest release once v1.0.1 is published.
+7. **Zenodo description sanitization-proofed.** The live v1.0.0 record confirms Zenodo strips
+   `<sup>`/`<sub>` HTML tags (its stored description contains only `<p>/<strong>/<span>`).
+   The staged description (`release/zenodo_software.json` and payload `.zenodo.json`) now uses
+   Unicode superscripts (10⁻⁵, 3.6 × 10⁻¹⁷) and plain `Re_b` / `O(1)` so no formatting is
+   lost when pasted into the deposit form.
 
 ---
 
@@ -78,7 +89,7 @@ into a self-contained, single-pass release archive:
 5. **Round-Trip Validation:** archive extracted to `release/tbnnFoam-1.0.1-source/`; all 226
    SHA-256 digests verified against the extracted files — zero discrepancies.
 6. **External Archive Digest:** independent SHA-256 of the outer ZIP recorded in
-   `release/tbnnFoam-1.0.1-source.zip.sha256` (`638c2593570c9aa084e45a48336518376730dcb56d0ed63a0b4b80d259089e1a`).
+   `release/tbnnFoam-1.0.1-source.zip.sha256` (`f2459da25e104cc846f9d0e2c83db4ac5a7395aa84b92d7fa6e8a47358446235`).
 
 ---
 
@@ -188,6 +199,11 @@ Beyond the packager's self-verification, the final artifact was audited independ
 * `unzip -l`: 227 entries. Outer ZIP hash matches sidecar. ✓
 * DNS leakage scan: clean (§5). ✓
 * `INSTALL.md` present in payload with current test matrix. ✓
+* **Live-record cross-check via the Zenodo public API** (`records/23799524`): concept DOI
+  `10.5281/zenodo.23799523` confirmed; v1.0.0 file = `tbnnFoam-1.0.0-source.zip`, 38,222,974
+  bytes, md5 `b5c227e6ac5c26f3343b7071a5c9b81c`; license stored as `mit-license`; description
+  stored without `<sup>`/`<sub>` — the evidence motivating the metadata corrections in
+  §2.B.6–7. ✓
 
 ---
 
@@ -222,14 +238,16 @@ animations (`docs/figures/`) are preserved in the release archive.
 
 ### Step-by-Step Instructions (publishing v1.0.1 as a new version of the existing record):
 1. Log in to [Zenodo](https://zenodo.org/) and open the existing software record
-   **DOI `10.5281/zenodo.23799524`** (currently holding v1.0.0).
-2. Click **"New version"**.
+   **DOI `10.5281/zenodo.23799524`** (v1.0.0) or the concept DOI `10.5281/zenodo.23799523` —
+   both lead to the same record page.
+2. Click **"New version"**. Zenodo reserves a **new version DOI** for v1.0.1; after publishing,
+   the concept DOI `…23799523` resolves to v1.0.1 while `…23799524` remains pinned to v1.0.0.
+   This is why all shipped citation files cite the concept DOI.
 3. **Files:** remove nothing (v1.0.0 files remain in their own version); upload only
    `release/tbnnFoam-1.0.1-source.zip` to the new version.
 4. **Resource Type:** Software. **License:** MIT. **Version:** `1.0.1`.
-5. **Metadata:** carry over the values from `release/zenodo_software.json` (title, creators,
-   HTML description, keywords) — they are already version-agnostic; confirm the version field
-   reads 1.0.1.
+5. **Description:** paste from `release/zenodo_software.json` — it is already
+   sanitization-proofed (Unicode superscripts, no `<sup>`/`<sub>`; Zenodo strips those tags).
 6. Optionally append a one-line version note: *"v1.0.1: reconciled benchmark metadata, corrected
    verification scripts, added INSTALL.md installation and usage guide, LF-normalized checksum
    files."*

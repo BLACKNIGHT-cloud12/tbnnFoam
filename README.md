@@ -470,7 +470,7 @@ tbnnFoam/
   title        = {{tbnnFoam: In-Situ Tensor Basis Neural Network RANS Closure in OpenFOAM}},
   year         = {2026},
   publisher    = {Zenodo},
-  doi          = {10.5281/zenodo.23799524},
+  doi          = {10.5281/zenodo.23799523},
   howpublished = {\url{https://github.com/BLACKNIGHT-cloud12/tbnnFoam}},
   version      = {1.0.1}
 }

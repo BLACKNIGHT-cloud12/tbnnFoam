@@ -80,7 +80,7 @@ def create_zenodo_software_json(dst: Path):
     zenodo_dict = {
         "title": "tbnnFoam: OpenFOAM C++ In-Solver Tensor Basis Neural Network RANS Closure",
         "upload_type": "software",
-        "description": "<p><b>tbnnFoam</b> is an open-source in-situ coupled Reynolds-Averaged Navier–Stokes (RANS) solver within OpenFOAM featuring a dual-runtime inference architecture: an embedded LibTorch C++ engine and a zero-dependency standalone C++ matrix evaluator with an analytical Cardano cubic eigensolver that enforces physical realizability on the Lumley triangle in \\(\\mathcal{O}(1)\\) operations per cell.</p>\n<p>This software release archives the complete source code, pre-trained neural network weights, LibTorch and native C++ inference backends, automated verification test suite with synthetic fixtures, canonical square duct benchmark specifications (Pirozzoli et al., <i>J. Fluid Mech.</i> 2018), and full OpenFOAM verification cases for developing square duct flow at <i>Re<sub>b</sub></i> = 4,410 and <i>Re<sub>b</sub></i> = 17,800.</p>\n<p>Features cross-engine numerical parity across PyTorch, TorchScript, and standalone C++ (within 10<sup>-5</sup>), exact Boussinesq-limit momentum assembly consistency (relative deviation 3.6 &times; 10<sup>-17</sup>), and independent algorithmic vortex detection recovering Prandtl's eight secondary recirculation cells.</p>",
+        "description": "<p><b>tbnnFoam</b> is an open-source in-situ coupled Reynolds-Averaged Navier–Stokes (RANS) solver within OpenFOAM featuring a dual-runtime inference architecture: an embedded LibTorch C++ engine and a zero-dependency standalone C++ matrix evaluator with an analytical Cardano cubic eigensolver that enforces physical realizability on the Lumley triangle in O(1) operations per cell.</p>\n<p>This software release archives the complete source code, pre-trained neural network weights, LibTorch and native C++ inference backends, automated verification test suite with synthetic fixtures, canonical square duct benchmark specifications (Pirozzoli et al., <i>J. Fluid Mech.</i> 2018), and full OpenFOAM verification cases for developing square duct flow at Re_b = 4,410 and Re_b = 17,800.</p>\n<p>Features cross-engine numerical parity across PyTorch, TorchScript, and standalone C++ (within 10⁻⁵), exact Boussinesq-limit momentum assembly consistency (relative deviation 3.6 × 10⁻¹⁷), and independent algorithmic vortex detection recovering Prandtl's eight secondary recirculation cells.</p>",
         "creators": [
             {
                 "name": "Ghosh, Soumik",
@@ -119,7 +119,7 @@ authors:
 title: "tbnnFoam: OpenFOAM C++ In-Solver Tensor Basis Neural Network RANS Closure"
 version: 1.0.1
 date-released: 2026-11-01
-doi: 10.5281/zenodo.23799524
+doi: 10.5281/zenodo.23799523
 url: "https://github.com/BLACKNIGHT-cloud12/tbnnFoam"
 repository-code: "https://github.com/BLACKNIGHT-cloud12/tbnnFoam"
 keywords:
