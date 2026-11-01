@@ -1,7 +1,7 @@
 {
   "benchmark_name": "Turbulent Flow in a Straight Square Duct",
   "primary_reference": {
-    "citation": "Pirozzoli, S., Modesti, D., Orlandi, P., & Grasso, F. (2018). Turbulence and secondary motions in square duct flow. Journal of Fluid Mechanics, 840, 634-655.",
+    "citation": "Pirozzoli, S., Modesti, D., Orlandi, P., & Grasso, F. (2018). Turbulence and secondary motions in square duct flow. Journal of Fluid Mechanics, 840, 631-655.",
     "secondary_reference": "Vinuesa, R., Noorani, A., Lozano-Duran, A., El Khoury, G. K., Schlatter, P., Fischer, P. F., & Nagib, H. M. (2014). Aspect ratio effects in turbulent duct flows studied through direct numerical simulation. Journal of Turbulence, 15(10), 677-706.",
     "database_repository": "Sapienza University CFD Group DNS Database (http://newton.dma.uniroma1.it/square_duct/)",
     "raw_source_file": "plotyz_Retau150.dat",
@@ -115,7 +115,7 @@
   },
   "held_out_benchmark": {
     "case_name": "Square Duct DNS at Re_tau = 220 (Re_b = 7000, Re_h = 3500)",
-    "citation": "Pirozzoli, S., Modesti, D., Orlandi, P., & Grasso, F. (2018). Turbulence and secondary motions in square duct flow. Journal of Fluid Mechanics, 840, 634-655.",
+    "citation": "Pirozzoli, S., Modesti, D., Orlandi, P., & Grasso, F. (2018). Turbulence and secondary motions in square duct flow. Journal of Fluid Mechanics, 840, 631-655.",
     "database_repository": "Sapienza University CFD Group DNS Database (http://newton.dma.uniroma1.it/square_duct/)",
     "raw_source_file": "plotyz_Retau220.dat",
     "dataset_file": "square_duct_dns_Reb7000_Retau220.csv",
@@ -128,7 +128,11 @@
     "bulk_velocity_Ub_m_s": 1.0,
     "kinematic_viscosity_nu_m2_s": 0.000142857,
     "friction_velocity_u_tau_m_s": 0.0628,
-    "peak_secondary_velocity_ratio_Vmax_over_Ub": 0.0215
+    "peak_secondary_velocity_ratio_Vmax_over_Ub": 0.0203,
+    "verification_provenance": {
+      "raw_secondary_peak_ratio": 0.0203,
+      "note": "Peak verified against the raw plotyz_Retau220.dat export (72x72 grid) during the raw-field reference verification (scripts/validation/verify_dns_reference.py), using the same methodology as the primary reference verification. The raw export is not redistributed; re-verify after re-obtaining it per data/benchmark_dns/README.md. The earlier 0.0215 value was a stale pre-verification number with no recorded basis."
+    }
   },
   "training_data_caveats": {
     "description": "Known provenance subtleties of the primary training dataset (square_duct_dns_Reb4410_Retau150.csv). Documented in detail in the README 'Honest Technical Discussion' section (limitation item 5).",
